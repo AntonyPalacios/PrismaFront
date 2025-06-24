@@ -47,9 +47,71 @@ export const menuItems = [
 ];
 
 export const fakeUser = {
-    name: 'Silvia Valle',
+    name: 'Antony Palacios',
     roles: [
         {id: 1, role: 'Administrador', current: true},
         {id: 2, role: 'Tutor', current: false},
     ]
 }
+
+export const fakeStudents = [
+    {
+        id: 1,
+        name: 'Antony Palacios',
+        area: 'Ciencias',
+        email: 'AntonyPalacios@gmail.com',
+        tutor: 'Silvia Valle',
+        active: true
+    },
+    {
+        id: 2,
+        name: 'Antony Palacios',
+        area: 'Letras',
+        email: 'AntonyPalacios@gmail.com',
+        tutor: 'Silvia Valle',
+        active: false
+    },
+    {
+        id: 3,
+        name: 'Antony Palacios',
+        area: 'Arquitectura',
+        email: 'AntonyPalacios@gmail.com',
+        tutor: 'Silvia Valle',
+        active: true
+    },
+    {
+        id: 4,
+        name: 'Antony Palacios',
+        area: 'Arquitectura',
+        email: 'AntonyPalacios@gmail.com',
+        tutor: 'Silvia Valle',
+        active: true
+    },
+    {
+        id: 5,
+        name: 'Antony Palacios',
+        area: 'Arquitectura',
+        email: 'AntonyPalacios@gmail.com',
+        tutor: 'Silvia Valle',
+        active: true
+    },
+]
+
+export const etapas = [
+    {id:1,etapa:'Regular 1'},
+    {id:2,etapa:'Regular 2'},
+    {id:3,etapa:'Regular 3'},
+    {id:4,etapa:'Repaso'},
+]
+
+export const areas = [
+    {id:1,area:'Ciencias'},
+    {id:2,area:'Letras'},
+    {id:3,area:'Arquitectura'},
+]
+
+export const tutores = [
+    {id:1,name:'Silvia Valle'},
+    {id:1,name:'Ximena'},
+    {id:1,name:'Ana'},
+]

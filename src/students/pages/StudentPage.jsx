@@ -1,21 +1,25 @@
-import {Grid} from "@mui/material";
+import {FormControl, Grid, InputLabel, MenuItem, Select, TextField} from "@mui/material";
 import {Title} from "../../components/ui/Title.jsx";
-import {useContext} from "react";
+import {useContext, useEffect, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
+import {MyButton} from "../../components/ui/MyButton.jsx";
+import {StudentFilter} from "../components/StudentFilter.jsx";
+import {StudentTable} from "../components/StudentTable.jsx";
+import StudentFAB from "../components/StudentFAB.jsx";
 
 export const StudentPage = () => {
     const {isLargeScreen} = useContext(AppContext);
-    const variant = () =>{
-        return isLargeScreen? "h4":"h6"
-    }
+    const [variant, setVariant] = useState("h4");
+    useEffect(()=>{
+        isLargeScreen? setVariant("h4"): setVariant("h6");
+    },[isLargeScreen]);
 
     return (
-        <Grid container>
-            <Grid size={12}>
-                <Title
-                    variant={variant}
-                >Alumnos</Title>
-            </Grid>
+        <Grid container spacing={2}>
+            <Title variant={variant}>Alumnos</Title>
+            <StudentFilter isLargeScreen={isLargeScreen}/>
+            <StudentTable />
+            <StudentFAB />
         </Grid>
     );
 };

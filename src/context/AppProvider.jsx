@@ -6,8 +6,7 @@ import {fakeUser} from "../assets/fakeData.jsx"
 export const AppProvider = ({children}) => {
 
     const theme = useTheme();
-    const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
-
+    const isLargeScreen = useMediaQuery(theme.breakpoints.up('md'));
     const [user, setUser] = useState(fakeUser);
     return (
         <AppContext.Provider value={{isLargeScreen, user, setUser}}>

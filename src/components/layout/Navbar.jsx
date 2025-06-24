@@ -103,7 +103,7 @@ export const Navbar = () => {
                         <Menu/>
                     </IconButton>
                     <Typography variant="h6" noWrap component="div">
-                        Silvia Valle
+                        {user.name}
                     </Typography>
                 </Toolbar>
             )}
