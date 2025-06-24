@@ -4,7 +4,7 @@ body::before {
     font-size: 2rem;
     font-weight: bold;
     position: fixed;
-    top: 0;
+    bottom: 0;
     right: 0;
 }
 
