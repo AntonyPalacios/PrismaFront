@@ -27,12 +27,7 @@ export default function StudentFAB() {
                     justifyContent:"flex-end",
                     display:"flex",
                 }}>
-                    <MyButton>Importar</MyButton>
-                </Grid>
-                <Grid size={2} sx={{
-                    justifyContent:"flex-end",
-                    display:"flex",
-                }}>
+                    <MyButton sx={{marginRight:'20px'}}>Importar</MyButton>
                     <MyButton>Nuevo</MyButton>
                 </Grid>
             </Grid>

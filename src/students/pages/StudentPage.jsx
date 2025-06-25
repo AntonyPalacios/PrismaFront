@@ -6,6 +6,7 @@ import {MyButton} from "../../components/ui/MyButton.jsx";
 import {StudentFilter} from "../components/StudentFilter.jsx";
 import {StudentTable} from "../components/StudentTable.jsx";
 import StudentFAB from "../components/StudentFAB.jsx";
+import { Outlet } from "react-router";
 
 export const StudentPage = () => {
     const {isLargeScreen} = useContext(AppContext);
@@ -17,9 +18,7 @@ export const StudentPage = () => {
     return (
         <Grid container spacing={2}>
             <Title variant={variant}>Alumnos</Title>
-            <StudentFilter isLargeScreen={isLargeScreen}/>
-            <StudentTable />
-            <StudentFAB />
+            <Outlet/>
         </Grid>
     );
 };

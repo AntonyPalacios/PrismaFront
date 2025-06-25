@@ -31,9 +31,3 @@ body::before {
         content: "XL";
     }
 }
-
-@media (min-width: 1400px) {
-    body::before {
-        content: "XXL";
-    }
-}

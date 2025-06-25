@@ -5,6 +5,8 @@ import {Box} from "@mui/material";
 import {Navbar} from "../components/layout/Navbar.jsx";
 import {useContext} from "react";
 import {AppContext} from "../context/AppContext.jsx";
+import {StudentList} from "../students/components/StudentList.jsx";
+import {StudentDetail} from "../students/components/StudentDetail.jsx";
 
 const drawerWidth = 240;
 export const PrismaRouter = () => {
@@ -24,7 +26,10 @@ export const PrismaRouter = () => {
             >
 
                 <Routes>
-                    <Route path="students" element={<StudentPage/>}/>
+                    <Route path="students" element={<StudentPage/>}>
+                        <Route index element={<StudentList />} />
+                        <Route path=":id" element={<StudentDetail />} />
+                    </Route>
                     <Route path="users" element={<UsersPage/>}/>
                 </Routes>
 

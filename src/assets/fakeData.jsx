@@ -65,7 +65,7 @@ export const fakeStudents = [
     },
     {
         id: 2,
-        name: 'Antony Palacios',
+        name: 'Silvia Valle',
         area: 'Letras',
         email: 'AntonyPalacios@gmail.com',
         tutor: 'Silvia Valle',
@@ -73,7 +73,7 @@ export const fakeStudents = [
     },
     {
         id: 3,
-        name: 'Antony Palacios',
+        name: 'BLACKY',
         area: 'Arquitectura',
         email: 'AntonyPalacios@gmail.com',
         tutor: 'Silvia Valle',
@@ -81,7 +81,7 @@ export const fakeStudents = [
     },
     {
         id: 4,
-        name: 'Antony Palacios',
+        name: 'PEPPA',
         area: 'Arquitectura',
         email: 'AntonyPalacios@gmail.com',
         tutor: 'Silvia Valle',
@@ -112,6 +112,6 @@ export const areas = [
 
 export const tutores = [
     {id:1,name:'Silvia Valle'},
-    {id:1,name:'Ximena'},
-    {id:1,name:'Ana'},
+    {id:2,name:'Ximena'},
+    {id:3,name:'Ana'},
 ]

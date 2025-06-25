@@ -6,8 +6,17 @@ import TableCell from "@mui/material/TableCell";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import {fakeStudents} from "../../assets/fakeData.jsx";
+import {useNavigate} from "react-router";
 
 export const StudentTable = () => {
+
+    const navigate = useNavigate();
+    const onClickStudent = (student) => {
+        navigate(`/students/${student.id}`,{
+            state: {student}
+        });
+    }
+
     return (
         <Grid container spacing={2}>
             <Grid size={12} sx={{ flexGrow: 1 }}>
@@ -25,7 +34,7 @@ export const StudentTable = () => {
                         <TableBody>
                             {fakeStudents.map((student) => {
                                 return (
-                                    <TableRow hover key={student.id}>
+                                    <TableRow hover key={student.id} onClick={() => {onClickStudent(student)}}>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{student.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
