@@ -1,67 +1,27 @@
-import {Grid, TextField} from "@mui/material";
-import {MyButton} from "../../components/ui/MyButton.jsx";
-import {Search} from '@mui/icons-material';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select from '@mui/material/Select';
-import {etapas,areas,tutores} from "../../assets/fakeData.jsx";
-import {useState} from "react";
+import {useContext, useState} from "react";
+import {Grid} from "@mui/material";
+import {MyButton, MyInput, MySelect} from "../../components/ui";
+import Search from '@mui/icons-material/Search';
+import {areas, etapas, tutores} from "../../assets/fakeData.jsx";
+import {AppContext} from "../../context/AppContext.jsx";
 
-export const StudentFilter = ({isLargeScreen}) => {
+export const StudentFilter = () => {
     const [age, setAge] = useState('');
+    const {isLargeScreen} = useContext(AppContext);
     return (
         <Grid container spacing={2} width="100%">
             <Grid size={{xs: 6, md: 2, xl: 2}}>
-                <FormControl fullWidth size="small">
-                    <InputLabel id="demo-simple-select-label">Ciclo</InputLabel>
-                    <Select
-                        labelId="demo-simple-select-label"
-                        id="demo-simple-select"
-                        value={age}
-                        label="Ciclo"
-                        //onChange={handleChange}
-                    >
-                        {etapas.map((etapa)=>
-                            <MenuItem key={etapa.id} value={etapa.id}>{etapa.etapa}</MenuItem>
-                        )}
-                    </Select>
-                </FormControl>
+                <MySelect options={etapas} label="Ciclo" value={age}/>
             </Grid>
             <Grid size={{xs: 6, md: 2}}>
-                <FormControl fullWidth size="small">
-                    <InputLabel id="demo-simple-select-label" >Área</InputLabel>
-                    <Select
-                        labelId="demo-simple-select-label"
-                        id="demo-simple-select"
-                        value={age}
-                        label="Área"
-                        //onChange={handleChange}
-                    >
-                        {areas.map((area)=>
-                            <MenuItem key={area.id} value={area.id}>{area.area}</MenuItem>
-                        )}
-                    </Select>
-                </FormControl>
+                <MySelect options={areas} label="Área" value={age}/>
             </Grid>
             <Grid size={{xs: 12, md: 2}}>
-                <FormControl fullWidth size="small">
-                    <InputLabel id="demo-simple-select-label" >Tutor</InputLabel>
-                    <Select
-                        labelId="demo-simple-select-label"
-                        id="demo-simple-select"
-                        value={age}
-                        label="Tutor"
-                        //onChange={handleChange}
-                    >
-                        {tutores.map((tutor)=>
-                            <MenuItem key={tutor.id} value={tutor.id}>{tutor.name}</MenuItem>
-                        )}
-                    </Select>
-                </FormControl>
+                <MySelect options={tutores} label="Tutor" value={age}/>
+
             </Grid>
             <Grid size={{xs: 12, md: 6}} sx={{display: 'flex', gap: 1, justifyContent: 'space-between'}}>
-                <TextField size="small" fullWidth label="Nombre" variant="outlined"/>
+                <MyInput label="Nombre" value={age}/>
                 <MyButton size="small">{isLargeScreen ? "Buscar" : <Search/>}</MyButton>
             </Grid>
         </Grid>

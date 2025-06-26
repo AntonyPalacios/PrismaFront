@@ -1,4 +1,5 @@
 import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
 
 export const MyButton = ({children, color='primary', disabled, size, variant='contained',sx, onClick}) => {
     return (
@@ -10,7 +11,9 @@ export const MyButton = ({children, color='primary', disabled, size, variant='co
             sx ={sx}
             onClick={onClick}
         >
-            {children}
+            <Typography varint="button" >
+                {children}
+            </Typography>
         </Button>
     );
 };

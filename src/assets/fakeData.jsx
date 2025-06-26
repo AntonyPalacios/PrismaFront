@@ -46,7 +46,7 @@ export const menuItems = [
     }
 ];
 
-export const fakeUser = {
+export const currentUser = {
     name: 'Antony Palacios',
     roles: [
         {id: 1, role: 'Administrador', current: true},
@@ -54,64 +54,79 @@ export const fakeUser = {
     ]
 }
 
-export const fakeStudents = [
+export const students = [
     {
         id: 1,
+        dni:'72498155',
         name: 'Antony Palacios',
-        area: 'Ciencias',
+        area: {id:1,area:'Ciencias'},
         email: 'AntonyPalacios@gmail.com',
-        tutor: 'Silvia Valle',
+        tutor: {id:1,name:'Silvia Valle'},
+        phone:'955110168',
         active: true
     },
     {
         id: 2,
-        name: 'Silvia Valle',
-        area: 'Letras',
+        dni:'72498155',
+        name: 'Antony Palacios',
+        area: {id:2,area:'Letras'},
         email: 'AntonyPalacios@gmail.com',
-        tutor: 'Silvia Valle',
-        active: false
-    },
-    {
-        id: 3,
-        name: 'BLACKY',
-        area: 'Arquitectura',
-        email: 'AntonyPalacios@gmail.com',
-        tutor: 'Silvia Valle',
+        tutor: {id:1,name:'Silvia Valle'},
+        phone:'955110168',
         active: true
     },
     {
-        id: 4,
-        name: 'PEPPA',
-        area: 'Arquitectura',
+        id: 3,
+        dni:'72498155',
+        name: 'Antony Palacios',
+        area: {id:3,area:'Arquitectura'},
         email: 'AntonyPalacios@gmail.com',
-        tutor: 'Silvia Valle',
+        tutor: {id:1,name:'Silvia Valle'},
+        phone:'955110168',
+        active: false
+    },
+    {
+        id: 4,
+        dni:'72498155',
+        name: 'Antony Palacios',
+        area: {id:1,area:'Ciencias'},
+        email: 'AntonyPalacios@gmail.com',
+        tutor: {id:1,name:'Silvia Valle'},
+        phone:'955110168',
         active: true
     },
     {
         id: 5,
+        dni:'72498155',
         name: 'Antony Palacios',
-        area: 'Arquitectura',
+        area: {id:1,area:'Ciencias'},
         email: 'AntonyPalacios@gmail.com',
-        tutor: 'Silvia Valle',
-        active: true
+        tutor: {id:1,name:'Silvia Valle'},
+        phone:'955110168',
+        active: false
     },
 ]
 
 export const etapas = [
-    {id:1,etapa:'Regular 1'},
-    {id:2,etapa:'Regular 2'},
-    {id:3,etapa:'Regular 3'},
-    {id:4,etapa:'Repaso'},
+    {id:1,name:'Regular 1'},
+    {id:2,name:'Regular 2'},
+    {id:3,name:'Regular 3'},
+    {id:4,name:'Repaso'},
 ]
 
 export const areas = [
-    {id:1,area:'Ciencias'},
-    {id:2,area:'Letras'},
-    {id:3,area:'Arquitectura'},
+    {id:1,name:'Ciencias'},
+    {id:2,name:'Letras'},
+    {id:3,name:'Arquitectura'},
 ]
 
 export const tutores = [
     {id:1,name:'Silvia Valle'},
     {id:2,name:'Ximena'},
     {id:3,name:'Ana'},
+]
+
+export const studentStates = [
+    {id:1,name:'Activo'},
+    {id:0,name:'Inactivo'},
 ]

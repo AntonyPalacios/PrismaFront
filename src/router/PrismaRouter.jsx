@@ -21,7 +21,7 @@ export const PrismaRouter = () => {
                     flexGrow: 1,
                     ml: isLargeScreen ? `${drawerWidth}px` : 0,
                     mt: isLargeScreen ? 0 : 8, // deja espacio si está el toolbar superior
-                    p: 3,
+                    p: 1,
                 }}
             >
 

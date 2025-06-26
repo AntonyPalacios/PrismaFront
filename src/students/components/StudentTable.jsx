@@ -5,7 +5,7 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
-import {fakeStudents} from "../../assets/fakeData.jsx";
+import {students} from "../../assets/fakeData.jsx";
 import {useNavigate} from "react-router";
 
 export const StudentTable = () => {
@@ -32,17 +32,17 @@ export const StudentTable = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {fakeStudents.map((student) => {
+                            {students.map((student) => {
                                 return (
                                     <TableRow hover key={student.id} onClick={() => {onClickStudent(student)}}>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{student.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word'}} align="left">{student.area}</TableCell>
+                                            wordBreak: 'break-word'}} align="left">{student.area.area}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{student.email}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{student.tutor}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{student.tutor.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{student.active?"Sí":"No"}</TableCell>
                                     </TableRow>
