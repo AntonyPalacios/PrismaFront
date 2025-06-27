@@ -43,12 +43,14 @@ export const StudentDetail = () => {
                 active={active}
                 disabled={disabled}
                 onInputChange={onInputChange}
+                onClickEdit={onClickEdit}
+                action="edit"
 
             />
-            <Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
+            {/*<Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
                 <MyButton size="small" color='error'>Borrar</MyButton>
                 <MyButton size="small" onClick={onClickEdit}>{disabled ? "Editar" : "Guardar"}</MyButton>
-            </Grid>
+            </Grid>*/}
             <MyAlert message="Alumno guardado correctamente" severity="success" open={open} handleClose={onAlertClose}/>
         </Grid>
     );

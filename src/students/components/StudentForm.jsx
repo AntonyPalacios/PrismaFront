@@ -2,12 +2,16 @@ import {Grid} from "@mui/material";
 import {MyButton, MyInput, MySelect} from "../../components/ui/index.js";
 import {areas, studentStates, tutores} from "../../assets/fakeData.jsx";
 
-export const StudentForm = ({dni,areaId,name,email,phone,tutorId, active, onInputChange, disabled=false}) => {
+export const StudentForm = ({dni,areaId,name,email,phone,tutorId, active, onInputChange, disabled=false,
+                                action, onClickEdit, handleClose}) => {
+
+
+
     return (
         <Grid container spacing={2} width='100%' >
             <Grid size={{xs: 6}}>
                 <MyInput
-                    disabled={disabled}
+                    disabled={action==='edit'}
                     label="DNI"
                     value={dni}
                     name="dni"
@@ -64,10 +68,21 @@ export const StudentForm = ({dni,areaId,name,email,phone,tutorId, active, onInpu
                     value={active}
                     handleChange={onInputChange}/>
             </Grid>
-            {/*<Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>*/}
-            {/*    <MyButton size="small" color='error'>Borrar</MyButton>*/}
-            {/*    <MyButton size="small" onClick={onClickEdit}>{disabled ? "Editar" : "Guardar"}</MyButton>*/}
-            {/*</Grid>*/}
+            {
+                action === 'edit' &&
+                <Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
+                    <MyButton size="small" color='error'>Borrar</MyButton>
+                    <MyButton size="small" onClick={onClickEdit}>{disabled ? "Editar" : "Guardar"}</MyButton>
+                </Grid>
+            }
+            {
+                action === 'new' &&
+                <Grid container spacing={2} size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
+                    <MyButton size="small" color='error' onClick={handleClose}>Cancelar</MyButton>
+                    <MyButton size="small">Aceptar</MyButton>
+                </Grid>
+            }
+
 
         </Grid>
     );

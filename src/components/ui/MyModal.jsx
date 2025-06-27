@@ -21,12 +21,12 @@ export default function MyModal({open, handleClose, title, content}) {
                     {content}
                 </Box>
             </DialogContent>
-            <DialogActions>
+            {/*<DialogActions>
                 <Grid container spacing={2} size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
                     <MyButton size="small" onClick={handleClose}>Cancelar</MyButton>
                     <MyButton size="small">Aceptar</MyButton>
                 </Grid>
-            </DialogActions>
+            </DialogActions>*/}
         </Dialog>
     );
 }

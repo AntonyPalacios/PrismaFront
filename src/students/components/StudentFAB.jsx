@@ -49,6 +49,8 @@ export default function StudentFAB() {
                 tutorId={tutorId}
                 active={active}
                 onInputChange={onInputChange}
+                action="new"
+                handleClose={showModal}
 
             />}
         />
