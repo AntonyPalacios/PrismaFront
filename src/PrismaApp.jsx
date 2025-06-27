@@ -2,6 +2,7 @@ import {useEffect} from "react";
 import colors from "./assets/colors.js";
 import './styles/styles.css'
 import {AppRouter} from "./router/AppRouter.jsx";
+import {AppProvider} from "./context/AppProvider.jsx";
 
 export const PrismaApp = () => {
     useEffect(() => {
@@ -12,7 +13,9 @@ export const PrismaApp = () => {
     }, []);
     return (
         <>
-            <AppRouter></AppRouter>
+            <AppProvider>
+                <AppRouter/>
+            </AppProvider>
 
         </>
     );

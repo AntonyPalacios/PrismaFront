@@ -1,14 +1,14 @@
 import {Grid} from "@mui/material";
-import {Title} from "../../components/ui/Title.jsx";
+import {MyTitle} from "../../components/ui/MyTitle.jsx";
+import {Outlet} from "react-router";
 
 export const StudentPage = () => {
+
+
     return (
-        <Grid container>
-            <Grid size={12}>
-                <Title
-                    variant="h4"
-                >Alumnos</Title>
-            </Grid>
+        <Grid container spacing={2}>
+            <MyTitle>Alumnos</MyTitle>
+            <Outlet/>
         </Grid>
     );
 };
