@@ -3,15 +3,21 @@ import {useReducer} from "react";
 import {studentReducer} from "../reducers/studentReducer.js";
 
 import {students} from "../assets/fakeData.jsx";
+import {studentActions} from "../reducers/studentActions.js";
 
-const initialState = [
-    ...students
-]
+const initialState = {
+    students,
+    studentAlert: {
+        open:false,
+        message: "Alumno guardado correctamente",
+        severity: "success",
+    }
+}
 
 
 export const StudentProvider = ({children}) => {
 
-    const [students, dispatch] = useReducer(studentReducer,initialState);
+    const [state, dispatch] = useReducer(studentReducer,initialState);
 
     const onCreateStudent = (action) => {
         dispatch(action);
@@ -25,8 +31,12 @@ export const StudentProvider = ({children}) => {
         dispatch(action)
     }
 
+    const onToggleAlert = () => {
+        dispatch({type:studentActions.toggleAlert})
+    }
+
     return (
-        <StudentContext.Provider value={{students, onCreateStudent, onUpdateStudent, onDeleteStudent}}>
+        <StudentContext.Provider value={{state, onCreateStudent, onUpdateStudent, onDeleteStudent, onToggleAlert}}>
             {children}
         </StudentContext.Provider>
     );

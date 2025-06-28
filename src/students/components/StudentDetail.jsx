@@ -1,15 +1,16 @@
 import {useLocation} from "react-router";
 import {Grid} from "@mui/material";
 
-import {useState} from "react";
+import {useContext, useState} from "react";
 import {useForm} from "../../hooks/useForm.js";
 import {StudentForm} from "./StudentForm.jsx";
 import {MyAlert} from "../../components/ui/MyAlert.jsx";
+import {StudentContext} from "../../context/StudentContext.jsx";
 
 export const StudentDetail = () => {
     const location = useLocation();
     const {student} = location.state;
-
+    const {state:{studentAlert}, onToggleAlert} = useContext(StudentContext);
 
 
     const {id,dni, areaId, name, email, phone, tutorId, active, onInputChange} = useForm({
@@ -23,11 +24,7 @@ export const StudentDetail = () => {
         active: student.active ? 1 : 0,
     });
 
-    const [open, setOpen] = useState(false);
     const [disabled, setDisabled] = useState(true);
-    const onAlertClose = () => {
-        setOpen(false);
-    }
     const onEditForm = () => {
         setDisabled(!disabled);
     }
@@ -49,11 +46,8 @@ export const StudentDetail = () => {
                 action="edit"
 
             />
-            {/*<Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
-                <MyButton size="small" color='error'>Borrar</MyButton>
-                <MyButton size="small" onClick={onClickEdit}>{disabled ? "Editar" : "Guardar"}</MyButton>
-            </Grid>*/}
-            <MyAlert message="Alumno guardado correctamente" severity="success" open={open} handleClose={onAlertClose}/>
+            <MyAlert message={studentAlert.message} severity={studentAlert.severity} open={studentAlert.open} onHandleClose={onToggleAlert} />
+
         </Grid>
     );
 };

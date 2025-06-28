@@ -2,11 +2,7 @@ import Box from '@mui/material/Box';
 import SpeedDial from '@mui/material/SpeedDial';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
-import FileCopyIcon from '@mui/icons-material/FileCopyOutlined';
-import SaveIcon from '@mui/icons-material/Save';
-import {Upload, Edit} from '@mui/icons-material'
-import PrintIcon from '@mui/icons-material/Print';
-import ShareIcon from '@mui/icons-material/Share';
+import {Edit, Upload} from '@mui/icons-material'
 import {useContext, useState} from "react";
 import {AppContext} from "../../context/AppContext.jsx";
 import {Grid} from "@mui/material";
@@ -34,7 +30,7 @@ export default function StudentFAB() {
         setOpenModal(!openModal);
     }
 
-    const { dni,areaId,name,email,phone,tutorId, active, onInputChange } = useForm(initialForm);
+    const { dni,areaId,name,email,phone,tutorId, active, onInputChange, onResetForm } = useForm(initialForm);
     const modal = (
         <MyModal
             open={openModal}
@@ -51,7 +47,7 @@ export default function StudentFAB() {
                 onInputChange={onInputChange}
                 action="new"
                 handleClose={showModal}
-
+                onResetForm={onResetForm}
             />}
         />
     );

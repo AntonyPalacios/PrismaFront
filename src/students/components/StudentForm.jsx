@@ -8,7 +8,7 @@ import {useNavigate} from "react-router";
 
 
 export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onInputChange,
-                                action, disabled =false, onEditForm, handleClose}) => {
+                                action, disabled =false, onEditForm, handleClose, onResetForm}) => {
 
 
     const {onCreateStudent, onUpdateStudent, onDeleteStudent} = useContext(StudentContext);
@@ -28,9 +28,17 @@ export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onI
 
         const action = {
             type:studentActions.create,
-            payload: student
+            payload: {
+                student,
+                studentAlert:{
+                    open:true,
+                    message:"Alumno creado correctamente",
+                    severity:"success",
+                }
+            }
         }
         onCreateStudent(action)
+        onResetForm()
         handleClose();
     }
 
@@ -51,14 +59,31 @@ export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onI
         }
 
         //buscar en la lista de alumnos y reemplazar el dato
-        const action = {type:studentActions.update, payload: student}
+        const action = {
+            type:studentActions.update,
+            payload: {
+                student,
+                studentAlert:{
+                    open:true,
+                    message:"Alumno actualizado correctamente",
+                    severity:"success",
+                }
+            }}
         onUpdateStudent(action);
 
         onEditForm();
     }
 
     const onHandleDelete = () =>{
-        const action = {type:studentActions.delete, payload: {id}}
+        const action = {
+            type:studentActions.delete,
+            payload: {id,
+                studentAlert:{
+                    open:true,
+                    message:"Alumno borrado correctamente",
+                    severity:"error",
+                }
+            }}
         onDeleteStudent(action)
         navigate("/students",{
             replace: true,
