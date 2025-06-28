@@ -2,7 +2,6 @@ import {useLocation} from "react-router";
 import {Grid} from "@mui/material";
 
 import {useState} from "react";
-import {MyButton} from "../../components/ui";
 import {useForm} from "../../hooks/useForm.js";
 import {StudentForm} from "./StudentForm.jsx";
 import {MyAlert} from "../../components/ui/MyAlert.jsx";
@@ -11,7 +10,10 @@ export const StudentDetail = () => {
     const location = useLocation();
     const {student} = location.state;
 
-    const {dni, areaId, name, email, phone, tutorId, active, onInputChange} = useForm({
+
+
+    const {id,dni, areaId, name, email, phone, tutorId, active, onInputChange} = useForm({
+        id: student.id,
         dni: student.dni,
         areaId: student.area.id,
         name: student.name,
@@ -21,19 +23,19 @@ export const StudentDetail = () => {
         active: student.active ? 1 : 0,
     });
 
-    const [disabled, setDisabled] = useState(true)
     const [open, setOpen] = useState(false);
+    const [disabled, setDisabled] = useState(true);
     const onAlertClose = () => {
         setOpen(false);
     }
-    const onClickEdit = () => {
+    const onEditForm = () => {
         setDisabled(!disabled);
-        setOpen(true);
     }
 
     return (
         <Grid container spacing={2} width='100%' >
             <StudentForm
+                id={id}
                 dni={dni}
                 areaId={areaId}
                 name={name}
@@ -43,7 +45,7 @@ export const StudentDetail = () => {
                 active={active}
                 disabled={disabled}
                 onInputChange={onInputChange}
-                onClickEdit={onClickEdit}
+                onEditForm = {onEditForm}
                 action="edit"
 
             />

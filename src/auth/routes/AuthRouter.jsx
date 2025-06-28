@@ -5,7 +5,7 @@ export const AuthRouter = () => {
     return (
         <>
             <Routes>
-                <Route path="" element={<LoginPage/>} />
+                <Route index element={<LoginPage/>} />
             </Routes>
         </>
     );

@@ -5,10 +5,16 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
-import {students} from "../../assets/fakeData.jsx";
+
 import {useNavigate} from "react-router";
+import {useContext} from "react";
+
+import {StudentContext} from "../../context/StudentContext.jsx";
+
 
 export const StudentTable = () => {
+
+    const {students} = useContext(StudentContext);
 
     const navigate = useNavigate();
     const onClickStudent = (student) => {
@@ -38,7 +44,7 @@ export const StudentTable = () => {
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{student.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word'}} align="left">{student.area.area}</TableCell>
+                                            wordBreak: 'break-word'}} align="left">{student.area.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{student.email}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
