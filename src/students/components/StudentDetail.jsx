@@ -1,17 +1,23 @@
 import {useLocation} from "react-router";
 import {Grid} from "@mui/material";
 
-import {useState} from "react";
-import {MyButton} from "../../components/ui";
+import {useContext, useState} from "react";
 import {useForm} from "../../hooks/useForm.js";
 import {StudentForm} from "./StudentForm.jsx";
 import {MyAlert} from "../../components/ui/MyAlert.jsx";
+import {StudentContext} from "../../context/StudentContext.jsx";
+import {useStudent} from "../../hooks/useStudent.js";
+import MyModal from "../../components/ui/MyModal.jsx";
+import {useModal} from "../../hooks/useModal.js";
 
 export const StudentDetail = () => {
     const location = useLocation();
     const {student} = location.state;
+    const {state: {studentAlert}, onToggleAlert} = useContext(StudentContext);
 
-    const {dni, areaId, name, email, phone, tutorId, active, onInputChange} = useForm({
+
+    const {id, dni, areaId, name, email, phone, tutorId, active, onInputChange} = useForm({
+        id: student.id,
         dni: student.dni,
         areaId: student.area.id,
         name: student.name,
@@ -21,19 +27,21 @@ export const StudentDetail = () => {
         active: student.active ? 1 : 0,
     });
 
-    const [disabled, setDisabled] = useState(true)
-    const [open, setOpen] = useState(false);
-    const onAlertClose = () => {
-        setOpen(false);
-    }
-    const onClickEdit = () => {
+    const [disabled, setDisabled] = useState(true);
+    const onEditForm = () => {
         setDisabled(!disabled);
-        setOpen(true);
     }
 
+    const {onHandleUpdate, onHandleDelete} = useStudent({
+        id, dni, areaId, name, email, phone, tutorId, disabled, active, onEditForm
+    })
+
+    const {open,toggleModal, title, confirmText,cancelText} = useModal({title:"Confirmación"})
+
     return (
-        <Grid container spacing={2} width='100%' >
+        <Grid container spacing={2} width='100%'>
             <StudentForm
+                id={id}
                 dni={dni}
                 areaId={areaId}
                 name={name}
@@ -43,15 +51,26 @@ export const StudentDetail = () => {
                 active={active}
                 disabled={disabled}
                 onInputChange={onInputChange}
-                onClickEdit={onClickEdit}
+                onEditForm={onEditForm}
                 action="edit"
+                onHandleConfirm={onHandleUpdate}
+                onHandleCancel={toggleModal}
 
             />
-            {/*<Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
-                <MyButton size="small" color='error'>Borrar</MyButton>
-                <MyButton size="small" onClick={onClickEdit}>{disabled ? "Editar" : "Guardar"}</MyButton>
-            </Grid>*/}
-            <MyAlert message="Alumno guardado correctamente" severity="success" open={open} handleClose={onAlertClose}/>
+            <MyAlert message={studentAlert.message} severity={studentAlert.severity} open={studentAlert.open}
+                     onHandleClose={onToggleAlert}/>
+            <MyModal
+                open={open}
+                handleClose={toggleModal}
+                title={title}
+                confirmText={confirmText}
+                cancelText={cancelText}
+
+                onHandleConfirm={onHandleDelete}
+                onHandleCancel={toggleModal}
+
+                content={<p>¿Desea eliminar a {name} permanentemente?</p>}
+            />
         </Grid>
     );
 };

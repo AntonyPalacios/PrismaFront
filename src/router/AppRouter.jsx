@@ -7,7 +7,7 @@ export const AppRouter = () => {
         <>
             <Routes>
                 <Route path="/" element={<Navigate to="/login"/>} />
-                <Route path="login" element={<AuthRouter/>} />
+                <Route path="login/*" element={<AuthRouter/>} />
                 <Route path="/*" element={<PrismaRouter/>} />
             </Routes>
         </>

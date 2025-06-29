@@ -2,9 +2,9 @@ import {Grid} from "@mui/material";
 import {MyButton, MyInput, MySelect} from "../../components/ui/index.js";
 import {areas, studentStates, tutores} from "../../assets/fakeData.jsx";
 
-export const StudentForm = ({dni,areaId,name,email,phone,tutorId, active, onInputChange, disabled=false,
-                                action, onClickEdit, handleClose}) => {
 
+export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onInputChange,
+                                action, disabled =false, onHandleConfirm, onHandleCancel, onEditForm}) => {
 
 
     return (
@@ -71,19 +71,10 @@ export const StudentForm = ({dni,areaId,name,email,phone,tutorId, active, onInpu
             {
                 action === 'edit' &&
                 <Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
-                    <MyButton size="small" color='error'>Borrar</MyButton>
-                    <MyButton size="small" onClick={onClickEdit}>{disabled ? "Editar" : "Guardar"}</MyButton>
+                    <MyButton size="small" color='error' onClick={onHandleCancel}>Borrar</MyButton>
+                    <MyButton size="small" onClick={onHandleConfirm}>{disabled ? "Editar" : "Guardar"}</MyButton>
                 </Grid>
             }
-            {
-                action === 'new' &&
-                <Grid container spacing={2} size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
-                    <MyButton size="small" color='error' onClick={handleClose}>Cancelar</MyButton>
-                    <MyButton size="small">Aceptar</MyButton>
-                </Grid>
-            }
-
-
         </Grid>
     );
 };
