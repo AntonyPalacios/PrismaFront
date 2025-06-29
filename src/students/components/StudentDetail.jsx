@@ -9,6 +9,7 @@ import {StudentContext} from "../../context/StudentContext.jsx";
 import {useStudent} from "../../hooks/useStudent.js";
 import MyModal from "../../components/ui/MyModal.jsx";
 import {useModal} from "../../hooks/useModal.js";
+import {StudentGraphics} from "./StudentGraphics.jsx";
 
 export const StudentDetail = () => {
     const location = useLocation();
@@ -57,6 +58,7 @@ export const StudentDetail = () => {
                 onHandleCancel={toggleModal}
 
             />
+            <StudentGraphics/>
             <MyAlert message={studentAlert.message} severity={studentAlert.severity} open={studentAlert.open}
                      onHandleClose={onToggleAlert}/>
             <MyModal
