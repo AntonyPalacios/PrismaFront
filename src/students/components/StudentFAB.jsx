@@ -10,8 +10,11 @@ import {MyButton} from "../../components/ui/MyButton.jsx";
 import MyModal from "../../components/ui/MyModal.jsx";
 import {StudentForm} from "./StudentForm.jsx";
 import {useForm} from "../../hooks/useForm.js";
+import {useStudent} from "../../hooks/useStudent.js";
+import {useModal} from "../../hooks/useModal.js";
 
 const initialForm = {
+    id:null,
     dni:'',
     areaId:1,
     name:'',
@@ -24,18 +27,32 @@ const initialForm = {
 export default function StudentFAB() {
     const {isLargeScreen} = useContext(AppContext);
 
-    const [openModal, setOpenModal] = useState(false)
+    const [openDial, setOpenDial] = useState(false);
 
-    const showModal = () => {
-        setOpenModal(!openModal);
+    const toggleDial = () =>{
+        setOpenDial(!openDial);
     }
 
-    const { dni,areaId,name,email,phone,tutorId, active, onInputChange, onResetForm } = useForm(initialForm);
+    const {open,toggleModal,title,confirmText,cancelText} = useModal({
+        title:"Nuevo Alumno"
+    });
+
+    const {id, dni,areaId,name,email,phone,tutorId, active, onInputChange, onResetForm } = useForm(initialForm);
+
+    const {onHandleCreate} = useStudent({
+        id,dni,areaId,name,email,phone,tutorId, active, onResetForm, handleClose:toggleModal
+    })
+
     const modal = (
         <MyModal
-            open={openModal}
-            handleClose={showModal}
-            title="Nuevo Alumno"
+            open={open}
+            handleClose={toggleModal}
+            title={title}
+            confirmText={confirmText}
+            cancelText={cancelText}
+            onHandleConfirm={onHandleCreate}
+            onHandleCancel={toggleModal}
+
             content={<StudentForm
                 dni={dni}
                 areaId={areaId}
@@ -46,7 +63,6 @@ export default function StudentFAB() {
                 active={active}
                 onInputChange={onInputChange}
                 action="new"
-                handleClose={showModal}
                 onResetForm={onResetForm}
             />}
         />
@@ -64,7 +80,7 @@ export default function StudentFAB() {
                         display: "flex",
                     }}>
                         <MyButton sx={{marginRight: '20px'}}>Importar</MyButton>
-                        <MyButton onClick={showModal}>Nuevo</MyButton>
+                        <MyButton onClick={toggleModal}>Nuevo</MyButton>
                     </Grid>
                 </Grid>
             </>
@@ -75,6 +91,8 @@ export default function StudentFAB() {
             {modal}
             <SpeedDial
                 ariaLabel="SpeedDial basic example"
+                open={openDial}
+                onClick={toggleDial}
                 sx={{
                     position: 'fixed',
                     bottom: 16,
@@ -88,7 +106,7 @@ export default function StudentFAB() {
             >
                 <SpeedDialAction
                     icon={<Edit/>}
-                    onClick={showModal}
+                    onClick={toggleModal}
                     sx={{color: 'primary.main'}}
                 />
                 <SpeedDialAction

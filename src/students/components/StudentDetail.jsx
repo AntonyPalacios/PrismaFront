@@ -6,14 +6,17 @@ import {useForm} from "../../hooks/useForm.js";
 import {StudentForm} from "./StudentForm.jsx";
 import {MyAlert} from "../../components/ui/MyAlert.jsx";
 import {StudentContext} from "../../context/StudentContext.jsx";
+import {useStudent} from "../../hooks/useStudent.js";
+import MyModal from "../../components/ui/MyModal.jsx";
+import {useModal} from "../../hooks/useModal.js";
 
 export const StudentDetail = () => {
     const location = useLocation();
     const {student} = location.state;
-    const {state:{studentAlert}, onToggleAlert} = useContext(StudentContext);
+    const {state: {studentAlert}, onToggleAlert} = useContext(StudentContext);
 
 
-    const {id,dni, areaId, name, email, phone, tutorId, active, onInputChange} = useForm({
+    const {id, dni, areaId, name, email, phone, tutorId, active, onInputChange} = useForm({
         id: student.id,
         dni: student.dni,
         areaId: student.area.id,
@@ -29,8 +32,14 @@ export const StudentDetail = () => {
         setDisabled(!disabled);
     }
 
+    const {onHandleUpdate, onHandleDelete} = useStudent({
+        id, dni, areaId, name, email, phone, tutorId, disabled, active, onEditForm
+    })
+
+    const {open,toggleModal, title, confirmText,cancelText} = useModal({title:"Confirmación"})
+
     return (
-        <Grid container spacing={2} width='100%' >
+        <Grid container spacing={2} width='100%'>
             <StudentForm
                 id={id}
                 dni={dni}
@@ -42,12 +51,26 @@ export const StudentDetail = () => {
                 active={active}
                 disabled={disabled}
                 onInputChange={onInputChange}
-                onEditForm = {onEditForm}
+                onEditForm={onEditForm}
                 action="edit"
+                onHandleConfirm={onHandleUpdate}
+                onHandleCancel={toggleModal}
 
             />
-            <MyAlert message={studentAlert.message} severity={studentAlert.severity} open={studentAlert.open} onHandleClose={onToggleAlert} />
+            <MyAlert message={studentAlert.message} severity={studentAlert.severity} open={studentAlert.open}
+                     onHandleClose={onToggleAlert}/>
+            <MyModal
+                open={open}
+                handleClose={toggleModal}
+                title={title}
+                confirmText={confirmText}
+                cancelText={cancelText}
 
+                onHandleConfirm={onHandleDelete}
+                onHandleCancel={toggleModal}
+
+                content={<p>¿Desea eliminar a {name} permanentemente?</p>}
+            />
         </Grid>
     );
 };

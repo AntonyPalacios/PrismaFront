@@ -6,14 +6,17 @@ import {MyTitle} from "./MyTitle.jsx";
 import {Box, Grid} from "@mui/material";
 import {MyButton} from "./MyButton.jsx";
 
-export default function MyModal({open, handleClose, title, content}) {
+export default function MyModal({
+                                    open, handleClose, title, content,
+                                    confirmText, cancelText, onHandleConfirm, onHandleCancel
+                                }) {
 
     return (
         <Dialog
             open={open}
             onClose={handleClose}
         >
-            <DialogTitle >
+            <DialogTitle>
                 <MyTitle>{title}</MyTitle>
             </DialogTitle>
             <DialogContent>
@@ -21,12 +24,13 @@ export default function MyModal({open, handleClose, title, content}) {
                     {content}
                 </Box>
             </DialogContent>
-            {/*<DialogActions>
+            <DialogActions>
                 <Grid container spacing={2} size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
-                    <MyButton size="small" onClick={handleClose}>Cancelar</MyButton>
-                    <MyButton size="small">Aceptar</MyButton>
+                    <MyButton size="small" color="error"
+                              onClick={onHandleCancel ? onHandleCancel : handleClose}>{cancelText}</MyButton>
+                    <MyButton size="small" onClick={onHandleConfirm}>{confirmText}</MyButton>
                 </Grid>
-            </DialogActions>*/}
+            </DialogActions>
         </Dialog>
     );
 }

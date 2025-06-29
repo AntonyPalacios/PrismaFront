@@ -7,7 +7,7 @@ import {MyAlert} from "../../components/ui/MyAlert.jsx";
 
 export const StudentList = ({isLargeScreen}) => {
     const {state: {studentAlert}, onToggleAlert} = useContext(StudentContext);
-    console.log(studentAlert)
+
     return (
         <>
             <StudentFilter isLargeScreen={isLargeScreen}/>

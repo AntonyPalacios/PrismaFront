@@ -7,20 +7,14 @@ import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 
 import {useNavigate} from "react-router";
-import {useContext, useState} from "react";
+import {useContext} from "react";
 
 import {StudentContext} from "../../context/StudentContext.jsx";
-import {MyAlert} from "../../components/ui/MyAlert.jsx";
 
 
 export const StudentTable = () => {
 
-    const {state} = useContext(StudentContext);
-
-    const [openAlert, setOpenAlert] = useState(true);
-    const toggleAlert = () => {
-        setOpenAlert(!openAlert);
-    }
+    const {state:{students}} = useContext(StudentContext);
 
 
     const navigate = useNavigate();
@@ -45,7 +39,7 @@ export const StudentTable = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {state.students.map((student) => {
+                            {students.map((student) => {
                                 return (
                                     <TableRow hover key={student.id} onClick={() => {onClickStudent(student)}}>
                                         <TableCell sx={{whiteSpace: 'normal',
