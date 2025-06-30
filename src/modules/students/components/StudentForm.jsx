@@ -1,6 +1,6 @@
 import {Grid} from "@mui/material";
-import {MyButton, MyInput, MySelect} from "../../components/ui/index.js";
-import {areas, studentStates, tutores} from "../../assets/fakeData.jsx";
+import {MyButton, MyInput, MySelect} from "../../../components/ui/index.js";
+import {areas, studentStates, tutores} from "../../../assets/fakeData.jsx";
 
 
 export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onInputChange,

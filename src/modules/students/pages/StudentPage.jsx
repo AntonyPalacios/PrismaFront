@@ -1,7 +1,7 @@
 import {Grid} from "@mui/material";
-import {MyTitle} from "../../components/ui/MyTitle.jsx";
+import {MyTitle} from "../../../components/ui/MyTitle.jsx";
 import {Outlet} from "react-router";
-import {StudentProvider} from "../../context/StudentProvider.jsx";
+import {StudentProvider} from "../../../context/StudentProvider.jsx";
 
 export const StudentPage = () => {
 

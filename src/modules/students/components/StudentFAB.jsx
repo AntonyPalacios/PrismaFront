@@ -4,14 +4,14 @@ import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
 import {Edit, Upload} from '@mui/icons-material'
 import {useContext, useState} from "react";
-import {AppContext} from "../../context/AppContext.jsx";
+import {AppContext} from "../../../context/AppContext.jsx";
 import {Grid} from "@mui/material";
-import {MyButton} from "../../components/ui/MyButton.jsx";
-import MyModal from "../../components/ui/MyModal.jsx";
+import {MyButton} from "../../../components/ui/MyButton.jsx";
+import MyModal from "../../../components/ui/MyModal.jsx";
 import {StudentForm} from "./StudentForm.jsx";
-import {useForm} from "../../hooks/useForm.js";
-import {useStudent} from "../../hooks/useStudent.js";
-import {useModal} from "../../hooks/useModal.js";
+import {useForm} from "../../../hooks/useForm.js";
+import {useStudent} from "../../../hooks/useStudent.js";
+import {useModal} from "../../../hooks/useModal.js";
 
 const initialForm = {
     id:null,

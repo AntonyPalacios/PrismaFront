@@ -1,5 +1,5 @@
 import {Grid} from "@mui/material";
-import {MySelect, MyTitle} from "../../components/ui/index.js";
+import {MySelect, MyTitle} from "../../../components/ui/index.js";
 
 const options = [
     {id:1,name:"Puntaje Total"},

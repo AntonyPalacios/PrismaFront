@@ -5,10 +5,18 @@ export const useForm = (initialForm = {}) => {
 
     const onInputChange = ({target})=>{
         const {name, value} = target
-        setFormState({
-            ...formState,
-            [name]: value,
-        })
+        if(value ==='true' || value==='false'){
+            setFormState({
+                ...formState,
+                [name]: Boolean(value),
+            })
+        }else{
+            setFormState({
+                ...formState,
+                [name]: value,
+            })
+        }
+
     }
 
     const onResetForm = () =>{
@@ -18,6 +26,7 @@ export const useForm = (initialForm = {}) => {
         ...formState,
         formState,
         onInputChange,
-        onResetForm
+        onResetForm,
+        setFormState
     }
 }

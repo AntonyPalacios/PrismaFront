@@ -1,6 +1,6 @@
 import TextField from "@mui/material/TextField";
 
-export const MyInput = ({label,value, disabled=false,name='name', handleChange=()=>{}}) => {
+export const MyInput = ({label,value, disabled=false,name='name', handleChange=()=>{}, ...props}) => {
     return (
         <TextField
             fullWidth
@@ -10,6 +10,8 @@ export const MyInput = ({label,value, disabled=false,name='name', handleChange=(
             value={value}
             name={name}
             variant="outlined"
-            onChange={handleChange} />
+            onChange={handleChange}
+            {...props}
+        />
     );
 };

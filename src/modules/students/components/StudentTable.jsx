@@ -9,7 +9,7 @@ import TableBody from "@mui/material/TableBody";
 import {useNavigate} from "react-router";
 import {useContext} from "react";
 
-import {StudentContext} from "../../context/StudentContext.jsx";
+import {StudentContext} from "../../../context/StudentContext.jsx";
 
 
 export const StudentTable = () => {
