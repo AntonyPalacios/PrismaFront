@@ -63,7 +63,7 @@ export const StudentDetail = () => {
                      onHandleClose={onToggleAlert}/>
             <MyModal
                 open={open}
-                handleClose={toggleModal}
+                toggleModal={toggleModal}
                 title={title}
                 confirmText={confirmText}
                 cancelText={cancelText}

@@ -70,7 +70,7 @@ export const StageTable = ({idCycle}) => {
             <MyFab onHandleCLick={toggleModal}/>
             <MyModal
                 open={open}
-                handleClose={onClickFab}
+                toggleModal={onClickFab}
                 title={modalTitle}
                 content={<StageForm id={idStage}/>}
             />

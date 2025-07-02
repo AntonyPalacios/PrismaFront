@@ -1,17 +1,32 @@
 import {Grid} from "@mui/material";
 import {MyTitle} from "../../../components/ui/MyTitle.jsx";
-import {Outlet} from "react-router";
-import {StudentProvider} from "../../../context/StudentProvider.jsx";
+import {StudentTable} from "../components/StudentTable.jsx";
+import {StudentFilter} from "../components/StudentFilter.jsx";
+import StudentFAB from "../components/StudentFAB.jsx";
+import {MyAlert} from "../../../components/ui/MyAlert.jsx";
+import {useContext, useState} from "react";
+import {StudentContext} from "../../../context/StudentContext.jsx";
 
 export const StudentPage = () => {
 
+    const {state:{studentAlert}, onToggleAlert} = useContext(StudentContext);
+
 
     return (
-        <StudentProvider>
-            <Grid container spacing={2}>
+        <Grid container spacing={2}>
+            <Grid width="100%">
                 <MyTitle>Alumnos</MyTitle>
-                <Outlet/>
             </Grid>
-        </StudentProvider>
+            <StudentFilter/>
+            <StudentTable/>
+            <StudentFAB/>
+            <MyAlert
+                message={studentAlert.message}
+                severity={studentAlert.severity}
+                open={studentAlert.open}
+                onHandleClose={onToggleAlert}
+            />
+
+        </Grid>
     );
 };

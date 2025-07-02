@@ -10,6 +10,8 @@ import {useNavigate} from "react-router";
 import {useContext} from "react";
 
 import {StudentContext} from "../../../context/StudentContext.jsx";
+import {getAreaById} from "../../../helper/getAreaById.js";
+import {getTutorById} from "../../../helper/getTutorById.js";
 
 
 export const StudentTable = () => {
@@ -18,10 +20,8 @@ export const StudentTable = () => {
 
 
     const navigate = useNavigate();
-    const onClickStudent = (student) => {
-        navigate(`/students/${student.id}`,{
-            state: {student}
-        });
+    const onClickStudent = (id) => {
+        navigate(`/students/${id}`);
     }
 
     return (
@@ -41,15 +41,15 @@ export const StudentTable = () => {
                         <TableBody>
                             {students.map((student) => {
                                 return (
-                                    <TableRow hover key={student.id} onClick={() => {onClickStudent(student)}}>
+                                    <TableRow hover key={student.id} onClick={() => {onClickStudent(student.id)}}>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{student.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word'}} align="left">{student.area.name}</TableCell>
+                                            wordBreak: 'break-word'}} align="left">{getAreaById(student.areaId)?.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{student.email}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{student.tutor.name}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{getTutorById(student.tutorId)?.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{student.active?"Sí":"No"}</TableCell>
                                     </TableRow>

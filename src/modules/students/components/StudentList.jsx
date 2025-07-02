@@ -5,12 +5,12 @@ import {useContext} from "react";
 import {StudentContext} from "../../../context/StudentContext.jsx";
 import {MyAlert} from "../../../components/ui/MyAlert.jsx";
 
-export const StudentList = ({isLargeScreen}) => {
+export const StudentList = () => {
     const {state: {studentAlert}, onToggleAlert} = useContext(StudentContext);
 
     return (
         <>
-            <StudentFilter isLargeScreen={isLargeScreen}/>
+            <StudentFilter/>
             <StudentTable />
             <StudentFAB />
             <MyAlert

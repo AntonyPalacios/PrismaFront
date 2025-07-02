@@ -1,16 +1,16 @@
 import {useState} from "react";
 
 export const useForm = (initialForm = {}) => {
-    const [formState, setFormState] =  useState(initialForm)
+    const [formState, setFormState] = useState(initialForm)
 
-    const onInputChange = ({target})=>{
+    const onInputChange = ({target}) => {
         const {name, value} = target
-        if(value ==='true' || value==='false'){
+        if (value === 'true' || value === 'false') {
             setFormState({
                 ...formState,
                 [name]: Boolean(value),
             })
-        }else{
+        } else {
             setFormState({
                 ...formState,
                 [name]: value,
@@ -19,7 +19,7 @@ export const useForm = (initialForm = {}) => {
 
     }
 
-    const onResetForm = () =>{
+    const onResetForm = () => {
         setFormState(initialForm)
     }
     return {

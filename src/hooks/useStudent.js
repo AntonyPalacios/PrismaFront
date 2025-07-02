@@ -1,25 +1,26 @@
 import {useContext} from "react";
 import {StudentContext} from "../context/StudentContext.jsx";
 import {useNavigate} from "react-router";
-import {areas, tutores} from "../assets/fakeData.jsx";
 import {studentActions} from "../reducers/studentActions.js";
 
-export const useStudent = ({id,dni,areaId,name,email,phone,tutorId, active,
-                               disabled =false, onEditForm, handleClose, onResetForm}) => {
+
+export const useStudent = ({studentForm, toggleForm, onCloseForm, onResetForm}) => {
     const {onCreateStudent, onUpdateStudent, onDeleteStudent} = useContext(StudentContext);
     const navigate = useNavigate()
 
+    const buildStudentObject = (override = {}) => ({
+        id: override.id ?? studentForm.id ?? new Date().getTime(),
+        dni: override.dni ?? studentForm.dni,
+        name: override.name ?? studentForm.name,
+        areaId: override.areaId ?? studentForm.areaId,
+        phone: override.phone ?? studentForm.phone,
+        email: override.email ?? studentForm.email,
+        tutorId: override.tutorId ?? studentForm.tutorId,
+        active: override.active ?? studentForm.active,
+    });
+
     const onHandleCreate = () => {
-        const student = {
-            id: new Date().getTime(),
-            dni,
-            name,
-            area: areas.filter(area => area.id === areaId)[0],
-            phone,
-            email,
-            tutor: tutores.filter(tutor => tutor.id === tutorId)[0],
-            active,
-        }
+        const student = buildStudentObject({ id: new Date().getTime() });
 
         const action = {
             type:studentActions.create,
@@ -34,26 +35,12 @@ export const useStudent = ({id,dni,areaId,name,email,phone,tutorId, active,
         }
         onCreateStudent(action)
         onResetForm()
-        handleClose();
+        onCloseForm();
     }
 
     const onHandleUpdate = () =>{
-        if(disabled){
-            onEditForm();
-            return;
-        }
-        const student = {
-            id,
-            dni,
-            name,
-            area: areas.filter(area => area.id === areaId)[0],
-            phone,
-            email,
-            tutor: tutores.filter(tutor => tutor.id === tutorId)[0],
-            active,
-        }
+        const student = buildStudentObject();
 
-        //buscar en la lista de alumnos y reemplazar el dato
         const action = {
             type:studentActions.update,
             payload: {
@@ -65,14 +52,13 @@ export const useStudent = ({id,dni,areaId,name,email,phone,tutorId, active,
                 }
             }}
         onUpdateStudent(action);
-
-        onEditForm();
+        toggleForm();
     }
 
     const onHandleDelete = () =>{
         const action = {
             type:studentActions.delete,
-            payload: {id,
+            payload: {id:studentForm.id,
                 studentAlert:{
                     open:true,
                     message:"Alumno borrado correctamente",

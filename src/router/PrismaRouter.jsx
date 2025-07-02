@@ -11,6 +11,7 @@ import {UserDetailPage} from "../modules/users/pages/UserDetailPage.jsx";
 import {CyclePage} from "../modules/cycles/pages/CyclePage.jsx";
 import {CycleDetailPage} from "../modules/cycles/pages/CycleDetailPage.jsx";
 import {ExamPage} from "../modules/exams/pages/ExamPage.jsx";
+import {StudentDetailPage} from "../modules/students/pages/StudentDetailPage.jsx";
 
 const drawerWidth = 240;
 export const PrismaRouter = () => {
@@ -30,9 +31,9 @@ export const PrismaRouter = () => {
             >
 
                 <Routes>
-                    <Route path="students" element={<StudentPage/>}>
-                        <Route index element={<StudentList />} />
-                        <Route path=":id" element={<StudentDetail />} />
+                    <Route path="students">
+                        <Route index  element={<StudentPage/>} />
+                        <Route path=":id" element={<StudentDetailPage />} />
                     </Route>
                     <Route path="users">
                         <Route index element={<UsersPage/>} />
