@@ -22,7 +22,7 @@ export const ExamPage = () => {
             <MyFab onHandleCLick={toggleModal}/>
             <MyModal
                 open={open}
-                handleClose={toggleModal}
+                toggleModal={toggleModal}
                 title={title}
                 content={<ExamForm/>}
             />

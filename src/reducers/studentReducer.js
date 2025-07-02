@@ -25,7 +25,7 @@ export const studentReducer = (state = initialState, action) => {
                 studentAlert: {...state.studentAlert, ...action.payload.studentAlert},
                 students: state.students.map((student) =>
                     student.id === action.payload.student.id
-                        ? {...student, ...action.payload.student}
+                        ? action.payload.student
                         : student
                 )
             }

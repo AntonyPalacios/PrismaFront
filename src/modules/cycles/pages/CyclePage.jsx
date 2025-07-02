@@ -23,7 +23,7 @@ export const CyclePage = () => {
             <MyFab onOpen={toggleModal}/>
             <MyModal
                 open={open}
-                handleClose={toggleModal}
+                toggleModal={toggleModal}
                 title={title}
                 content={
                 <CycleForm/>

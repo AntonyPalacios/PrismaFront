@@ -1,19 +1,81 @@
 import {Grid} from "@mui/material";
-import {MyButton, MyInput, MySelect} from "../../../components/ui/index.js";
+import {MyInput, MySelect} from "../../../components/ui/index.js";
 import {areas, studentStates, tutores} from "../../../assets/fakeData.jsx";
+import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
+import {useForm} from "../../../hooks/useForm.js";
+import {useStudent} from "../../../hooks/useStudent.js";
+import {useEffect, useState} from "react";
+import {StudentDeleteConfirmation} from "./StudentDeleteConfirmation.jsx";
+import MyModal from "../../../components/ui/MyModal.jsx";
+import {useModal} from "../../../hooks/useModal.js";
+
+const initialForm = {
+    id: null,
+    dni: '',
+    areaId: 1,
+    name: '',
+    email: '',
+    phone: '',
+    tutorId: 1,
+    active: true
+}
+export const StudentForm = ({student = initialForm, disabled = false, action = "new", toggleForm, onCloseForm}) => {
+
+    const {open, toggleModal,title} = useModal({title : "Confirmación"});
+
+    const {
+        formState,
+        onInputChange, onResetForm
+    } = useForm(student);
 
 
-export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onInputChange,
-                                action, disabled =false, onHandleConfirm, onHandleCancel, onEditForm}) => {
+    const {onHandleCreate, onHandleUpdate, onHandleDelete} = useStudent({
+        studentForm: formState,
+        onCloseForm,
+        toggleForm,
+        onResetForm
+    });
 
+    const [actionType, setActionType] = useState("create");
+
+    // En cada render, usamos el estado actualizado
+    const handleConfirmAction = () => {
+        if (actionType === "create") {
+            onHandleCreate(formState);
+        } else if (actionType === "update") {
+            onHandleUpdate(formState);
+        } else if (actionType === 'edit-disabled') {
+            toggleForm();
+        }
+    };
+
+    const handleCancelAction = () => {
+        if (actionType === "edit-disabled") {
+            toggleModal();
+        } else {
+            onCloseForm();
+        }
+    };
+
+    useEffect(() => {
+        if (action === "edit") {
+            if (disabled) {
+                setActionType("edit-disabled");
+            } else {
+                setActionType("update");
+            }
+        } else {
+            setActionType("create");
+        }
+    }, [action, disabled]);
 
     return (
-        <Grid container spacing={2} width='100%' >
+        <Grid container spacing={2} width='100%'>
             <Grid size={{xs: 6}}>
                 <MyInput
-                    disabled={action==='edit'}
+                    disabled={disabled}
                     label="DNI"
-                    value={dni}
+                    value={formState.dni}
                     name="dni"
                     handleChange={onInputChange}/>
             </Grid>
@@ -23,15 +85,15 @@ export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onI
                     options={areas}
                     label="Área"
                     disabled={disabled}
-                    value={areaId}
-                    handleChange={onInputChange} />
+                    value={formState.areaId}
+                    handleChange={onInputChange}/>
             </Grid>
             <Grid size={{xs: 12}}>
                 <MyInput
                     name="name"
                     disabled={disabled}
                     label="Nombre"
-                    value={name}
+                    value={formState.name}
                     handleChange={onInputChange}/>
             </Grid>
             <Grid size={{xs: 6}}>
@@ -39,7 +101,7 @@ export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onI
                     name="email"
                     disabled={disabled}
                     label="Correo"
-                    value={email}
+                    value={formState.email}
                     handleChange={onInputChange}/>
             </Grid>
             <Grid size={{xs: 6}}>
@@ -47,7 +109,7 @@ export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onI
                     name="phone"
                     disabled={disabled}
                     label="Teléfono"
-                    value={phone}
+                    value={formState.phone}
                     handleChange={onInputChange}/>
             </Grid>
             <Grid size={{xs: 6}}>
@@ -56,7 +118,7 @@ export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onI
                     options={tutores}
                     label="Tutor"
                     disabled={disabled}
-                    value={tutorId}
+                    value={formState.tutorId}
                     handleChange={onInputChange}/>
             </Grid>
             <Grid size={{xs: 6}}>
@@ -65,16 +127,30 @@ export const StudentForm = ({id,dni,areaId,name,email,phone,tutorId, active, onI
                     options={studentStates}
                     label="Estado"
                     disabled={disabled}
-                    value={active}
+                    value={formState.active}
                     handleChange={onInputChange}/>
             </Grid>
-            {
-                action === 'edit' &&
-                <Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}}>
-                    <MyButton size="small" color='error' onClick={onHandleCancel}>Borrar</MyButton>
-                    <MyButton size="small" onClick={onHandleConfirm}>{disabled ? "Editar" : "Guardar"}</MyButton>
-                </Grid>
-            }
+            <MyActionButtons onConfirmAction={handleConfirmAction}
+                             onCancelAction={handleCancelAction}
+                             confirmText={
+                                 actionType === "edit-disabled" ? "Editar" :
+                                     actionType === "update" ? "Guardar" : "Aceptar"
+                             }
+                             cancelText={
+                                 actionType === "edit-disabled" ? "Borrar" : "Cancelar"
+                             }/>
+
+            <MyModal
+                open={open}
+                toggleModal={toggleModal}
+                title={title}
+
+                content={<StudentDeleteConfirmation
+                    name={formState.name}
+                    onConfirmAction={()=>onHandleDelete(formState)}
+                    onCancelAction={toggleModal}
+                />}
+            />
         </Grid>
     );
 };

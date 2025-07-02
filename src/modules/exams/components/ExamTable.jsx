@@ -55,7 +55,7 @@ export const ExamTable = () => {
             </Grid>
             <MyModal
                 open={open}
-                handleClose={toggleModal}
+                toggleModal={toggleModal}
                 title={title}
 
                 content={
