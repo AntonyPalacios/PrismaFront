@@ -5,17 +5,10 @@ export const useForm = (initialForm = {}) => {
 
     const onInputChange = ({target}) => {
         const {name, value} = target
-        if (value === 'true' || value === 'false') {
-            setFormState({
-                ...formState,
-                [name]: Boolean(value),
-            })
-        } else {
-            setFormState({
-                ...formState,
-                [name]: value,
-            })
-        }
+        setFormState(prev => ({
+            ...prev,
+            [name]: value === 'true' || value === 'false' ? Boolean(value) : value,
+        }));
 
     }
 

@@ -1,6 +1,7 @@
 import TextField from "@mui/material/TextField";
+import {memo} from "react";
 
-export const MyInput = ({label,value, disabled=false,name='name', handleChange=()=>{}, ...props}) => {
+export const MyInput = memo(({label,value, disabled=false,name='name', handleChange=()=>{}, ...props}) => {
     return (
         <TextField
             fullWidth
@@ -14,4 +15,4 @@ export const MyInput = ({label,value, disabled=false,name='name', handleChange=(
             {...props}
         />
     );
-};
+});

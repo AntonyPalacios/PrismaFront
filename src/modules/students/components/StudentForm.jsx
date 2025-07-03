@@ -4,7 +4,7 @@ import {areas, studentStates, tutores} from "../../../assets/fakeData.jsx";
 import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
 import {useForm} from "../../../hooks/useForm.js";
 import {useStudent} from "../../../hooks/useStudent.js";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {StudentDeleteConfirmation} from "./StudentDeleteConfirmation.jsx";
 import MyModal from "../../../components/ui/MyModal.jsx";
 import {useModal} from "../../../hooks/useModal.js";
@@ -39,7 +39,8 @@ export const StudentForm = ({student = initialForm, disabled = false, action = "
     const [actionType, setActionType] = useState("create");
 
     // En cada render, usamos el estado actualizado
-    const handleConfirmAction = () => {
+    const handleConfirmAction = useCallback(() => {
+        console.log("render handleConfirmAction");
         if (actionType === "create") {
             onHandleCreate(formState);
         } else if (actionType === "update") {
@@ -47,17 +48,19 @@ export const StudentForm = ({student = initialForm, disabled = false, action = "
         } else if (actionType === 'edit-disabled') {
             toggleForm();
         }
-    };
+    },[formState]);
 
-    const handleCancelAction = () => {
-        if (actionType === "edit-disabled") {
+    const handleCancelAction = useCallback(() => {
+        console.log("render handleCancleAction");
+        if (actionType !== "create") {
             toggleModal();
-        } else {
+        }else{
             onCloseForm();
         }
-    };
+    },[actionType]);
 
     useEffect(() => {
+        console.log("render handleConfirmAction");
         if (action === "edit") {
             if (disabled) {
                 setActionType("edit-disabled");
@@ -137,7 +140,7 @@ export const StudentForm = ({student = initialForm, disabled = false, action = "
                                      actionType === "update" ? "Guardar" : "Aceptar"
                              }
                              cancelText={
-                                 actionType === "edit-disabled" ? "Borrar" : "Cancelar"
+                                 actionType === "create" ? "Cancelar" : "Borrar"
                              }/>
 
             <MyModal
