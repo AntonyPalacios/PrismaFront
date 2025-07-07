@@ -2,8 +2,9 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
+import {memo} from "react";
 
-export const MySelect = ({label='Etiqueta',value, options=[],name, disabled=false, handleChange=()=>{
+export const MySelect = memo(({label='Etiqueta',value, options=[],name, disabled=false, handleChange=()=>{
     console.log(`handleChange de ${label}`)}}) => {
     return (
         <FormControl fullWidth size="small" disabled={disabled}>
@@ -21,4 +22,4 @@ export const MySelect = ({label='Etiqueta',value, options=[],name, disabled=fals
             </Select>
         </FormControl>
     );
-};
+});

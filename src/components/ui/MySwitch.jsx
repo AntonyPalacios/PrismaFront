@@ -1,7 +1,7 @@
 import {FormControlLabel, Switch} from "@mui/material";
+import {memo} from "react";
 
-export const MySwitch = ({label,disabled,value,name,onInputChange,checked}) => {
-
+export const MySwitch = memo(({label,disabled,name,handleChange,checked}) => {
     return (
         <FormControlLabel
         label={label}
@@ -9,12 +9,11 @@ export const MySwitch = ({label,disabled,value,name,onInputChange,checked}) => {
             <Switch
                 disabled={disabled}
                 size="small"
-                value={value}
                 name={name}
                 checked={checked}
-                onChange={onInputChange}/>
+                onChange={handleChange}/>
         }
         />
 
     );
-};
+});

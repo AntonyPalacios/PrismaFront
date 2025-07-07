@@ -45,7 +45,7 @@ export const ExamForm = ({id}) => {
                     }}
                 />
             </Grid>
-            {/*<Grid size={{xs:12, md:6}}>
+            <Grid size={{xs:12, md:6}}>
                 <MySelect
                     label="Etapa"
                     name="stage.id"
@@ -53,7 +53,7 @@ export const ExamForm = ({id}) => {
                     handleChange={onInputChange}
                     options={etapas}
                 />
-            </Grid>*/}
+            </Grid>
             <MyActionButtons/>
         </Grid>
     );

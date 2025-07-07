@@ -1,26 +1,27 @@
-import {useContext} from "react";
+import {useCallback, useContext} from "react";
 import {StudentContext} from "../context/StudentContext.jsx";
 import {useNavigate} from "react-router";
 import {studentActions} from "../reducers/studentActions.js";
 
 
-export const useStudent = ({studentForm, toggleForm, onCloseForm, onResetForm}) => {
+export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
     const {onCreateStudent, onUpdateStudent, onDeleteStudent} = useContext(StudentContext);
     const navigate = useNavigate()
 
-    const buildStudentObject = (override = {}) => ({
-        id: override.id ?? studentForm.id ?? new Date().getTime(),
-        dni: override.dni ?? studentForm.dni,
-        name: override.name ?? studentForm.name,
-        areaId: override.areaId ?? studentForm.areaId,
-        phone: override.phone ?? studentForm.phone,
-        email: override.email ?? studentForm.email,
-        tutorId: override.tutorId ?? studentForm.tutorId,
-        active: override.active ?? studentForm.active,
+    const buildStudentObject = (currentFormState,override = {}) => ({
+        id: override.id ?? currentFormState.id ?? new Date().getTime(),
+        dni: override.dni ?? currentFormState.dni,
+        name: override.name ?? currentFormState.name,
+        areaId: override.areaId ?? currentFormState.areaId,
+        phone: override.phone ?? currentFormState.phone,
+        email: override.email ?? currentFormState.email,
+        tutorId: override.tutorId ?? currentFormState.tutorId,
+        active: override.active ?? currentFormState.active,
     });
 
-    const onHandleCreate = () => {
-        const student = buildStudentObject({ id: new Date().getTime() });
+    const onHandleCreate = useCallback((currentFormState) => {
+
+        const student = buildStudentObject(currentFormState,{ id: new Date().getTime() });
 
         const action = {
             type:studentActions.create,
@@ -36,10 +37,11 @@ export const useStudent = ({studentForm, toggleForm, onCloseForm, onResetForm}) 
         onCreateStudent(action)
         onResetForm()
         onCloseForm();
-    }
+    },[onCreateStudent, onResetForm, onCloseForm]);
 
-    const onHandleUpdate = () =>{
-        const student = buildStudentObject();
+    const onHandleUpdate = useCallback((currentFormState) =>{
+
+        const student = buildStudentObject(currentFormState);
 
         const action = {
             type:studentActions.update,
@@ -53,12 +55,13 @@ export const useStudent = ({studentForm, toggleForm, onCloseForm, onResetForm}) 
             }}
         onUpdateStudent(action);
         toggleForm();
-    }
+    }, [onUpdateStudent, toggleForm]);
 
-    const onHandleDelete = () =>{
+    const onHandleDelete = useCallback((currentFormState) =>{
+
         const action = {
             type:studentActions.delete,
-            payload: {id:studentForm.id,
+            payload: {id:currentFormState.id,
                 studentAlert:{
                     open:true,
                     message:"Alumno borrado correctamente",
@@ -69,7 +72,8 @@ export const useStudent = ({studentForm, toggleForm, onCloseForm, onResetForm}) 
         navigate("/students",{
             replace: true,
         })
-    }
+    },[navigate, onDeleteStudent]);
+    
     return{
         onHandleCreate,
         onHandleUpdate,

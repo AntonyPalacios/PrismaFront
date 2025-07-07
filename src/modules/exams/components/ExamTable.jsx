@@ -10,7 +10,6 @@ import MyModal from "../../../components/ui/MyModal.jsx";
 import {useModal} from "../../../hooks/useModal.js";
 import {ExamForm} from "./ExamForm.jsx";
 import {useState} from "react";
-import {MyTitle} from "../../../components/ui/index.js";
 import {ExamImport} from "./ExamImport.jsx";
 
 export const ExamTable = () => {

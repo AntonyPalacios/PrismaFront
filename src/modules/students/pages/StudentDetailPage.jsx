@@ -2,10 +2,11 @@ import {useParams} from "react-router";
 
 import {MyTitle} from "../../../components/ui/index.js";
 import {StudentForm} from "../components/StudentForm.jsx";
-import {useContext, useState} from "react";
+import {useCallback, useContext, useState} from "react";
 import {Grid} from "@mui/material";
 import {StudentContext} from "../../../context/StudentContext.jsx";
 import {MyAlert} from "../../../components/ui/MyAlert.jsx";
+import {StudentGraphics} from "../components/StudentGraphics.jsx";
 
 export const StudentDetailPage = () => {
     const {id} = useParams();
@@ -18,9 +19,9 @@ export const StudentDetailPage = () => {
     const [disabled, setDisabled] = useState(true)
 
 
-    const toggleForm = () => {
-        setDisabled(!disabled);
-    }
+    const toggleForm = useCallback(() => {
+        setDisabled(prevDisabled => !prevDisabled);
+    }, []);
     return (
             <Grid container spacing={2}>
                 <Grid width="100%">
@@ -29,6 +30,7 @@ export const StudentDetailPage = () => {
                 <Grid width="100%">
                     <StudentForm student={student} action="edit" disabled={disabled} toggleForm={toggleForm}/>
                 </Grid>
+                <StudentGraphics/>
                 <MyAlert
                     message={studentAlert.message}
                     severity={studentAlert.severity}

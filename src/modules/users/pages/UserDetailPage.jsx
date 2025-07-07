@@ -22,7 +22,7 @@ export const UserDetailPage = () => {
                 <MyTitle>Usuarios</MyTitle>
             </Grid>
             <Grid width="100%">
-                <UserForm user={user} disabled={disabled} toggleForm={toggleForm}/>
+                <UserForm user={user} disabled={disabled} action="edit" toggleForm={toggleForm}/>
                 {JSON.stringify(user, null, 2)}
             </Grid>
         </Grid>
