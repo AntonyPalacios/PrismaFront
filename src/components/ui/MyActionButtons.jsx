@@ -12,7 +12,7 @@ export const MyActionButtons = memo(({
                                         console.log("cancelar")
                                     }
                                 }) => {
-    console.log("render actionButtons")
+
     return (
         <Grid container size={{xs: 12}} sx={{justifyContent: 'flex-end'}} spacing={2}>
             <MyButton size="small" color='error' onClick={onCancelAction}>{cancelText}</MyButton>

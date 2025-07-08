@@ -1,6 +1,5 @@
 import {Grid} from "@mui/material";
 import {MyTitle} from '../../../components/ui/MyTitle.jsx'
-import {Outlet} from "react-router";
 import {UserTable} from "../components/UserTable.jsx";
 import {MyFab} from "../../../components/ui/MyFab.jsx";
 import MyModal from "../../../components/ui/MyModal.jsx";
@@ -23,7 +22,7 @@ export const UsersPage = () => {
                 open={open}
                 toggleModal={toggleModal}
                 title={title}
-                content={<UserForm/>}
+                content={<UserForm onCloseForm={toggleModal}/>}
             />
         </Grid>
     );

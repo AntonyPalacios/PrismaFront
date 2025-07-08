@@ -3,20 +3,17 @@ import {useCallback, useEffect, useState} from "react";
 export const useActionType = ({onHandleCreate,onHandleUpdate,action,disabled,toggleForm,toggleModal,onCloseForm}) =>{
     const [actionType, setActionType] = useState("create");
 
-    // En cada render, usamos el estado actualizado
-    const handleConfirmAction = useCallback((formState) => {
-        console.log("render handleConfirmAction");
+    const handleConfirmAction = useCallback((formData) => {
         if (actionType === "create") {
-            onHandleCreate(formState);
+            onHandleCreate(formData);
         } else if (actionType === "update") {
-            onHandleUpdate(formState);
+            onHandleUpdate(formData);
         } else if (actionType === 'edit-disabled') {
             toggleForm();
         }
-    },[actionType, toggleForm]);
+    },[actionType, onHandleCreate, onHandleUpdate, toggleForm]);
 
     const handleCancelAction = useCallback(() => {
-        console.log("render handleCancleAction");
         if (actionType !== "create") {
             toggleModal();
         }else{

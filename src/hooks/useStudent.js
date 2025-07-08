@@ -19,9 +19,9 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
         active: override.active ?? currentFormState.active,
     });
 
-    const onHandleCreate = useCallback((currentFormState) => {
+    const onHandleCreate = useCallback((formData) => {
 
-        const student = buildStudentObject(currentFormState,{ id: new Date().getTime() });
+        const student = buildStudentObject(formData,{ id: new Date().getTime() });
 
         const action = {
             type:studentActions.create,
@@ -39,9 +39,9 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
         onCloseForm();
     },[onCreateStudent, onResetForm, onCloseForm]);
 
-    const onHandleUpdate = useCallback((currentFormState) =>{
+    const onHandleUpdate = useCallback((formData) =>{
 
-        const student = buildStudentObject(currentFormState);
+        const student = buildStudentObject(formData);
 
         const action = {
             type:studentActions.update,
@@ -57,11 +57,11 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
         toggleForm();
     }, [onUpdateStudent, toggleForm]);
 
-    const onHandleDelete = useCallback((currentFormState) =>{
+    const onHandleDelete = useCallback((formData) =>{
 
         const action = {
             type:studentActions.delete,
-            payload: {id:currentFormState.id,
+            payload: {id:formData.id,
                 studentAlert:{
                     open:true,
                     message:"Alumno borrado correctamente",

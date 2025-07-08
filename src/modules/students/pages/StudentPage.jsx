@@ -4,7 +4,7 @@ import {StudentTable} from "../components/StudentTable.jsx";
 import {StudentFilter} from "../components/StudentFilter.jsx";
 import StudentFAB from "../components/StudentFAB.jsx";
 import {MyAlert} from "../../../components/ui/MyAlert.jsx";
-import {useContext, useState} from "react";
+import {useContext} from "react";
 import {StudentContext} from "../../../context/StudentContext.jsx";
 
 export const StudentPage = () => {

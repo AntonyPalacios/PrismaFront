@@ -5,10 +5,13 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import {users} from "../../../assets/fakeData.jsx";
 import {useNavigate} from "react-router";
+import {useContext} from "react";
+import {UserContext} from "../../../context/UserContext.jsx";
 
 export const UserTable = () => {
+
+    const {state:{users}} = useContext(UserContext);
 
     const navigate = useNavigate();
 

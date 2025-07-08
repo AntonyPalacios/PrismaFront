@@ -1,12 +1,14 @@
-import {FormControlLabel, Grid, Switch} from "@mui/material";
-import {MyButton, MyInput} from "../../../components/ui/index.js";
-import {useForm} from "../../../hooks/useForm.js";
+import {Grid} from "@mui/material";
+import {MyInput} from "../../../components/ui/index.js";
 import {MySwitch} from "../../../components/ui/MySwitch.jsx";
 import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
 import {useModal} from "../../../hooks/useModal.js";
 import {useActionType} from "../../../hooks/useActionType.js";
-import {StudentDeleteConfirmation} from "../../students/components/StudentDeleteConfirmation.jsx";
+import {DeleteConfirmation} from "../../../components/layout/DeleteConfirmation.jsx";
 import MyModal from "../../../components/ui/MyModal.jsx";
+import {Controller, useForm} from "react-hook-form";
+import {useCallback} from "react";
+import {useUser} from "../../../hooks/useUser.js";
 
 const initialForm = {
     id: null,
@@ -18,71 +20,117 @@ const initialForm = {
 }
 export const UserForm = ({user=initialForm, disabled=false, action="new", toggleForm, onCloseForm}) => {
 
-    const {formState:userData,onInputChange,onResetForm} = useForm(user);
+    const {
+        control,
+        handleSubmit,
+        watch,
+        setValue,
+        reset,
+        formState: { errors, isValid, isDirty }
+    } = useForm({
+        defaultValues: user
+    });
 
     const {open, toggleModal,title} = useModal({title : "Confirmación"});
 
-    const onHandleCreate =() =>{
-        console.log("onHandleCreate")
-    }
+    const {onHandleCreate, onHandleUpdate, onHandleDelete} = useUser({
+        onCloseForm,
+        toggleForm,
+        onResetForm: () => reset(initialForm)
+    });
 
-    const onHandleUpdate =() =>{
-        console.log("onHandleUpdate")
-    }
 
-    const {actionType,handleConfirmAction, handleCancelAction} = useActionType({formState:userData,onHandleCreate,
+    const {actionType,handleConfirmAction, handleCancelAction} = useActionType({onHandleCreate,
         onHandleUpdate, action,disabled,toggleForm,toggleModal,onCloseForm});
+
+    const onSubmit = useCallback((data) => {
+        // Llama a tu handleConfirmAction, pasándole los datos validados de RHF
+        handleConfirmAction(data);
+    }, [handleConfirmAction]);
+
+    const onDeleteConfirmed = useCallback(() => {
+        const currentDataForDelete = watch();
+        onHandleDelete(currentDataForDelete);
+    }, [onHandleDelete, watch]);
 
     return (
         <Grid container spacing={2}>
 
             <Grid size={{xs: 12}}>
-                <MyInput
-                    disabled={disabled}
-                    label="Nombre"
-                    value={userData.name}
+                <Controller
                     name="name"
-                    handleChange={onInputChange}
+                    control={control}
+                    render={({field,fieldState}) => (
+                        <MyInput
+                            {...field}
+                            label="Nombre"
+                            disabled={disabled}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                        />
+                    )}
                 />
             </Grid>
             <Grid size={{xs: 12}}>
-                <MyInput
-                    disabled={disabled}
-                    label="Correo"
-                    value={userData.email}
+                <Controller
                     name="email"
-                    handleChange={onInputChange}
+                    control={control}
+                    render={({field,fieldState}) => (
+                        <MyInput
+                            {...field}
+                            label="Correo"
+                            disabled={disabled}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                        />
+                    )}
                 />
             </Grid>
             <Grid size={{xs: 4}} display="flex" justifyContent="center">
-                    <MySwitch
-                        label="Admin"
-                        disabled={disabled}
-                        checked={userData.isAdmin}
-                        name="isAdmin"
-                        handleChange={onInputChange}
-                    />
+                <Controller
+                    name="isAdmin"
+                    control={control}
+                    render={({field}) => (
+                        <MySwitch
+                            {...field}
+                            label="Admin"
+                            disabled={disabled}
+                            checked={field.value}
+                        />
+                    )}
+                />
+
             </Grid>
             <Grid size={{xs: 4}} display="flex" justifyContent="center">
-                <MySwitch
-                    label="Tutor"
-                    disabled={disabled}
-                    checked={userData.isTutor}
+                <Controller
                     name="isTutor"
-                    handleChange={onInputChange}
+                    control={control}
+                    render={({field}) => (
+                        <MySwitch
+                            {...field}
+                            label="Tutor"
+                            disabled={disabled}
+                            checked={field.value}
+                        />
+                    )}
                 />
             </Grid>
             <Grid size={{xs: 4}} display="flex" justifyContent="center">
-                <MySwitch
-                    label="Activo"
-                    disabled={disabled}
-                    checked={userData.isActive}
+                <Controller
                     name="isActive"
-                    handleChange={onInputChange}
+                    control={control}
+                    render={({field}) => (
+                        <MySwitch
+                            {...field}
+                            label="Activo"
+                            disabled={disabled}
+                            checked={field.value}
+                        />
+                    )}
                 />
             </Grid>
 
-            <MyActionButtons onConfirmAction={handleConfirmAction}
+            <MyActionButtons onConfirmAction={handleSubmit(onSubmit)}
                              onCancelAction={handleCancelAction}
                              confirmText={
                                  actionType === "edit-disabled" ? "Editar" :
@@ -97,9 +145,9 @@ export const UserForm = ({user=initialForm, disabled=false, action="new", toggle
                 toggleModal={toggleModal}
                 title={title}
 
-                content={<StudentDeleteConfirmation
-                    name={userData.name}
-                    onConfirmAction={()=>{}}
+                content={<DeleteConfirmation
+                    name={watch('name')}
+                    onConfirmAction={onDeleteConfirmed}
                     onCancelAction={toggleModal}
                 />}
             />
