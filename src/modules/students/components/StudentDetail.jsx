@@ -2,13 +2,13 @@ import {useLocation} from "react-router";
 import {Grid} from "@mui/material";
 
 import {useContext, useState} from "react";
-import {useForm} from "../../hooks/useForm.js";
+import {useForm} from "../../../hooks/useForm.js";
 import {StudentForm} from "./StudentForm.jsx";
-import {MyAlert} from "../../components/ui/MyAlert.jsx";
-import {StudentContext} from "../../context/StudentContext.jsx";
-import {useStudent} from "../../hooks/useStudent.js";
-import MyModal from "../../components/ui/MyModal.jsx";
-import {useModal} from "../../hooks/useModal.js";
+import {MyAlert} from "../../../components/ui/MyAlert.jsx";
+import {StudentContext} from "../../../context/StudentContext.jsx";
+import {useStudent} from "../../../hooks/useStudent.js";
+import MyModal from "../../../components/ui/MyModal.jsx";
+import {useModal} from "../../../hooks/useModal.js";
 import {StudentGraphics} from "./StudentGraphics.jsx";
 
 export const StudentDetail = () => {
@@ -63,7 +63,7 @@ export const StudentDetail = () => {
                      onHandleClose={onToggleAlert}/>
             <MyModal
                 open={open}
-                handleClose={toggleModal}
+                toggleModal={toggleModal}
                 title={title}
                 confirmText={confirmText}
                 cancelText={cancelText}

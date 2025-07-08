@@ -4,28 +4,19 @@ import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
 import {Edit, Upload} from '@mui/icons-material'
 import {useContext, useState} from "react";
-import {AppContext} from "../../context/AppContext.jsx";
+import {AppContext} from "../../../context/AppContext.jsx";
 import {Grid} from "@mui/material";
-import {MyButton} from "../../components/ui/MyButton.jsx";
-import MyModal from "../../components/ui/MyModal.jsx";
+import {MyButton} from "../../../components/ui/MyButton.jsx";
+import MyModal from "../../../components/ui/MyModal.jsx";
 import {StudentForm} from "./StudentForm.jsx";
-import {useForm} from "../../hooks/useForm.js";
-import {useStudent} from "../../hooks/useStudent.js";
-import {useModal} from "../../hooks/useModal.js";
+import {useForm} from "../../../hooks/useForm.js";
+import {useStudent} from "../../../hooks/useStudent.js";
+import {useModal} from "../../../hooks/useModal.js";
 
-const initialForm = {
-    id:null,
-    dni:'',
-    areaId:1,
-    name:'',
-    email:'',
-    phone:'',
-    tutorId:1,
-    active:1,
-}
 
 export default function StudentFAB() {
     const {isLargeScreen} = useContext(AppContext);
+    const {open, toggleModal,title} = useModal({title : "Nuevo Alumno"});
 
     const [openDial, setOpenDial] = useState(false);
 
@@ -33,18 +24,16 @@ export default function StudentFAB() {
         setOpenDial(!openDial);
     }
 
-    const {open,toggleModal,title,confirmText,cancelText} = useModal({
-        title:"Nuevo Alumno"
-    });
-
-    const {id, dni,areaId,name,email,phone,tutorId, active, onInputChange, onResetForm } = useForm(initialForm);
-
-    const {onHandleCreate} = useStudent({
-        id,dni,areaId,name,email,phone,tutorId, active, onResetForm, handleClose:toggleModal
-    })
-
     const modal = (
         <MyModal
+            open={open}
+            toggleModal={toggleModal}
+            title={title}
+            content={
+                <StudentForm onCloseForm={toggleModal}/>
+            }
+        />
+        /*<MyModal
             open={open}
             handleClose={toggleModal}
             title={title}
@@ -65,7 +54,7 @@ export default function StudentFAB() {
                 action="new"
                 onResetForm={onResetForm}
             />}
-        />
+        />*/
     );
 
 

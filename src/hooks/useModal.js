@@ -1,10 +1,10 @@
-import {useState} from "react";
+import {useCallback, useState} from "react";
 
-export const useModal = ({title,confirmText="Aceptar", cancelText = "Cancelar"})=> {
+export const useModal = ({title="Título",confirmText="Aceptar", cancelText = "Cancelar"})=> {
     const [open, setOpen] = useState(false)
-    const toggleModal = () => {
+    const toggleModal = useCallback(() => {
         setOpen(!open)
-    }
+    },[open]);
 
     return{
         title,

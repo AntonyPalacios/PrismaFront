@@ -54,14 +54,26 @@ export const currentUser = {
     ]
 }
 
+export const users = [
+    {id:1, name: 'Antony Palacios',email: 'antonyPalacios@gmail.com',isAdmin: true,isTutor:true,isActive:true},
+    {id:2, name: 'Silvia Valle',email: 'svalle@prisma.edu.pe',isAdmin: false,isTutor:true,isActive:true},
+    {id:3, name: 'Almendra Gómez',email: 'agomez@gmail.com',isAdmin: false,isTutor:true,isActive:false},
+]
+
+export const exams = [
+    {id:1,name:"Examen 1", date:"2025-06-02", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
+    {id:2,name:"Examen 2", date:"2025-06-09", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
+    {id:3,name:"Examen 3", date:"2025-06-16", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
+    {id:4,name:"Examen 4", date:"2025-06-23", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
+]
 export const students = [
     {
         id: 1,
         dni:'72498155',
         name: 'Antony Palacios',
-        area: {id:1,name:'Ciencias'},
+        areaId: 1,
         email: 'AntonyPalacios@gmail.com',
-        tutor: {id:1,name:'Silvia Valle'},
+        tutorId: 1,
         phone:'955110168',
         active: true
     },
@@ -69,9 +81,9 @@ export const students = [
         id: 2,
         dni:'72498155',
         name: 'Antony Palacios',
-        area: {id:2,name:'Letras'},
+        areaId: 2,
         email: 'AntonyPalacios@gmail.com',
-        tutor: {id:1,name:'Silvia Valle'},
+        tutorId: 2,
         phone:'955110168',
         active: true
     },
@@ -79,9 +91,9 @@ export const students = [
         id: 3,
         dni:'72498155',
         name: 'Antony Palacios',
-        area: {id:3,name:'Arquitectura'},
+        areaId: 3,
         email: 'AntonyPalacios@gmail.com',
-        tutor: {id:1,name:'Silvia Valle'},
+        tutorId: 1,
         phone:'955110168',
         active: false
     },
@@ -89,9 +101,9 @@ export const students = [
         id: 4,
         dni:'72498155',
         name: 'Antony Palacios',
-        area: {id:1,name:'Ciencias'},
+        areaId: 1,
         email: 'AntonyPalacios@gmail.com',
-        tutor: {id:1,name:'Silvia Valle'},
+        tutorId: 3,
         phone:'955110168',
         active: true
     },
@@ -99,19 +111,25 @@ export const students = [
         id: 5,
         dni:'72498155',
         name: 'Antony Palacios',
-        area: {id:1,name:'Ciencias'},
+        areaId: 1,
         email: 'AntonyPalacios@gmail.com',
-        tutor: {id:1,name:'Silvia Valle'},
+        tutorId: 1,
         phone:'955110168',
         active: false
     },
 ]
 
-export const etapas = [
-    {id:1,name:'Regular 1'},
-    {id:2,name:'Regular 2'},
-    {id:3,name:'Regular 3'},
-    {id:4,name:'Repaso'},
+export const stages = [
+    {id:1,name:'Regular 1',initDate:"2025-02-19",endDate:"2025-05-26", cycle:{id:1, name:"2025 - 2"}},
+    {id:2,name:'Regular 2',initDate:"2025-02-19",endDate:"2025-05-26", cycle:{id:1, name:"2025 - 2"}},
+    {id:3,name:'Regular 3',initDate:"2025-02-19",endDate:"2025-05-26", cycle:{id:1, name:"2025 - 2"}},
+    {id:4,name:'Repaso',initDate:"2025-02-19",endDate:"2025-05-26",  cycle:{id:1, name:"2025 - 2"}},
+]
+
+export const cycles = [
+    {id:1, name:"2025 - 1",initDate:"2025-02-13", endDate:"2025-06-29"},
+    {id:2, name:"2025 - 2",initDate:"2025-02-13", endDate:"2025-06-29"},
+    {id:3, name:"2026 - 1",initDate:"2025-02-13", endDate:"2025-06-29"},
 ]
 
 export const areas = [
@@ -127,6 +145,6 @@ export const tutores = [
 ]
 
 export const studentStates = [
-    {id:1,name:'Activo'},
-    {id:0,name:'Inactivo'},
+    {id:true,name:'Activo'},
+    {id:false,name:'Inactivo'},
 ]
