@@ -2,7 +2,6 @@ import {useCallback} from "react";
 import {useNavigate} from "react-router";
 import {useDispatch} from "react-redux";
 import {onCreateStudent, onDeleteStudent, onUpdateStudent} from "../store/slices/student/studentSlice.js";
-import {toggleAlert} from "../store/slices/alert/alertSlice.js";
 
 
 export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
@@ -21,41 +20,31 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
         active: override.active ?? currentFormState.active,
     });
 
-    const onHandleCreate = useCallback((formData) => {
+    const onHandleCreate = useCallback(async (formData) => {
 
         const student = buildStudentObject(formData, {id: new Date().getTime()});
 
-        dispatch(onCreateStudent(student))
-        dispatch(toggleAlert({
-            message:'Alumno creado correctamente',
-            severity: 'success',
-        }));
+        await dispatch(onCreateStudent(student))
         onResetForm()
         onCloseForm();
     }, [dispatch, onResetForm, onCloseForm]);
 
-    const onHandleUpdate = useCallback((formData) => {
+    const onHandleUpdate = useCallback(async (formData) => {
 
         const student = buildStudentObject(formData);
 
-        dispatch(onUpdateStudent(student));
-        dispatch(toggleAlert({
-            message:'Alumno actualizado correctamente',
-            severity: 'success',
-        }));
+        await dispatch(onUpdateStudent(student));
         toggleForm();
     }, [dispatch, toggleForm]);
 
-    const onHandleDelete = useCallback((formData) => {
+    const onHandleDelete = useCallback(async (formData) => {
 
-        dispatch(onDeleteStudent(formData.id))
-        dispatch(toggleAlert({
-            message:'Alumno borrado correctamente',
-            severity: 'error',
-        }));
-        navigate("/students", {
-            replace: true,
-        })
+        const resultAction = await dispatch(onDeleteStudent(formData.id))
+        if (onDeleteStudent.fulfilled.match(resultAction)) {
+            navigate("/students", {
+                replace: true,
+            })
+        }
     }, [dispatch, navigate]);
 
     return {

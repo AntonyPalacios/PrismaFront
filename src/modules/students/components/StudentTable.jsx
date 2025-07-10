@@ -9,13 +9,23 @@ import TableBody from "@mui/material/TableBody";
 import {useNavigate} from "react-router";
 import {getAreaById} from "../../../helper/getAreaById.js";
 import {getTutorById} from "../../../helper/getTutorById.js";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
+import {useEffect} from "react";
+import {fetchStudents} from "../../../store/slices/student/studentSlice.js";
 
 
 export const StudentTable = () => {
 
 
-    const {students} = useSelector((state) => state.student)
+    const {list, status} = useSelector((state) => state.student)
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        // Cargar estudiantes cuando el componente se monte por primera vez
+        if (status === 'idle') {
+            dispatch(fetchStudents());
+        }
+    }, [dispatch, status]);
 
 
     const navigate = useNavigate();
@@ -26,6 +36,9 @@ export const StudentTable = () => {
     return (
         <Grid container spacing={2}>
             <Grid size={12} sx={{ flexGrow: 1 }}>
+                {status === 'loading' ? (
+                        <div>Cargando tabla de alumnos...</div>
+                ):
                 <TableContainer component={Paper} sx={{width:'100%', overflowX: 'auto'}} >
                     <Table sx={{width:'100%', tableLayout: 'fixed'}}>
                         <TableHead>
@@ -38,7 +51,7 @@ export const StudentTable = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {students.map((student) => {
+                            {list.map((student) => {
                                 return (
                                     <TableRow hover key={student.id} onClick={() => {onClickStudent(student.id)}}>
                                         <TableCell sx={{whiteSpace: 'normal',
@@ -57,6 +70,7 @@ export const StudentTable = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
+                }
             </Grid>
 
         </Grid>
