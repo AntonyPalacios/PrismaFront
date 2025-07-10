@@ -16,7 +16,7 @@ export const MySelect = memo(({label='Etiqueta', options=[],name, disabled=false
                 variant="outlined"
                 {...props}
             >
-                <MenuItem value={undefined}>
+                <MenuItem value={0}>
                     <em>Seleccione una opción</em>
                 </MenuItem>
                 {options.map((option) =>

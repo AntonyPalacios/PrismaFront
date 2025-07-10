@@ -39,12 +39,10 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
 
     const onHandleDelete = useCallback(async (formData) => {
 
-        const resultAction = await dispatch(onDeleteStudent(formData.id))
-        if (onDeleteStudent.fulfilled.match(resultAction)) {
-            navigate("/students", {
-                replace: true,
-            })
-        }
+        navigate("/students", {
+            replace: true,
+        })
+        await dispatch(onDeleteStudent(formData.id))
     }, [dispatch, navigate]);
 
     return {

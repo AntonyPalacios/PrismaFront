@@ -24,7 +24,7 @@ export const StudentDetailPage = () => {
 
     // Cargar estudiantes ya que si no hay nada, no puede buscar al alumno
     useEffect(() => {
-        if (studentStatus === 'idle') { // O si studentsList.length === 0
+        if (list.length === 0) { // O si studentsList.length === 0
             dispatch(fetchStudents());
         }
     }, [dispatch, studentStatus]);
@@ -42,11 +42,7 @@ export const StudentDetailPage = () => {
                     <MyTitle>Alumnos</MyTitle>
                 </Grid>
                 <Grid width="100%">
-                    {studentStatus === 'loading' ? (
-                        <div>Cargando estudiante...</div>
-                    ) : (
-                        <StudentForm student={student} action="edit" disabled={disabled} toggleForm={toggleForm} />
-                    )}
+                    <StudentForm student={student} action="edit" disabled={disabled} toggleForm={toggleForm} />
                 </Grid>
                 <StudentGraphics/>
                 <MyAlert

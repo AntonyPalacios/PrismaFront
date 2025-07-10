@@ -13,11 +13,11 @@ import {Controller, useForm} from "react-hook-form";
 const defaultFormValues = {
     id: null,
     dni: '',
-    areaId: undefined,
+    areaId: 0,
     name: '',
     email: '',
     phone: '',
-    tutorId: undefined,
+    tutorId: 0,
     active: true
 }
 export const StudentForm = ({student = defaultFormValues, disabled = false, action = "new", toggleForm, onCloseForm}) => {

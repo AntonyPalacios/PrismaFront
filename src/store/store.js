@@ -7,10 +7,10 @@ export const store = configureStore({
     reducer: {
         student: studentSlice.reducer,
         alert: alertSlice.reducer,
-        [apiSlice.reducerPath]: apiSlice.reducer
+        //[apiSlice.reducerPath]: apiSlice.reducer
     },
     // Añade el middleware de la API
-    middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(apiSlice.middleware),
+   // middleware: (getDefaultMiddleware) =>
+   // getDefaultMiddleware().concat(apiSlice.middleware),
     //devTools: process.env.NODE_ENV !== 'production',
 })

@@ -1,4 +1,4 @@
-import {Grid, Paper} from "@mui/material";
+import {CircularProgress, Grid, Paper} from "@mui/material";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
@@ -37,7 +37,7 @@ export const StudentTable = () => {
         <Grid container spacing={2}>
             <Grid size={12} sx={{ flexGrow: 1 }}>
                 {status === 'loading' ? (
-                        <div>Cargando tabla de alumnos...</div>
+                        <CircularProgress />
                 ):
                 <TableContainer component={Paper} sx={{width:'100%', overflowX: 'auto'}} >
                     <Table sx={{width:'100%', tableLayout: 'fixed'}}>
