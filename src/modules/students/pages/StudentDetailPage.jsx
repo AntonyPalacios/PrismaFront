@@ -2,11 +2,12 @@ import {useParams} from "react-router";
 
 import {MyTitle} from "../../../components/ui/index.js";
 import {StudentForm} from "../components/StudentForm.jsx";
-import {useCallback, useContext, useState} from "react";
+import {useCallback, useState} from "react";
 import {Grid} from "@mui/material";
-import {StudentContext} from "../../../context/StudentContext.jsx";
 import {MyAlert} from "../../../components/ui/MyAlert.jsx";
 import {StudentGraphics} from "../components/StudentGraphics.jsx";
+import {useDispatch, useSelector} from "react-redux";
+import {toggleAlert} from "../../../store/slices/alert/alertSlice.js";
 
 export const StudentDetailPage = () => {
     const {id} = useParams();
@@ -14,7 +15,11 @@ export const StudentDetailPage = () => {
         //obtener student por id desde el backend
 
     },[id])*/
-    const {state:{students,studentAlert}, onToggleAlert} = useContext(StudentContext);
+
+    const {students} = useSelector(state => state.student);
+    const {message,severity,open} = useSelector(state => state.alert);
+
+    const dispatch = useDispatch();
     const student = students.find((student) => student.id === parseInt(id));
     const [disabled, setDisabled] = useState(true)
 
@@ -32,10 +37,10 @@ export const StudentDetailPage = () => {
                 </Grid>
                 <StudentGraphics/>
                 <MyAlert
-                    message={studentAlert.message}
-                    severity={studentAlert.severity}
-                    open={studentAlert.open}
-                    onHandleClose={onToggleAlert}
+                    message={message}
+                    severity={severity}
+                    open={open}
+                    onHandleClose={()=>dispatch(toggleAlert())}
                 />
 
             </Grid>

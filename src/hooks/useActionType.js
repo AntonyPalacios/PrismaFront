@@ -11,7 +11,7 @@ export const useActionType = ({onHandleCreate,onHandleUpdate,action,disabled,tog
         } else if (actionType === 'edit-disabled') {
             toggleForm();
         }
-    },[actionType, onHandleCreate, onHandleUpdate, toggleForm]);
+    },[actionType, disabled, onHandleCreate, onHandleUpdate, toggleForm]);
 
     const handleCancelAction = useCallback(() => {
         if (actionType !== "create") {

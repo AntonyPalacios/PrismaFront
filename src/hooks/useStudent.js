@@ -1,14 +1,16 @@
-import {useCallback, useContext} from "react";
-import {StudentContext} from "../context/StudentContext.jsx";
+import {useCallback} from "react";
 import {useNavigate} from "react-router";
-import {studentActions} from "../reducers/studentActions.js";
+import {useDispatch} from "react-redux";
+import {onCreateStudent, onDeleteStudent, onUpdateStudent} from "../store/slices/student/studentSlice.js";
+import {toggleAlert} from "../store/slices/alert/alertSlice.js";
 
 
 export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
-    const {onCreateStudent, onUpdateStudent, onDeleteStudent} = useContext(StudentContext);
+
+    const dispatch = useDispatch();
     const navigate = useNavigate()
 
-    const buildStudentObject = (currentFormState,override = {}) => ({
+    const buildStudentObject = (currentFormState, override = {}) => ({
         id: override.id ?? currentFormState.id ?? new Date().getTime(),
         dni: override.dni ?? currentFormState.dni,
         name: override.name ?? currentFormState.name,
@@ -21,60 +23,42 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
 
     const onHandleCreate = useCallback((formData) => {
 
-        const student = buildStudentObject(formData,{ id: new Date().getTime() });
+        const student = buildStudentObject(formData, {id: new Date().getTime()});
 
-        const action = {
-            type:studentActions.create,
-            payload: {
-                student,
-                studentAlert:{
-                    open:true,
-                    message:"Alumno creado correctamente",
-                    severity:"success",
-                }
-            }
-        }
-        onCreateStudent(action)
+        dispatch(onCreateStudent(student))
+        dispatch(toggleAlert({
+            message:'Alumno creado correctamente',
+            severity: 'success',
+        }));
         onResetForm()
         onCloseForm();
-    },[onCreateStudent, onResetForm, onCloseForm]);
+    }, [dispatch, onResetForm, onCloseForm]);
 
-    const onHandleUpdate = useCallback((formData) =>{
+    const onHandleUpdate = useCallback((formData) => {
 
         const student = buildStudentObject(formData);
 
-        const action = {
-            type:studentActions.update,
-            payload: {
-                student,
-                studentAlert:{
-                    open:true,
-                    message:"Alumno actualizado correctamente",
-                    severity:"success",
-                }
-            }}
-        onUpdateStudent(action);
+        dispatch(onUpdateStudent(student));
+        dispatch(toggleAlert({
+            message:'Alumno actualizado correctamente',
+            severity: 'success',
+        }));
         toggleForm();
-    }, [onUpdateStudent, toggleForm]);
+    }, [dispatch, toggleForm]);
 
-    const onHandleDelete = useCallback((formData) =>{
+    const onHandleDelete = useCallback((formData) => {
 
-        const action = {
-            type:studentActions.delete,
-            payload: {id:formData.id,
-                studentAlert:{
-                    open:true,
-                    message:"Alumno borrado correctamente",
-                    severity:"error",
-                }
-            }}
-        onDeleteStudent(action)
-        navigate("/students",{
+        dispatch(onDeleteStudent(formData.id))
+        dispatch(toggleAlert({
+            message:'Alumno borrado correctamente',
+            severity: 'error',
+        }));
+        navigate("/students", {
             replace: true,
         })
-    },[navigate, onDeleteStudent]);
-    
-    return{
+    }, [dispatch, navigate]);
+
+    return {
         onHandleCreate,
         onHandleUpdate,
         onHandleDelete

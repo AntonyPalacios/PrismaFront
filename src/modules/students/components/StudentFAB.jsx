@@ -33,28 +33,6 @@ export default function StudentFAB() {
                 <StudentForm onCloseForm={toggleModal}/>
             }
         />
-        /*<MyModal
-            open={open}
-            handleClose={toggleModal}
-            title={title}
-            confirmText={confirmText}
-            cancelText={cancelText}
-            onHandleConfirm={onHandleCreate}
-            onHandleCancel={toggleModal}
-
-            content={<StudentForm
-                dni={dni}
-                areaId={areaId}
-                name={name}
-                email={email}
-                phone={phone}
-                tutorId={tutorId}
-                active={active}
-                onInputChange={onInputChange}
-                action="new"
-                onResetForm={onResetForm}
-            />}
-        />*/
     );
 
 

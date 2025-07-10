@@ -7,16 +7,15 @@ import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 
 import {useNavigate} from "react-router";
-import {useContext} from "react";
-
-import {StudentContext} from "../../../context/StudentContext.jsx";
 import {getAreaById} from "../../../helper/getAreaById.js";
 import {getTutorById} from "../../../helper/getTutorById.js";
+import {useSelector} from "react-redux";
 
 
 export const StudentTable = () => {
 
-    const {state:{students}} = useContext(StudentContext);
+
+    const {students} = useSelector((state) => state.student)
 
 
     const navigate = useNavigate();
