@@ -11,7 +11,7 @@ export const apiSlice = createApi({
     reducerPath: 'api', // Nombre de la sección de la store para este API
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://localhost:8080', // Tu URL base del backend
-        prepareHeaders: (headers, { getState }) => {
+        /*prepareHeaders: (headers, { getState }) => {
             // Añadir token de autorización si existe
             const token = getToken(); // O const token = getState().auth.token; si lo tienes en un slice de auth
             if (token) {
@@ -20,12 +20,19 @@ export const apiSlice = createApi({
             // Asegúrate de enviar JSON
             headers.set('Content-Type', 'application/json');
             return headers;
-        },
+        },*/
     }),
     // Tags para invalidación de caché (importante para actualizar listas después de cambios)
-    tagTypes: ['Student'], // Definimos un tag para los estudiantes
+    tagTypes: ['Student','User'], // Definimos un tag para los estudiantes
     endpoints: (builder) => ({
-        // Aquí se definirán tus endpoints específicos
-        // Los veremos en el siguiente paso
+        getAreas: builder.query({
+            query: () => '/areas',
+            staleTime: Infinity,
+            cacheTime: Infinity,
+            providesTime: ['Area'],
+            transformResponse: (response) => response,
+        }),
     }),
 });
+
+export const {useGetAreasQuery} = apiSlice;

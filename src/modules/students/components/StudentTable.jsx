@@ -7,8 +7,7 @@ import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 
 import {useNavigate} from "react-router";
-import {getAreaById} from "../../../helper/getAreaById.js";
-import {getTutorById} from "../../../helper/getTutorById.js";
+import { useGetNameById} from "../../../hooks/useGetNameById.js";
 import {useDispatch, useSelector} from "react-redux";
 import {useEffect} from "react";
 import {fetchStudents} from "../../../store/slices/student/studentSlice.js";
@@ -27,6 +26,7 @@ export const StudentTable = () => {
         }
     }, [dispatch, status]);
 
+    const {getAreaNameById,getTutorNameById} = useGetNameById();
 
     const navigate = useNavigate();
     const onClickStudent = (id) => {
@@ -57,11 +57,11 @@ export const StudentTable = () => {
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{student.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word'}} align="left">{getAreaById(student.areaId)?.name}</TableCell>
+                                            wordBreak: 'break-word'}} align="left">{getAreaNameById(student.areaId)}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{student.email}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{getTutorById(student.tutorId)?.name}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{getTutorNameById(student.tutorId)}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{student.active?"Sí":"No"}</TableCell>
                                     </TableRow>

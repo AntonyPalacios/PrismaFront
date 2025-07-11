@@ -1,6 +1,6 @@
 import {Grid} from "@mui/material";
 import {MyInput, MySelect} from "../../../components/ui/index.js";
-import {areas, studentStates, tutores} from "../../../assets/fakeData.jsx";
+import {studentStates} from "../../../assets/fakeData.jsx";
 import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
 import {useStudent} from "../../../hooks/useStudent.js";
 import {DeleteConfirmation} from "../../../components/layout/DeleteConfirmation.jsx";
@@ -9,6 +9,8 @@ import {useModal} from "../../../hooks/useModal.js";
 import {useActionType} from "../../../hooks/useActionType.js";
 import {useCallback} from "react";
 import {Controller, useForm} from "react-hook-form";
+import {useSelector} from "react-redux";
+import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
 
 const defaultFormValues = {
     id: null,
@@ -64,6 +66,9 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
         const currentDataForDelete = watch(); // Obtiene los valores actuales para la eliminación
         onHandleDelete(currentDataForDelete); // Pasa los datos actuales para la eliminación
     }, [onHandleDelete, watch]);
+
+    const {tutorList:tutores} = useSelector(state => state.user);
+    const { data: areas = [] } = useGetAreasQuery();
 
     return (
         <Grid container spacing={2} width='100%'>
