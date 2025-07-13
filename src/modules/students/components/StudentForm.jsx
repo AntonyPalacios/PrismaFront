@@ -20,7 +20,7 @@ const defaultFormValues = {
     email: '',
     phone: '',
     tutorId: 0,
-    active: true
+    isActive: true
 }
 export const StudentForm = ({student = defaultFormValues, disabled = false, action = "new", toggleForm, onCloseForm}) => {
 
@@ -179,7 +179,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
             </Grid>
             <Grid size={{xs: 6}}>
                 <Controller
-                    name="active"
+                    name="isActive"
                     control={control}
                     rules={{ required: "El Estado es obligatorio" }}
                     render={({ field, fieldState }) => (
