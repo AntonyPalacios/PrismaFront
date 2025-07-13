@@ -4,13 +4,14 @@ import {StudentTable} from "../components/StudentTable.jsx";
 import {StudentFilter} from "../components/StudentFilter.jsx";
 import StudentFAB from "../components/StudentFAB.jsx";
 import {MyAlert} from "../../../components/ui/MyAlert.jsx";
-import {useContext} from "react";
-import {StudentContext} from "../../../context/StudentContext.jsx";
+import {useDispatch, useSelector} from "react-redux";
+import {toggleAlert} from "../../../store/slices/alert/alertSlice.js";
 
 export const StudentPage = () => {
 
-    const {state:{studentAlert}, onToggleAlert} = useContext(StudentContext);
+    const {message,severity,open} = useSelector(state => state.alert);
 
+    const dispatch = useDispatch();
 
     return (
         <Grid container spacing={2}>
@@ -21,10 +22,10 @@ export const StudentPage = () => {
             <StudentTable/>
             <StudentFAB/>
             <MyAlert
-                message={studentAlert.message}
-                severity={studentAlert.severity}
-                open={studentAlert.open}
-                onHandleClose={onToggleAlert}
+                message={message}
+                severity={severity}
+                open={open}
+                onHandleClose={()=>dispatch(toggleAlert())}
             />
 
         </Grid>

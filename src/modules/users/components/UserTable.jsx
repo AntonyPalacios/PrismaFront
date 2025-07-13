@@ -6,12 +6,9 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import {useNavigate} from "react-router";
-import {useContext} from "react";
-import {UserContext} from "../../../context/UserContext.jsx";
+import {users} from "../../../assets/fakeData.jsx";
 
-export const UserTable = () => {
-
-    const {state:{users}} = useContext(UserContext);
+export const UserTable = ({userList=users}) => {
 
     const navigate = useNavigate();
 
@@ -34,7 +31,7 @@ export const UserTable = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {users.map((user) => {
+                            {userList.map((user) => {
                                 return (
                                     <TableRow hover key={user.id} onClick={() => {onClickUser(user.id)}}>
                                         <TableCell sx={{whiteSpace: 'normal',

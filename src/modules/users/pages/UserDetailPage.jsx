@@ -1,10 +1,13 @@
 import {Grid} from "@mui/material";
 import {MyTitle} from "../../../components/ui/index.js";
 import {useParams} from "react-router";
-import {useCallback, useContext, useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {UserForm} from "../components/UserForm.jsx";
 import {MyAlert} from "../../../components/ui/MyAlert.jsx";
-import {UserContext} from "../../../context/UserContext.jsx";
+import {useDispatch, useSelector} from "react-redux";
+import {toggleAlert} from "../../../store/slices/alert/alertSlice.js";
+import {useGetUserQuery} from "../../../store/slices/user/userApiSlice.js";
+import {setTutorList} from "../../../store/slices/user/userSlice.js";
 
 export const UserDetailPage = () => {
     const {id} = useParams();
@@ -12,8 +15,19 @@ export const UserDetailPage = () => {
         //obtener usuario por id desde el backend
 
     },[id])*/
-    const {state:{users,userAlert}, onToggleAlert} = useContext(UserContext);
-    const user = users.find((user) => user.id === parseInt(id));
+    // const {list,status:userStatus} = useSelector(state => state.user);
+    const {message,severity,open} = useSelector(state => state.alert);
+
+    const dispatch = useDispatch();
+
+    // Cargar estudiantes ya que si no hay nada, no puede buscar al alumno
+    const { data: usersList, isLoading, isFetching, isSuccess, isError, error } = useGetUserQuery();
+    useEffect(() => {
+        if (isSuccess && usersList.length > 0) {
+            dispatch(setTutorList(usersList));
+        }
+    }, [dispatch, isSuccess, usersList]);
+    const user = usersList.find((user) => user.id === parseInt(id));
     const [disabled, setDisabled] = useState(true)
     const toggleForm = useCallback(() =>{
         setDisabled(prevDisabled => !prevDisabled);
@@ -28,10 +42,10 @@ export const UserDetailPage = () => {
                 {JSON.stringify(user, null, 2)}
             </Grid>
             <MyAlert
-                message={userAlert.message}
-                severity={userAlert.severity}
-                open={userAlert.open}
-                onHandleClose={onToggleAlert}
+                message={message}
+                severity={severity}
+                open={open}
+                onHandleClose={()=>dispatch(toggleAlert())}
             />
         </Grid>
     );

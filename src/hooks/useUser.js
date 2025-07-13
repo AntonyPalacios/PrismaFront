@@ -1,75 +1,63 @@
-import {useCallback, useContext} from "react";
-import {UserContext} from "../context/UserContext.jsx";
+import {useCallback} from "react";
 import {useNavigate} from "react-router";
-import {userActions} from "../reducers/userActions.js";
+import {useDispatch} from "react-redux";
+
+import {
+    useCreateUserMutation,
+    useDeleteUserMutation,
+    useUpdateUserMutation
+} from "../store/slices/user/userApiSlice.js";
+import {toggleAlert} from "../store/slices/alert/alertSlice.js";
 
 export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
-    const {onCreateUser, onUpdateUser, onDeleteUser} = useContext(UserContext);
+    const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const buildUserObject = (currentFormState,override={}) => ({
-        id: override.id ?? currentFormState.id ?? new Date().getTime(),
-        name: override.name ?? currentFormState.name,
-        email: override.email ?? currentFormState.email,
-        isAdmin: override.isAdmin ?? currentFormState.isAdmin,
-        isTutor: override.isTutor ?? currentFormState.isTutor,
-        isActive: override.isActive ?? currentFormState.isActive,
-    })
+    // Obtén los mutadores y su estado (isLoading, isSuccess, isError, error)
+    const [createUser, { isLoading: isCreating, isSuccess: createSuccess, isError: createError, error: createErrorData }] = useCreateUserMutation();
+    const [updateUser, { isLoading: isUpdating, isSuccess: updateSuccess, isError: updateError, error: updateErrorData }] = useUpdateUserMutation();
+    const [deleteUser, { isLoading: isDeleting, isSuccess: deleteSuccess, isError: deleteError, error: deleteErrorData }] = useDeleteUserMutation();
 
-    const onHandleCreate = useCallback((formData) => {
 
-        const user = buildUserObject(formData,{ id: new Date().getTime() });
-
-        const action = {
-            type:userActions.create,
-            payload: {
-                user,
-                userAlert:{
-                    open:true,
-                    message:"Usuario creado correctamente",
-                    severity:"success",
-                }
-            }
+    const onHandleCreate = useCallback(async (formData) => {
+        try {
+            await createUser(formData).unwrap(); // .unwrap() lanza el error para poderlo capturar con try/catch
+            dispatch(toggleAlert({ message: 'Usuario creado correctamente', severity: 'success' }));
+            onResetForm();
+            onCloseForm();
+        } catch (err) {
+            console.error("Failed to create student:", err);
+            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
         }
-        onCreateUser(action)
-        onResetForm()
-        onCloseForm();
-    },[onCreateUser, onResetForm, onCloseForm]);
+    },[createUser, dispatch, onResetForm, onCloseForm]);
 
-    const onHandleUpdate = useCallback((formData) =>{
+    const onHandleUpdate = useCallback(async (formData) =>{
 
-        const user = buildUserObject(formData);
+        try {
+            await updateUser(formData).unwrap();
+            dispatch(toggleAlert({ message: 'Usuario actualizado correctamente', severity: 'success' }));
+            toggleForm()
+        } catch (err) {
+            console.error("Failed to update student:", err);
+            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+        }
+    }, [dispatch, toggleForm, updateUser]);
 
-        const action = {
-            type:userActions.update,
-            payload: {
-                user,
-                userAlert:{
-                    open:true,
-                    message:"Usuario actualizado correctamente",
-                    severity:"success",
-                }
-            }}
-        onUpdateUser(action);
-        toggleForm();
-    }, [onUpdateUser, toggleForm]);
+    const onHandleDelete = useCallback(async (formData) =>{
 
-    const onHandleDelete = useCallback((formData) =>{
-
-        const action = {
-            type:userActions.delete,
-            payload: {id:formData.id,
-                userAlert:{
-                    open:true,
-                    message:"Usuario borrado correctamente",
-                    severity:"error",
-                }
-            }}
-        onDeleteUser(action)
-        navigate("/users",{
-            replace: true,
-        })
-    },[navigate, onDeleteUser]);
+        try {
+            await deleteUser(formData.id).unwrap();
+            navigate("/users",{
+                replace: true,
+            })
+            dispatch(toggleAlert({ message: 'Usuario borrado correctamente', severity: 'error' }));
+        } catch (err) {
+            console.error("Failed to delete student:", err);
+            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+        }
+        
+        
+    },[deleteUser, dispatch, navigate]);
 
     return{
         onHandleCreate,
