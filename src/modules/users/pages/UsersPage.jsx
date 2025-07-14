@@ -20,7 +20,7 @@ export const UsersPage = () => {
 
     const dispatch = useDispatch();
 
-    const { data: userList, isLoading, isFetching, isSuccess, isError, error } = useGetUserQuery();
+    const { data: userList, isSuccess } = useGetUserQuery();
 
     useEffect(() => {
         if (isSuccess && userList.length > 0) {

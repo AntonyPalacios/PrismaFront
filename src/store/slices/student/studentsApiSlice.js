@@ -8,14 +8,12 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
             query: () => '/students', // Endpoint GET a http://localhost:8080/students
             providesTags: ['Student'], // Marca que esta query provee datos para el tag 'Student'
             transformResponse: (response) => {
-                // Aquí puedes transformar la respuesta del backend si es necesario
-                // Por ejemplo, si el backend devuelve { data: [], message: '' }, podrías retornar response.data
-                // console.log("Backend response for getStudents:", response);
-                // Suponiendo que el backend devuelve un array de estudiantes directamente
-                return response;
+                return response.map(student => {
+                    if(student.tutorId === null) student.tutorId = 0;
+                    return student;
+                });
             },
             transformErrorResponse: (response) => {
-                // Manejo de errores personalizados del backend
                 return response.data?.message || 'Error desconocido al obtener alumnos.';
             },
         }),

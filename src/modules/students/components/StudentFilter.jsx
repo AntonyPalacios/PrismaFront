@@ -1,27 +1,103 @@
-import {useContext, useState} from "react";
+import {useContext, useEffect} from "react";
 import {Grid} from "@mui/material";
 import {MyButton, MyInput, MySelect} from "../../../components/ui/index.js";
 import Search from '@mui/icons-material/Search';
-import {areas, stages, tutores} from "../../../assets/fakeData.jsx";
+import {stages} from "../../../assets/fakeData.jsx";
 import {AppContext} from "../../../context/AppContext.jsx";
+import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
+import {useDispatch, useSelector} from "react-redux";
+import {Controller, useForm} from "react-hook-form";
+import {setFilter} from "../../../store/slices/student/studentSlice.js";
+
+const defaultFormValues = {
+    stageId:0,
+    areaId:0,
+    tutorId:0,
+    name:''
+}
 
 export const StudentFilter = () => {
-    const [age, setAge] = useState('');
+
+    const {control, watch} = useForm({defaultValues:defaultFormValues});
+
     const {isLargeScreen} = useContext(AppContext);
+    const {data:areas} = useGetAreasQuery();
+    const {tutorList} = useSelector((state) => state.user);
+    const dispatch = useDispatch();
+
+    // *** CAMBIO CLAVE AQUÍ: Usar la suscripción de watch ***
+    useEffect(() => {
+        // Suscribirse a los cambios de todos los campos del formulario
+        const subscription = watch((value) => {
+            dispatch(setFilter(value));
+        });
+
+        // Retorna una función de limpieza para cancelar la suscripción cuando el componente se desmonte
+        return () => subscription.unsubscribe();
+    }, [watch, dispatch]); // Las dependencias son watch y dispatch (ambas son estables)
+
+
     return (
         <Grid container spacing={2} width="100%">
             <Grid size={{xs: 6, md: 2, xl: 2}}>
-                <MySelect options={stages} label="Ciclo" value={age}/>
+                <Controller
+                    name="stageId"
+                    control={control}
+                    render={({ field }) => (
+                        <MySelect
+                            {...field}
+                            options={stages}
+                            label="Etapa"
+                            defaultItem="Todas las etapas"
+                        />
+                    )}
+                />
+
             </Grid>
             <Grid size={{xs: 6, md: 2}}>
-                <MySelect options={areas} label="Área" value={age}/>
+                <Controller
+                    name="areaId"
+                    control={control}
+                    render={({ field }) => (
+                        <MySelect
+                            {...field}
+                            options={areas}
+                            label="Área"
+                            defaultItem="Todas las áreas"
+                        />
+                    )}
+
+                />
+
             </Grid>
             <Grid size={{xs: 12, md: 2}}>
-                <MySelect options={tutores} label="Tutor" value={age}/>
+                <Controller
+                    name="tutorId"
+                    control={control}
+                    render={({ field }) => (
+                        <MySelect
+                            {...field}
+                            options={tutorList}
+                            label="Tutor"
+                            defaultItem="Todos los tutores"
+                        />
+                    )}
+                />
+
 
             </Grid>
             <Grid size={{xs: 12, md: 6}} sx={{display: 'flex', gap: 1, justifyContent: 'space-between'}}>
-                <MyInput label="Nombre" value={age}/>
+                <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                        <MyInput
+                            {...field}
+                            label="Nombre"
+                        />
+                    )}
+                />
+
                 <MyButton size="small">{isLargeScreen ? "Buscar" : <Search/>}</MyButton>
             </Grid>
         </Grid>

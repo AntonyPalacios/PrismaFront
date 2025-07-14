@@ -1,7 +1,12 @@
 import {useCallback} from "react";
 import {useNavigate} from "react-router";
 import {useDispatch} from "react-redux";
-import {onCreateStudent, onDeleteStudent, onUpdateStudent} from "../store/slices/student/studentSlice.js";
+import {
+    useCreateStudentMutation,
+    useDeleteStudentMutation,
+    useUpdateStudentMutation
+} from "../store/slices/student/studentsApiSlice.js";
+import {toggleAlert} from "../store/slices/alert/alertSlice.js";
 
 
 export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
@@ -9,41 +14,48 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
     const dispatch = useDispatch();
     const navigate = useNavigate()
 
-    const buildStudentObject = (currentFormState, override = {}) => ({
-        id: override.id ?? currentFormState.id ?? new Date().getTime(),
-        dni: override.dni ?? currentFormState.dni,
-        name: override.name ?? currentFormState.name,
-        areaId: override.areaId ?? currentFormState.areaId,
-        phone: override.phone ?? currentFormState.phone,
-        email: override.email ?? currentFormState.email,
-        tutorId: override.tutorId ?? currentFormState.tutorId,
-        active: override.active ?? currentFormState.active,
-    });
+    const [createStudent] = useCreateStudentMutation();
+    const [updateStudent] = useUpdateStudentMutation();
+    const [deleteStudent] = useDeleteStudentMutation();
 
     const onHandleCreate = useCallback(async (formData) => {
 
-        const student = buildStudentObject(formData, {id: new Date().getTime()});
-
-        await dispatch(onCreateStudent(student))
-        onResetForm()
-        onCloseForm();
-    }, [dispatch, onResetForm, onCloseForm]);
+        try {
+            await createStudent(formData).unwrap(); // .unwrap() lanza el error para poderlo capturar con try/catch
+            dispatch(toggleAlert({ message: 'Alumno creado correctamente', severity: 'success' }));
+            onResetForm();
+            onCloseForm();
+        } catch (err) {
+            console.error("Failed to create student:", err);
+            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+        }
+    }, [createStudent, dispatch, onResetForm, onCloseForm]);
 
     const onHandleUpdate = useCallback(async (formData) => {
 
-        const student = buildStudentObject(formData);
-
-        await dispatch(onUpdateStudent(student));
-        toggleForm();
-    }, [dispatch, toggleForm]);
+        try {
+            await updateStudent(formData).unwrap();
+            dispatch(toggleAlert({ message: 'Alumno actualizado correctamente', severity: 'success' }));
+            toggleForm()
+        } catch (err) {
+            console.error("Failed to update student:", err);
+            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+        }
+    }, [dispatch, toggleForm, updateStudent]);
 
     const onHandleDelete = useCallback(async (formData) => {
 
-        await dispatch(onDeleteStudent(formData.id))
-        navigate("/students", {
-            replace: true,
-        })
-    }, [dispatch, navigate]);
+        try {
+            await deleteStudent(formData.id).unwrap();
+            navigate("/students",{
+                replace: true,
+            })
+            dispatch(toggleAlert({ message: 'Alumno borrado correctamente', severity: 'error' }));
+        } catch (err) {
+            console.error("Failed to delete student:", err);
+            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+        }
+    }, [deleteStudent, dispatch, navigate]);
 
     return {
         onHandleCreate,

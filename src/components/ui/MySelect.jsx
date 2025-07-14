@@ -6,7 +6,7 @@ import {memo} from "react";
 import {FormHelperText} from "@mui/material";
 
 export const MySelect = memo(({label='Etiqueta', options=[],name, disabled=false,error = false, // <-- Recibe el estado de error
-                                  helperText = null, ...props}) => {
+                                  helperText = null,defaultItem="Seleccione una opción", ...props}) => {
     return (
         <FormControl fullWidth size="small" disabled={disabled}>
             <InputLabel>{label}</InputLabel>
@@ -17,7 +17,7 @@ export const MySelect = memo(({label='Etiqueta', options=[],name, disabled=false
                 {...props}
             >
                 <MenuItem value={0}>
-                    <em>Seleccione una opción</em>
+                    <em>{defaultItem}</em>
                 </MenuItem>
                 {options.map((option) =>
                     <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>

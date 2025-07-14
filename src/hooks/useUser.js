@@ -26,7 +26,7 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
             onResetForm();
             onCloseForm();
         } catch (err) {
-            console.error("Failed to create student:", err);
+            console.error("Failed to create user:", err);
             dispatch(toggleAlert({ message: err.message, severity: 'error' }));
         }
     },[createUser, dispatch, onResetForm, onCloseForm]);
@@ -38,7 +38,7 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
             dispatch(toggleAlert({ message: 'Usuario actualizado correctamente', severity: 'success' }));
             toggleForm()
         } catch (err) {
-            console.error("Failed to update student:", err);
+            console.error("Failed to update user:", err);
             dispatch(toggleAlert({ message: err.message, severity: 'error' }));
         }
     }, [dispatch, toggleForm, updateUser]);
@@ -52,7 +52,7 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
             })
             dispatch(toggleAlert({ message: 'Usuario borrado correctamente', severity: 'error' }));
         } catch (err) {
-            console.error("Failed to delete student:", err);
+            console.error("Failed to delete user:", err);
             dispatch(toggleAlert({ message: err.message, severity: 'error' }));
         }
         

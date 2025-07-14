@@ -4,11 +4,13 @@ export const useActionType = ({onHandleCreate,onHandleUpdate,action,disabled,tog
     const [actionType, setActionType] = useState("create");
 
     const handleConfirmAction = useCallback((formData) => {
+        console.log("handleConfirmAction", formData)
         if (actionType === "create") {
             onHandleCreate(formData);
         } else if (actionType === "update") {
             onHandleUpdate(formData);
         } else if (actionType === 'edit-disabled') {
+            console.log('entra')
             toggleForm();
         }
     },[actionType, disabled, onHandleCreate, onHandleUpdate, toggleForm]);

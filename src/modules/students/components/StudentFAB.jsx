@@ -9,8 +9,6 @@ import {Grid} from "@mui/material";
 import {MyButton} from "../../../components/ui/MyButton.jsx";
 import MyModal from "../../../components/ui/MyModal.jsx";
 import {StudentForm} from "./StudentForm.jsx";
-import {useForm} from "../../../hooks/useForm.js";
-import {useStudent} from "../../../hooks/useStudent.js";
 import {useModal} from "../../../hooks/useModal.js";
 
 

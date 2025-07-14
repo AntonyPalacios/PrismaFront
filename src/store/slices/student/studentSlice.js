@@ -1,143 +1,68 @@
-import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
-import {students} from "../../../assets/fakeData.jsx";
-import { toggleAlert } from '../alert/alertSlice.js';
-
-// Simulando API para operaciones asíncronas
-const simulatedApiDelay = 1000; // ms
-
-//Thunk para cargar alumnos
-export const fetchStudents = createAsyncThunk(
-    'student/fetchStudents',
-    async () => {
-        return new Promise(resolve => setTimeout(()=>{
-            resolve(students);
-        }, simulatedApiDelay));
-    }
-)
-
-// Thunk para Crear
-export const onCreateStudent = createAsyncThunk(
-    'student/createStudent',
-    async (studentData,{dispatch}) => {
-        try{
-            const result = await new Promise(resolve => setTimeout(() => {
-                resolve(studentData); // Devuelve el estudiante creado (ya con ID)
-            }, simulatedApiDelay));
-            dispatch(toggleAlert({ message: 'Alumno creado correctamente', severity: 'success' }));
-            return result;
-        }catch(err){
-            dispatch(toggleAlert({ message: 'Error al crear alumno', severity: 'error' })); // Despacha la alerta de éxito
-            throw err;
-        }
-    }
-);
-
-// Thunk para Actualizar
-export const onUpdateStudent = createAsyncThunk(
-    'student/updateStudent',
-    async (studentData,{dispatch}) => {
-        try {
-            const result = await new Promise(resolve => setTimeout(() => {
-                resolve(studentData); // Devuelve el estudiante actualizado
-            }, simulatedApiDelay));
-            // Despacha la alerta de éxito directamente desde aquí
-            dispatch(toggleAlert({ message: 'Alumno actualizado correctamente', severity: 'success' }));
-            return result;
-        }catch(err){
-            dispatch(toggleAlert({ message: 'Error al actualizar alumno', severity: 'error' }));
-            throw err;
-        }
-
-    }
-);
-
-// Thunk para Borrar
-export const onDeleteStudent = createAsyncThunk(
-    'student/deleteStudent',
-    async (studentId,{dispatch}) => {
-        try {
-            const result = await new Promise(resolve => setTimeout(() => {
-                resolve(studentId); // Devuelve el ID del estudiante eliminado
-            }, simulatedApiDelay));
-            dispatch(toggleAlert({ message: 'Alumno borrado correctamente', severity: 'error' }));
-            return result;
-        }catch(err){
-            dispatch(toggleAlert({ message: 'Error al borrar alumno', severity: 'error' }));
-            throw err;
-        }
-    }
-);
+import {createSlice} from '@reduxjs/toolkit';
+import { createSelector } from 'reselect';
 
 const initialState = {
-    list: students,
-    status: 'idle', //'idle','loading','succeeded', 'failed'
-    error: null,
+    students: [],
+    studentFilter:{
+        stageId:0,
+        areaId:0,
+        tutorId:0,
+        name:''
+    }
 }
 
 export const studentSlice = createSlice({
     name: 'student',
     initialState,
-    reducers: { //aca solo van los reducers síncronos
-        /*onCreateStudent: (state, action) => {
-            state.list.push(action.payload)
+    reducers: {
+        setFilter: (state, action) => {
+            state.studentFilter = {...state.studentFilter, ...action.payload};
         },
-        onUpdateStudent: (state, action) => {
-            const index = state.list.findIndex(student => student.id === action.payload.id)
-            if(index !==-1) {
-                state.list.splice(index, 1,action.payload)
-            }
-        },
-        onDeleteStudent: (state, action) => {
-            const index = state.list.findIndex(student => student.id === action.payload)
-            if(index !== -1) {
-                state.list.splice(index, 1)
-            }
-        }*/
+        setStudents: (state, action) => {
+            console.log(action.payload);
+            state.students = action.payload;
+        }
     },
-    extraReducers:(builder) => { //para reducers asíncronos que tengan que ver con el estado
-        builder
-            // Listar
-            .addCase(fetchStudents.pending, (state) => { state.status = 'loading'; })
-            .addCase(fetchStudents.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.list = action.payload; // Usa push directamente con Immer
-            })
-            .addCase(fetchStudents.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.error.message || 'Error al cargar alumnos.';
-            })
-            // Crear
-            .addCase(onCreateStudent.pending, (state) => { state.status = 'loading'; })
-            .addCase(onCreateStudent.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.list.push(action.payload); // Usa push directamente con Immer
-            })
-            .addCase(onCreateStudent.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.error.message || 'Error al crear alumno.';
-            })
-            // Actualizar
-            .addCase(onUpdateStudent.pending, (state) => { state.status = 'loading'; })
-            .addCase(onUpdateStudent.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                const index = state.list.findIndex(student => student.id === action.payload.id);
-                if (index !== -1) { state.list[index] = action.payload; } // Actualiza inmutablemente
-            })
-            .addCase(onUpdateStudent.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.error.message || 'Error al actualizar alumno.';
-            })
-            // Borrar
-            .addCase(onDeleteStudent.pending, (state) => { state.status = 'loading'; })
-            .addCase(onDeleteStudent.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.list = state.list.filter(student => student.id !== action.payload); // filter es inmutable
-            })
-            .addCase(onDeleteStudent.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.error.message || 'Error al borrar alumno.';
-            });
-    }
 })
 
-//export const { } = studentSlice.actions
+export const {
+    setFilter,
+    setStudents} = studentSlice.actions
+
+// --- Selectores ---
+// Selector para obtener la lista completa de estudiantes
+const selectAllStudents = (state) => state.student.students;
+// Selector para obtener el objeto de filtros
+const selectStudentFilter = (state) => state.student.studentFilter;
+
+// Selector memorizado para obtener la lista de estudiantes FILTRADA
+// Este selector se ejecutará solo cuando cambie selectAllStudents o selectStudentFilter
+export const selectFilteredStudents = createSelector(
+    [selectAllStudents, selectStudentFilter],
+    (allStudents, filters) => {
+        let filtered = allStudents;
+
+        // Aplicar filtro por Stage
+        if (filters.stageId && filters.stageId !== 0) { // Asegúrate de manejar 0 si es tu default
+            filtered = filtered.filter(student => student.stageId === filters.stageId);
+        }
+
+        // Aplicar filtro por Area
+        if (filters.areaId && filters.areaId !== 0) {
+            filtered = filtered.filter(student => student.areaId === filters.areaId);
+        }
+
+        // Aplicar filtro por Tutor
+        if (filters.tutorId && filters.tutorId !== 0) {
+            filtered = filtered.filter(student => student.tutorId === filters.tutorId);
+        }
+
+        // Aplicar filtro por Nombre
+        if (filters.name && filters.name.trim() !== '') {
+            const lowerCaseNameFilter = filters.name.toLowerCase();
+            filtered = filtered.filter(student => student.name.toLowerCase().includes(lowerCaseNameFilter));
+        }
+        console.log(filtered);
+        return filtered;
+    }
+);
