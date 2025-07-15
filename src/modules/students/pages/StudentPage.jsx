@@ -14,14 +14,17 @@ export const StudentPage = () => {
 
     const {message,severity,open} = useSelector(state => state.alert);
 
+    const { stageId: currentStageId } = useSelector(state => state.student.studentFilter);
+
     const dispatch = useDispatch();
-    const {data: studentsList, isSuccess:isSuccessStudent, isLoading} = useGetStudentsQuery(); //
+    const {data: studentsList, isSuccess:isSuccessStudent, isLoading} = useGetStudentsQuery(currentStageId); //
 
     //hace que siempre tenga la data cargada del backend
     useEffect(() => {
         if (isSuccessStudent && studentsList && studentsList.length > 0) { //
-            console.log("Datos brutos de RTK Query:", studentsList); // <-- Añade este log
             dispatch(setStudents(studentsList)); //
+        }else if(isSuccessStudent && studentsList && studentsList.length === 0) {
+            dispatch(setStudents([]))
         }
     }, [dispatch, isSuccessStudent, studentsList]);
 

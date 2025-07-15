@@ -5,7 +5,13 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         // GET (Listar todos los estudiantes)
         getStudents: builder.query({
-            query: () => '/students', // Endpoint GET a http://localhost:8080/students
+            query: (stageId) => {
+                // Si se proporciona un stageId (y no es 0 o vacío), lo añade como query parameter
+                if (stageId && stageId !== 0) {
+                    return `/students?stageId=${stageId}`;
+                }
+                return '/students';
+            }, // Endpoint GET a http://localhost:8080/students
             providesTags: ['Student'], // Marca que esta query provee datos para el tag 'Student'
             transformResponse: (response) => {
                 return response.map(student => {

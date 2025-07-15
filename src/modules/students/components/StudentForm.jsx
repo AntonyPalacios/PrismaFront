@@ -11,15 +11,16 @@ import {useCallback} from "react";
 import {Controller, useForm} from "react-hook-form";
 import {useSelector} from "react-redux";
 import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
+import MenuItem from "@mui/material/MenuItem";
 
 const defaultFormValues = {
     id: null,
     dni: '',
-    areaId: 0,
+    areaId: -1,
     name: '',
     email: '',
     phone: '',
-    tutorId: 0,
+    tutorId: -1,
     stageId:0,
     isActive: true
 }
@@ -166,7 +167,11 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                             disabled={disabled}
                             error={!!fieldState.error}
                             helperText={fieldState.error?.message}
-                        />
+                        >
+                            <MenuItem value={0}>
+                                Sin Tutor
+                            </MenuItem>
+                        </MySelect>
                     )}
                 />
             </Grid>

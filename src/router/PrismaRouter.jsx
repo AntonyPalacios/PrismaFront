@@ -12,11 +12,13 @@ import {CyclePage} from "../modules/cycles/pages/CyclePage.jsx";
 import {CycleDetailPage} from "../modules/cycles/pages/CycleDetailPage.jsx";
 import {ExamPage} from "../modules/exams/pages/ExamPage.jsx";
 import {StudentDetailPage} from "../modules/students/pages/StudentDetailPage.jsx";
+import {useLoadInitialData} from "../hooks/useLoadInitialData.js";
 
 const drawerWidth = 240;
 export const PrismaRouter = () => {
 
     const {isLargeScreen} = useContext(AppContext);
+    useLoadInitialData();
     return (
         <>
             <Navbar/>

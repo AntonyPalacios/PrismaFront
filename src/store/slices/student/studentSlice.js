@@ -4,9 +4,9 @@ import { createSelector } from 'reselect';
 const initialState = {
     students: [],
     studentFilter:{
-        stageId:0,
-        areaId:0,
-        tutorId:0,
+        stageId:1,
+        areaId:-1,
+        tutorId:-1,
         name:''
     }
 }
@@ -19,7 +19,6 @@ export const studentSlice = createSlice({
             state.studentFilter = {...state.studentFilter, ...action.payload};
         },
         setStudents: (state, action) => {
-            console.log(action.payload);
             state.students = action.payload;
         }
     },
@@ -42,27 +41,21 @@ export const selectFilteredStudents = createSelector(
     (allStudents, filters) => {
         let filtered = allStudents;
 
-        // Aplicar filtro por Stage
-        if (filters.stageId && filters.stageId !== 0) { // Asegúrate de manejar 0 si es tu default
-            filtered = filtered.filter(student => student.stageId === filters.stageId);
-        }
-
         // Aplicar filtro por Area
-        if (filters.areaId && filters.areaId !== 0) {
+        if (filters.areaId && filters.areaId !== -1) {
             filtered = filtered.filter(student => student.areaId === filters.areaId);
         }
 
         // Aplicar filtro por Tutor
-        if (filters.tutorId && filters.tutorId !== 0) {
+        if ( filters.tutorId !== -1) {
             filtered = filtered.filter(student => student.tutorId === filters.tutorId);
         }
 
         // Aplicar filtro por Nombre
-        if (filters.name && filters.name.trim() !== '') {
+        if ( filters.name.trim() !== '') {
             const lowerCaseNameFilter = filters.name.toLowerCase();
             filtered = filtered.filter(student => student.name.toLowerCase().includes(lowerCaseNameFilter));
         }
-        console.log(filtered);
         return filtered;
     }
 );

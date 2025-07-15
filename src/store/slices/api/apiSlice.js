@@ -32,7 +32,21 @@ export const apiSlice = createApi({
             providesTime: ['Area'],
             transformResponse: (response) => response,
         }),
+        getCurrentCycle: builder.query({
+            query: () => '/cycle/current',
+            staleTime: Infinity,
+            cacheTime: Infinity,
+            providesTime: ['Cycle'],
+            transformResponse: (response) => response,
+        }),
+        getCurrentStage: builder.query({
+            query: () => '/stage/current',
+            staleTime: Infinity,
+            cacheTime: Infinity,
+            providesTime: ['Stage'],
+            transformResponse: (response) => response,
+        })
     }),
 });
 
-export const {useGetAreasQuery} = apiSlice;
+export const {useGetAreasQuery, useGetCurrentCycleQuery, useGetCurrentStageQuery} = apiSlice;

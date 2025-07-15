@@ -8,11 +8,12 @@ import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
 import {useDispatch, useSelector} from "react-redux";
 import {Controller, useForm} from "react-hook-form";
 import {setFilter} from "../../../store/slices/student/studentSlice.js";
+import MenuItem from "@mui/material/MenuItem";
 
 const defaultFormValues = {
-    stageId:0,
-    areaId:0,
-    tutorId:0,
+    stageId:1,
+    areaId:-1,
+    tutorId:-1,
     name:''
 }
 
@@ -80,7 +81,11 @@ export const StudentFilter = () => {
                             options={tutorList}
                             label="Tutor"
                             defaultItem="Todos los tutores"
-                        />
+                        >
+                            <MenuItem value={0}>
+                                Sin Tutor
+                            </MenuItem>
+                        </MySelect>
                     )}
                 />
 
