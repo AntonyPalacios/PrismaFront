@@ -11,6 +11,7 @@ import {useCallback} from "react";
 import {Controller, useForm} from "react-hook-form";
 import {useSelector} from "react-redux";
 import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
+import MenuItem from "@mui/material/MenuItem";
 
 const defaultFormValues = {
     id: null,
@@ -20,7 +21,8 @@ const defaultFormValues = {
     email: '',
     phone: '',
     tutorId: 0,
-    isActive: true
+    stageId:0,
+    isActive: 1
 }
 export const StudentForm = ({student = defaultFormValues, disabled = false, action = "new", toggleForm, onCloseForm}) => {
 
@@ -36,10 +38,6 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
         defaultValues: student // Usa los datos del estudiante como valores por defecto
     });
 
-    // Puedes usar watch si necesitas el estado actual del formulario para lógica en tiempo real
-    // const currentFormData = watch();
-    // console.log("Current RHF form data:", currentFormData);
-
     const {open, toggleModal,title} = useModal({title : "Confirmación"});
 
 
@@ -52,19 +50,16 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
     const {actionType,handleConfirmAction, handleCancelAction} = useActionType({onHandleCreate,
         onHandleUpdate, action,disabled,toggleForm,toggleModal,onCloseForm});
 
-    // 2. Define la función de envío que React Hook Form llamará
     const onSubmit = useCallback((data) => {
         console.log("Form submitted with data (from RHF):", data);
-        // Llama a tu handleConfirmAction, pasándole los datos validados de RHF
-        handleConfirmAction(data); // handleConfirmAction ahora espera los datos
+
+        handleConfirmAction(data);
     }, [handleConfirmAction]);
 
-    // 3. Define la función para manejar la eliminación (si se necesita el formState)
-    // Cuando el botón de borrar se presiona en el modal, necesitamos el estado actual
-    // Podemos obtenerlo usando watch() o directamente pasando los valores del formulario
+
     const onDeleteConfirmed = useCallback(() => {
-        const currentDataForDelete = watch(); // Obtiene los valores actuales para la eliminación
-        onHandleDelete(currentDataForDelete); // Pasa los datos actuales para la eliminación
+        const currentDataForDelete = watch();
+        onHandleDelete(currentDataForDelete);
     }, [onHandleDelete, watch]);
 
     const {tutorList:tutores} = useSelector(state => state.user);
@@ -102,7 +97,12 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                             disabled={disabled}
                             error={!!fieldState.error}
                             helperText={fieldState.error?.message}
-                        />
+                            isForm
+                        >
+                            <MenuItem value={0}>
+                                Sin Área
+                            </MenuItem>
+                        </MySelect>
                     )}
                 />
             </Grid>
@@ -164,7 +164,6 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="tutorId"
                     control={control}
-                    rules={{ required: "El Tutor es obligatorio" }}
                     render={({ field, fieldState }) => (
                         <MySelect
                             {...field}
@@ -173,7 +172,12 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                             disabled={disabled}
                             error={!!fieldState.error}
                             helperText={fieldState.error?.message}
-                        />
+                            isForm
+                        >
+                            <MenuItem value={0}>
+                                Sin Tutor
+                            </MenuItem>
+                        </MySelect>
                     )}
                 />
             </Grid>

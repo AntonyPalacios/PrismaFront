@@ -7,24 +7,10 @@ import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 
 import {useNavigate} from "react-router";
-import { useGetNameById} from "../../../hooks/useGetNameById.js";
-import {useDispatch, useSelector} from "react-redux";
-import {useEffect} from "react";
-import {fetchStudents} from "../../../store/slices/student/studentSlice.js";
+import {useGetNameById} from "../../../hooks/useGetNameById.js";
 
 
-export const StudentTable = () => {
-
-
-    const {list, status} = useSelector((state) => state.student)
-    const dispatch = useDispatch();
-
-    useEffect(() => {
-        // Cargar estudiantes cuando el componente se monte por primera vez
-        if (status === 'idle') {
-            dispatch(fetchStudents());
-        }
-    }, [dispatch, status]);
+export const StudentTable = ({students, isLoading}) => {
 
     const {getAreaNameById,getTutorNameById} = useGetNameById();
 
@@ -36,7 +22,7 @@ export const StudentTable = () => {
     return (
         <Grid container spacing={2}>
             <Grid size={12} sx={{ flexGrow: 1 }}>
-                {status === 'loading' ? (
+                {isLoading ? (
                         <CircularProgress />
                 ):
                 <TableContainer component={Paper} sx={{width:'100%', overflowX: 'auto'}} >
@@ -51,7 +37,7 @@ export const StudentTable = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {list.map((student) => {
+                            {students.map((student) => {
                                 return (
                                     <TableRow hover key={student.id} onClick={() => {onClickStudent(student.id)}}>
                                         <TableCell sx={{whiteSpace: 'normal',
@@ -63,7 +49,7 @@ export const StudentTable = () => {
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{getTutorNameById(student.tutorId)}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{student.active?"Sí":"No"}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{student.isActive===1?"Sí":"No"}</TableCell>
                                     </TableRow>
                                 )
                             })}

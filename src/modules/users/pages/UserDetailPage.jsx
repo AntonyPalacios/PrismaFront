@@ -39,7 +39,6 @@ export const UserDetailPage = () => {
             </Grid>
             <Grid width="100%">
                 <UserForm user={user} disabled={disabled} action="edit" toggleForm={toggleForm}/>
-                {JSON.stringify(user, null, 2)}
             </Grid>
             <MyAlert
                 message={message}

@@ -1,20 +1,39 @@
-import {useGetAreasQuery} from "../store/slices/api/apiSlice.js";
+import {useGetAreasQuery, useGetCurrentCycleQuery, useGetCurrentStageQuery} from "../store/slices/api/apiSlice.js";
 import {useGetUserQuery} from "../store/slices/user/userApiSlice.js";
 import {useDispatch} from "react-redux";
 import {useEffect} from "react";
 import {setTutorList} from "../store/slices/user/userSlice.js";
+import {setFilter} from "../store/slices/student/studentSlice.js";
+import {setCurrentCycle, setCurrentStage} from "../store/slices/cycle/cycleSlice.js";
 
 export const useLoadInitialData = () => {
     useGetAreasQuery();
-    useGetUserQuery();
 
     const dispatch = useDispatch();
+    const {data: currentCycle, isSuccess:isSuccessCycle} = useGetCurrentCycleQuery();
+
+    useEffect(() => {
+        if(isSuccessCycle && currentCycle){
+            dispatch(setCurrentCycle(currentCycle));
+        }
+    },[dispatch,isSuccessCycle,currentCycle]);
+
+    const {data: currentStage, isSuccess:isSuccessStage} = useGetCurrentStageQuery();
+
+    useEffect(() => {
+        if(isSuccessStage && currentStage){
+            dispatch(setCurrentStage(currentStage));
+            dispatch(setFilter({stageId:currentStage.id}))
+        }
+    },[dispatch,isSuccessStage,currentStage]);
 
     // Cargar estudiantes ya que si no hay nada, no puede buscar al alumno
-    const { data: usersList, isSuccess} = useGetUserQuery();
+    const { data: usersList, isSuccess:isSuccessUser} = useGetUserQuery();
+
     useEffect(() => {
-        if (isSuccess && usersList.length > 0) {
+        if (isSuccessUser && usersList.length > 0) {
             dispatch(setTutorList(usersList));
         }
-    }, [dispatch, isSuccess, usersList]);
+    }, [dispatch, isSuccessUser, usersList]);
+
 }

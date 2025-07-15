@@ -145,6 +145,6 @@ export const tutores = [
 ]
 
 export const studentStates = [
-    {id:true,name:'Activo'},
-    {id:false,name:'Inactivo'},
+    {id:1,name:'Activo'},
+    {id:2,name:'Inactivo'},
 ]
