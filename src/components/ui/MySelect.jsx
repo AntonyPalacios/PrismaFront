@@ -16,9 +16,11 @@ export const MySelect = memo(({label='Etiqueta', options=[],name, disabled=false
                 variant="outlined"
                 {...props}
             >
+                {props.isForm?null:
                 <MenuItem value={-1}>
                     <em>{defaultItem}</em>
                 </MenuItem>
+                }
                 {props.children}
                 {options.map((option) =>
                     <MenuItem key={option.id} value={option.id}>{option.name}</MenuItem>

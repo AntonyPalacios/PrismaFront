@@ -49,7 +49,7 @@ export const StudentTable = ({students, isLoading}) => {
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{getTutorNameById(student.tutorId)}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{student.isActive?"Sí":"No"}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{student.isActive===1?"Sí":"No"}</TableCell>
                                     </TableRow>
                                 )
                             })}

@@ -7,6 +7,7 @@ const initialState = {
         stageId:1,
         areaId:-1,
         tutorId:-1,
+        isActive:1,
         name:''
     }
 }
@@ -41,8 +42,13 @@ export const selectFilteredStudents = createSelector(
     (allStudents, filters) => {
         let filtered = allStudents;
 
+        // Aplicar filtro por Estado
+        if (filters.isActive && filters.isActive !== -1) {
+            filtered = filtered.filter(student => student.isActive === filters.isActive);
+        }
+
         // Aplicar filtro por Area
-        if (filters.areaId && filters.areaId !== -1) {
+        if (filters.areaId !== -1) {
             filtered = filtered.filter(student => student.areaId === filters.areaId);
         }
 

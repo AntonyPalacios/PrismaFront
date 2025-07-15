@@ -5,8 +5,6 @@ import {Box} from "@mui/material";
 import {Navbar} from "../components/layout/Navbar.jsx";
 import {useContext} from "react";
 import {AppContext} from "../context/AppContext.jsx";
-import {StudentList} from "../modules/students/components/StudentList.jsx";
-import {StudentDetail} from "../modules/students/components/StudentDetail.jsx";
 import {UserDetailPage} from "../modules/users/pages/UserDetailPage.jsx";
 import {CyclePage} from "../modules/cycles/pages/CyclePage.jsx";
 import {CycleDetailPage} from "../modules/cycles/pages/CycleDetailPage.jsx";

@@ -16,6 +16,8 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
             transformResponse: (response) => {
                 return response.map(student => {
                     if(student.tutorId === null) student.tutorId = 0;
+                    if(student.areaId === null) student.areaId = 0;
+                    student.isActive? student.isActive = 1:student.isActive = 2;
                     return student;
                 });
             },

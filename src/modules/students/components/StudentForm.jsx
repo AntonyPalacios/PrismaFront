@@ -16,13 +16,13 @@ import MenuItem from "@mui/material/MenuItem";
 const defaultFormValues = {
     id: null,
     dni: '',
-    areaId: -1,
+    areaId: 0,
     name: '',
     email: '',
     phone: '',
-    tutorId: -1,
+    tutorId: 0,
     stageId:0,
-    isActive: true
+    isActive: 1
 }
 export const StudentForm = ({student = defaultFormValues, disabled = false, action = "new", toggleForm, onCloseForm}) => {
 
@@ -97,7 +97,12 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                             disabled={disabled}
                             error={!!fieldState.error}
                             helperText={fieldState.error?.message}
-                        />
+                            isForm
+                        >
+                            <MenuItem value={0}>
+                                Sin Área
+                            </MenuItem>
+                        </MySelect>
                     )}
                 />
             </Grid>
@@ -167,6 +172,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                             disabled={disabled}
                             error={!!fieldState.error}
                             helperText={fieldState.error?.message}
+                            isForm
                         >
                             <MenuItem value={0}>
                                 Sin Tutor

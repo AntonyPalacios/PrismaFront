@@ -19,6 +19,10 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
     const [deleteStudent] = useDeleteStudentMutation();
 
     const onHandleCreate = useCallback(async (formData) => {
+        formData = {
+            ...formData,
+            isActive: formData.isActive === 1
+        }
 
         try {
             await createStudent(formData).unwrap(); // .unwrap() lanza el error para poderlo capturar con try/catch
@@ -32,7 +36,10 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
     }, [createStudent, dispatch, onResetForm, onCloseForm]);
 
     const onHandleUpdate = useCallback(async (formData) => {
-
+        formData = {
+            ...formData,
+            isActive: formData.isActive === 1
+        }
         try {
             await updateStudent(formData).unwrap();
             dispatch(toggleAlert({ message: 'Alumno actualizado correctamente', severity: 'success' }));

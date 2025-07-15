@@ -2,7 +2,7 @@ import {useContext, useEffect} from "react";
 import {Grid} from "@mui/material";
 import {MyButton, MyInput, MySelect} from "../../../components/ui/index.js";
 import Search from '@mui/icons-material/Search';
-import {stages} from "../../../assets/fakeData.jsx";
+import {stages, studentStates} from "../../../assets/fakeData.jsx";
 import {AppContext} from "../../../context/AppContext.jsx";
 import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
 import {useDispatch, useSelector} from "react-redux";
@@ -12,8 +12,9 @@ import MenuItem from "@mui/material/MenuItem";
 
 const defaultFormValues = {
     stageId:1,
-    areaId:-1,
-    tutorId:-1,
+    areaId:-1, //todas las areas
+    tutorId:-1, // todos los tutores
+    isActive: 1, // activos
     name:''
 }
 
@@ -65,13 +66,17 @@ export const StudentFilter = () => {
                             options={areas}
                             label="Área"
                             defaultItem="Todas las áreas"
-                        />
+                        >
+                            <MenuItem value={0}>
+                                Sin Área
+                            </MenuItem>
+                        </MySelect>
                     )}
 
                 />
 
             </Grid>
-            <Grid size={{xs: 12, md: 2}}>
+            <Grid size={{xs: 6, md: 2}}>
                 <Controller
                     name="tutorId"
                     control={control}
@@ -88,10 +93,22 @@ export const StudentFilter = () => {
                         </MySelect>
                     )}
                 />
-
-
             </Grid>
-            <Grid size={{xs: 12, md: 6}} sx={{display: 'flex', gap: 1, justifyContent: 'space-between'}}>
+            <Grid size={{xs: 6, md: 2}}>
+                <Controller
+                    name="isActive"
+                    control={control}
+                    render={({ field }) => (
+                        <MySelect
+                            {...field}
+                            options={studentStates}
+                            label="Estado"
+                            defaultItem="Todos los estados"
+                        />
+                    )}
+                />
+            </Grid>
+            <Grid size={{xs: 12, md: 4}} sx={{display: 'flex', gap: 1, justifyContent: 'space-between'}}>
                 <Controller
                     name="name"
                     control={control}
@@ -102,8 +119,6 @@ export const StudentFilter = () => {
                         />
                     )}
                 />
-
-                <MyButton size="small">{isLargeScreen ? "Buscar" : <Search/>}</MyButton>
             </Grid>
         </Grid>
     );
