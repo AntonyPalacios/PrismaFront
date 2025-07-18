@@ -12,21 +12,22 @@ import Logout from '@mui/icons-material/Logout';
 import {menuItems} from "../../assets/fakeData.jsx";
 import {Menu} from '@mui/icons-material';
 import {Avatar, Box, IconButton, Typography} from "@mui/material";
-import {NavLink, useNavigate} from "react-router";
+import {NavLink} from "react-router";
 import {AppContext} from "../../context/AppContext.jsx";
+import {useDispatch, useSelector} from "react-redux";
+import {logout} from "../../store/slices/auth/authSlice.js";
 
 const drawerWidth = 240;
 
 export const Navbar = () => {
 
     const [mobileOpen, setMobileOpen] = useState(false);
-    const {isLargeScreen, user} = useContext(AppContext);
-    const navigate = useNavigate();
+    const {isLargeScreen} = useContext(AppContext);
+    const {user} = useSelector((state) => state.auth);
+    const dispatch = useDispatch();
 
     const handleLogout = () => {
-        navigate('/login', {
-            replace: true,
-        });
+        dispatch(logout());
     }
 
     const handleDrawerToggle = () => {
@@ -46,8 +47,8 @@ export const Navbar = () => {
             <Box>
                 {isLargeScreen && <Toolbar sx={{flexDirection: 'column', alignItems: 'center', py: 2}}>
                     <Avatar sx={{backgroundColor: 'secondary.main', width: 60, height: 60, mb: 1}}/>
-                    <Typography variant="body1" fontWeight="bold" color="white">{user.name}</Typography>
-                    <Typography variant="body2" color="white" sx={{mb: 2}}>{user.roles.filter(role => role.current)[0].role}</Typography>
+                    <Typography variant="body1" fontWeight="bold" color="white">{user?.name}</Typography>
+                    {/*<Typography variant="body2" color="white" sx={{mb: 2}}>{user.roles.filter(role => role.current)[0].role}</Typography>*/}
                 </Toolbar>}
                 <Divider/>
                 <List sx={{ marginTop: !isLargeScreen? 10:0 }}>
@@ -103,7 +104,7 @@ export const Navbar = () => {
                         <Menu/>
                     </IconButton>
                     <Typography variant="h6" noWrap component="div">
-                        {user.name}
+                        {user?.name}
                     </Typography>
                 </Toolbar>
             )}
