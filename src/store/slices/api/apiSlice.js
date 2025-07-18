@@ -30,14 +30,14 @@ export const apiSlice = createApi({
             transformResponse: (response) => response,
         }),
         getCurrentCycle: builder.query({
-            query: () => '/cycle/current',
+            query: () => '/cycles/current',
             staleTime: Infinity,
             cacheTime: Infinity,
             providesTime: ['Cycle'],
             transformResponse: (response) => response,
         }),
         getCurrentStage: builder.query({
-            query: () => '/stage/current',
+            query: () => '/stages/current',
             staleTime: Infinity,
             cacheTime: Infinity,
             providesTime: ['Stage'],

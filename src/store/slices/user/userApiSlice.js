@@ -40,7 +40,6 @@ export const userApiSlice = apiSlice.injectEndpoints({
             },
         }),
 
-        // PATCH (Actualizar un estudiante)
         updateUser: builder.mutation({
             query: (updatedUser) => ({
                 url: `/users/${updatedUser.id}`, // Asume que el ID está en el objeto
@@ -52,8 +51,6 @@ export const userApiSlice = apiSlice.injectEndpoints({
                 return response.data?.message || 'Error desconocido al actualizar alumno.';
             },
         }),
-
-        // DELETE (Borrar un estudiante)
         deleteUser: builder.mutation({
             query: (studentId) => ({
                 url: `/users/${studentId}`,

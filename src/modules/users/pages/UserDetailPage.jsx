@@ -11,17 +11,13 @@ import {setTutorList} from "../../../store/slices/user/userSlice.js";
 
 export const UserDetailPage = () => {
     const {id} = useParams();
-    /*useEffect(() => {
-        //obtener usuario por id desde el backend
 
-    },[id])*/
-    // const {list,status:userStatus} = useSelector(state => state.user);
     const {message,severity,open} = useSelector(state => state.alert);
 
     const dispatch = useDispatch();
 
     // Cargar estudiantes ya que si no hay nada, no puede buscar al alumno
-    const { data: usersList, isLoading, isFetching, isSuccess, isError, error } = useGetUserQuery();
+    const { data: usersList=[], isLoading, isFetching, isSuccess, isError, error } = useGetUserQuery();
     useEffect(() => {
         if (isSuccess && usersList.length > 0) {
             dispatch(setTutorList(usersList));

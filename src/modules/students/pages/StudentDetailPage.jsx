@@ -13,7 +13,7 @@ import {useGetStudentsQuery} from "../../../store/slices/student/studentsApiSlic
 export const StudentDetailPage = () => {
     const {id} = useParams();
     const {id: stageId} = useSelector(state => state.cycle.currentStage)
-    const {data:students} = useGetStudentsQuery(stageId);
+    const {data:students = []} = useGetStudentsQuery(stageId);
 
     const {message,severity,open} = useSelector(state => state.alert);
 
