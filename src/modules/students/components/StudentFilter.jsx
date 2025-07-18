@@ -1,9 +1,7 @@
-import {useContext, useEffect} from "react";
+import {useEffect} from "react";
 import {Grid} from "@mui/material";
-import {MyButton, MyInput, MySelect} from "../../../components/ui/index.js";
-import Search from '@mui/icons-material/Search';
+import {MyInput, MySelect} from "../../../components/ui/index.js";
 import {stages, studentStates} from "../../../assets/fakeData.jsx";
-import {AppContext} from "../../../context/AppContext.jsx";
 import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
 import {useDispatch, useSelector} from "react-redux";
 import {Controller, useForm} from "react-hook-form";
@@ -20,12 +18,30 @@ const defaultFormValues = {
 
 export const StudentFilter = () => {
 
-    const {control, watch} = useForm({defaultValues:defaultFormValues});
+    const {control, watch, setValue} = useForm({defaultValues:defaultFormValues});
 
-    const {isLargeScreen} = useContext(AppContext);
     const {data:areas} = useGetAreasQuery();
     const {tutorList} = useSelector((state) => state.user);
+    const {user, roles} = useSelector((state) => state.auth);
     const dispatch = useDispatch();
+
+    const isCurrentUserTutor = roles.includes('ROLE_TUTOR');
+    const isCurrentUserAdmin = roles.includes('ROLE_ADMIN');
+
+    useEffect(() => {
+        // Solo si el usuario actual es un tutor y su ID está disponible
+        // y si el filtro de tutorId no ha sido ya establecido (ej. por el usuario manualmente)
+        if (isCurrentUserTutor && user && user.id && watch('tutorId') === -1) {
+            // Busca si el ID del usuario logueado existe en la lista de tutores disponibles
+            const tutorExistsInList = tutorList.some(tutor => tutor.id === user.id);
+            if (tutorExistsInList) {
+                setValue('tutorId', user.id, { shouldDirty: true }); // Establece el valor del tutorId
+                // Opcional: Si quieres que el filtro se aplique inmediatamente, despacha el filtro
+                const updatedFormValues = { ...watch(), tutorId: user.id };
+                dispatch(setFilter(updatedFormValues));
+            }
+        }
+    }, [user, tutorList, setValue, watch, dispatch, isCurrentUserTutor]);
 
     // *** CAMBIO CLAVE AQUÍ: Usar la suscripción de watch ***
     useEffect(() => {
@@ -86,6 +102,7 @@ export const StudentFilter = () => {
                             options={tutorList}
                             label="Tutor"
                             defaultItem="Todos los tutores"
+                            disabled={!isCurrentUserAdmin}
                         >
                             <MenuItem value={0}>
                                 Sin Tutor

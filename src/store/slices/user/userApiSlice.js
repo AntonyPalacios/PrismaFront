@@ -20,6 +20,12 @@ export const userApiSlice = apiSlice.injectEndpoints({
             },
         }),
 
+        getCurrentUser: builder.query({
+            query: () => '/users/current',
+            providesTags: ['User'],
+
+        }),
+
         // POST (Crear un nuevo estudiante)
         createUser: builder.mutation({
             query: (newUser) => ({
@@ -67,4 +73,5 @@ export const {
     useCreateUserMutation,
     useUpdateUserMutation,
     useDeleteUserMutation,
+    useGetCurrentUserQuery,
 } = userApiSlice;
