@@ -31,21 +31,17 @@ export const CycleForm = ({cycle= initialForm, disabled = false, action="new", t
         onHandleUpdate, action,disabled,toggleForm,toggleModal,onCloseForm});
 
     useEffect(() => {
-        // Solo resetea el formulario si 'cycle' no es nulo/indefinido
-        // y si el formulario no está en modo 'create' o si el 'cycle.id' es diferente
-        // Esto evita resetear un formulario vacío si 'cycle' es el 'initialForm' por defecto
-        if (cycle && cycle.id !== null) { // Asegúrate de que 'cycle' tenga datos reales (no el initialForm vacío)
-            reset(cycle); // Resetea el formulario con los datos del 'cycle' prop
+        if (cycle && cycle.id !== null) {
+            reset(cycle);
         } else if (action === "new" && cycle === initialForm) {
-            // Si es un formulario nuevo y el ciclo es el default vacío, asegúrate de que se resetee a vacío
             reset(initialForm);
         }
     }, [cycle, reset, action]);
     const onSubmit = useCallback((data) => {
         const transformedData = {
             ...data,
-            startDate: formatDateToDDMMYYYY(data.startDate), // Transforma startDate
-            endDate: formatDateToDDMMYYYY(data.endDate),     // Transforma endDate
+            startDate: formatDateToDDMMYYYY(data.startDate),
+            endDate: formatDateToDDMMYYYY(data.endDate),
         };
         handleConfirmAction(transformedData);
     }, [handleConfirmAction]);

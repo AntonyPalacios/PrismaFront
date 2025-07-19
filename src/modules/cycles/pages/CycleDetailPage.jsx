@@ -28,7 +28,7 @@ export const CycleDetailPage = () => {
                 startDate: formatDateToYYYYMMDD(cycle.startDate),
                 endDate: formatDateToYYYYMMDD(cycle.endDate),
             };
-            console.log(cycleWithFormattedDates);
+            console.log("rerender")
             setTransformedCycle(cycleWithFormattedDates);
         } else if (isSuccess && !cycle) {
             // Si no se encontró el ciclo después de una carga exitosa, limpia el estado

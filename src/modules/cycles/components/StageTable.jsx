@@ -9,56 +9,69 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import { stages} from "../../../assets/fakeData.jsx";
-import {useEffect, useState} from "react";
+import {useState} from "react";
+import {useGetStagesQuery} from "../../../store/slices/cycle/cycleApiSlice.js";
+import {useDispatch} from "react-redux";
+import {resetSelectedStage, setSelectedStage} from "../../../store/slices/cycle/cycleSlice.js";
 
 export const StageTable = ({idCycle}) => {
-    const {open, toggleModal} = useModal({});
+    const {open, toggleModal, title} = useModal({title: "Etapa"});
 
-    const [cycleStages, setCycleStages] = useState([])
-    const [idStage, setIdStage] = useState(null)
-    const [modalTitle, setModalTitle] = useState("Nueva Etapa");
+    const dispatch = useDispatch();
 
-    useEffect(() => {
-        const stagesByCycle = stages.filter(stage => {
-            return stage.cycle.id === idCycle
-        })
-        setCycleStages(stagesByCycle)
-    },[idCycle]);
+    const {data: stages = []} = useGetStagesQuery(idCycle);
 
-    const onClickStage = (id) =>{
-        setIdStage(id);
-        setModalTitle("Editar Etapa");
+    const [disabled, setDisabled] = useState(true)
+    const toggleForm = () => {
+        setDisabled(!disabled);
+    }
+
+    const onClickStage = (stage) => {
+        console.log("re render: onClickStage");
+        dispatch(setSelectedStage(stage));
+        setDisabled(true)
         toggleModal();
     }
 
-    const onClickFab = () =>{
-        setModalTitle("Nueva Etapa");
+    const onClickFab = () => {
+        console.log("re render: onClickFab");
+        dispatch(resetSelectedStage(idCycle));
+        setDisabled(false);
         toggleModal();
     }
+
+
     return (
         <>
             <Grid container spacing={2}>
-                <Grid size={12} sx={{ flexGrow: 1 }}>
-                    <TableContainer component={Paper} sx={{width:'100%', overflowX: 'auto'}} >
-                        <Table sx={{width:'100%', tableLayout: 'fixed'}}>
+                <Grid size={12} sx={{flexGrow: 1}}>
+                    <TableContainer component={Paper} sx={{width: '100%', overflowX: 'auto'}}>
+                        <Table sx={{width: '100%', tableLayout: 'fixed'}}>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{width:'110px'}} align="left">Nombre</TableCell>
-                                    <TableCell sx={{width:'150px'}} align="left">Fecha Inicio</TableCell>
-                                    <TableCell sx={{width:'150px'}} align="left">Fecha Fin</TableCell>
+                                    <TableCell sx={{width: '110px'}} align="left">Nombre</TableCell>
+                                    <TableCell sx={{width: '150px'}} align="left">Fecha Inicio</TableCell>
+                                    <TableCell sx={{width: '150px'}} align="left">Fecha Fin</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {cycleStages.map((stage) => {
+                                {stages.map((stage) => {
                                     return (
-                                        <TableRow hover key={stage.id} onClick={() => {onClickStage(stage.id)}}>
-                                            <TableCell sx={{whiteSpace: 'normal',
-                                                wordBreak: 'break-word'}} align="left">{stage.name}</TableCell>
-                                            <TableCell sx={{whiteSpace: 'normal',
-                                                wordBreak: 'break-word'}} align="left">{stage.initDate}</TableCell>
-                                            <TableCell sx={{whiteSpace: 'normal',
-                                                wordBreak: 'break-word',}} align="left">{stage.endDate}</TableCell>
+                                        <TableRow hover key={stage.id} onClick={() => {
+                                            onClickStage(stage)
+                                        }}>
+                                            <TableCell sx={{
+                                                whiteSpace: 'normal',
+                                                wordBreak: 'break-word'
+                                            }} align="left">{stage.name}</TableCell>
+                                            <TableCell sx={{
+                                                whiteSpace: 'normal',
+                                                wordBreak: 'break-word'
+                                            }} align="left">{stage.startDate}</TableCell>
+                                            <TableCell sx={{
+                                                whiteSpace: 'normal',
+                                                wordBreak: 'break-word',
+                                            }} align="left">{stage.endDate}</TableCell>
                                         </TableRow>
                                     )
                                 })}
@@ -67,13 +80,18 @@ export const StageTable = ({idCycle}) => {
                     </TableContainer>
                 </Grid>
             </Grid>
-            <MyFab onHandleCLick={toggleModal}/>
-            <MyModal
+            <MyFab onHandleCLick={onClickFab}/>
+            {open ? <MyModal
                 open={open}
                 toggleModal={onClickFab}
-                title={modalTitle}
-                content={<StageForm id={idStage}/>}
-            />
+                title={title}
+                content={
+                    <StageForm disabled={disabled}
+                               onCloseForm={toggleModal}
+                               toggleForm={toggleForm}/>
+                }
+            /> : null}
+
         </>
     );
 };

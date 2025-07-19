@@ -1,35 +1,142 @@
 import {Grid} from "@mui/material";
 import {MyInput} from "../../../components/ui/index.js";
 import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
+import {Controller, useForm} from "react-hook-form";
+import {useCallback, useEffect, useState} from "react";
+import {useActionType} from "../../../hooks/useActionType.js";
+import {formatDateToDDMMYYYY} from "../../../helper/formatDateToDDMMYYYY.js";
+import {useStage} from "../../../hooks/useStage.js";
+import {useSelector} from "react-redux";
+import {formatDateToYYYYMMDD} from "../../../helper/formatDateToYYYYMMDD.js";
+import {DeleteConfirmation} from "../../../components/layout/DeleteConfirmation.jsx";
+import MyModal from "../../../components/ui/MyModal.jsx";
+import {useModal} from "../../../hooks/useModal.js";
 
-export const StageForm = ({id}) => {
+
+export const StageForm = ({
+                               disabled = false, toggleForm, onCloseForm
+                          }) => {
+
+    const {open, toggleModal,title} = useModal({title : "Confirmación"});
+
+    const {selectedStage} = useSelector(state => state.cycle)
+    let stage = {
+        ...selectedStage,
+        startDate: formatDateToYYYYMMDD(selectedStage.startDate),
+        endDate: formatDateToYYYYMMDD(selectedStage.endDate),
+    }
+    const [action, setAction] = useState("new")
+    useEffect(() => {
+        if(selectedStage.id ===null){
+            setAction("new")
+        }else{
+            setAction("edit")
+        }
+    },[selectedStage])
+
+    const {control, watch, handleSubmit, reset} = useForm({
+        defaultValues: stage,
+    });
+
+    const {onHandleCreate, onHandleUpdate, onHandleDelete} = useStage({
+        onCloseForm,
+        onResetForm: () => reset(stage)
+    });
+
+    const {actionType,handleConfirmAction, handleCancelAction} = useActionType({onHandleCreate,
+        onHandleUpdate, action,disabled,toggleModal,toggleForm,onCloseForm});
+
+    const onSubmit = useCallback((data) => {
+        const transformedData = {
+            ...data,
+            startDate: formatDateToDDMMYYYY(data.startDate),
+            endDate: formatDateToDDMMYYYY(data.endDate),
+        };
+        handleConfirmAction(transformedData);
+    }, [handleConfirmAction]);
+
+    const onDeleteConfirmed = useCallback(() => {
+        const currentDataForDelete = watch();
+        onHandleDelete(currentDataForDelete);
+    }, [onHandleDelete, watch]);
+
+
     return (
         <Grid container spacing={2}>
-            <Grid size={{xs:12}}>
-                <MyInput
-                label="Nombre"
-                name="name"
+            <Grid size={{xs: 12}}>
+                <Controller
+                    name="name"
+                    control={control}
+                    render={({field, fieldState}) => (
+                        <MyInput
+                            {...field}
+                            label="Nombre"
+                            disabled={disabled}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                        />
+                    )}
+                />
+
+            </Grid>
+            <Grid size={{xs: 12}}>
+                <Controller
+                    name="startDate"
+                    control={control}
+                    render={({field, fieldState}) => (
+                        <MyInput
+                            {...field}
+                            label="Fecha Inicio"
+                            type="date"
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            disabled={disabled}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                        />
+                    )}
                 />
             </Grid>
-            <Grid size={{xs:12}}>
-                <MyInput
-                    label="Fecha Inicio"
-                    type="date"
-                    InputLabelProps={{
-                        shrink: true,
-                    }}
+            <Grid size={{xs: 12}}>
+                <Controller
+                    name="endDate"
+                    control={control}
+                    render={({field, fieldState}) => (
+                        <MyInput
+                            {...field}
+                            label="Fecha Fin"
+                            type="date"
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            disabled={disabled}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                        />
+                    )}
                 />
             </Grid>
-            <Grid size={{xs:12}}>
-                <MyInput
-                    label="Fecha Fin"
-                    type="date"
-                    InputLabelProps={{
-                        shrink: true,
-                    }}
-                />
-            </Grid>
-            <MyActionButtons />
+            <MyActionButtons onConfirmAction={handleSubmit(onSubmit)}
+                             onCancelAction={handleCancelAction}
+                             confirmText={
+                                 actionType === "edit-disabled" ? "Editar" :
+                                     actionType === "update" ? "Guardar" : "Aceptar"
+                             }
+                             cancelText={
+                                 actionType === "create" ? "Cancelar" : "Borrar"
+                             }/>
+            <MyModal
+                open={open}
+                toggleModal={toggleModal}
+                title={title}
+
+                content={<DeleteConfirmation
+                    name={watch('name')}
+                    onConfirmAction={onDeleteConfirmed}
+                    onCancelAction={toggleModal}
+                />}
+            />
         </Grid>
     );
 };
