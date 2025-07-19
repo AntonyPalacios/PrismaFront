@@ -28,7 +28,6 @@ export const CycleDetailPage = () => {
                 startDate: formatDateToYYYYMMDD(cycle.startDate),
                 endDate: formatDateToYYYYMMDD(cycle.endDate),
             };
-            console.log("rerender")
             setTransformedCycle(cycleWithFormattedDates);
         } else if (isSuccess && !cycle) {
             // Si no se encontró el ciclo después de una carga exitosa, limpia el estado
@@ -43,8 +42,11 @@ export const CycleDetailPage = () => {
     return (
         <Grid container spacing={2}>
             <MyTitle>Ciclos</MyTitle>
-            {isLoading ? (<CircularProgress/>):
-            <CycleForm cycle={transformedCycle} disabled={disabled} action="edit" toggleForm={toggleForm}/>}
+            <Grid width="100%">
+                {isLoading
+                    ?<CircularProgress/>
+                    :<CycleForm cycle={transformedCycle} disabled={disabled} action="edit" toggleForm={toggleForm}/>}
+            </Grid>
             <MyTitle>Etapas</MyTitle>
             <StageTable idCycle={parseInt(id)}/>
             <MyAlert

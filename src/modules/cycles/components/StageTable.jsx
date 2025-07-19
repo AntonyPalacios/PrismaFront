@@ -27,14 +27,12 @@ export const StageTable = ({idCycle}) => {
     }
 
     const onClickStage = (stage) => {
-        console.log("re render: onClickStage");
         dispatch(setSelectedStage(stage));
         setDisabled(true)
         toggleModal();
     }
 
     const onClickFab = () => {
-        console.log("re render: onClickFab");
         dispatch(resetSelectedStage(idCycle));
         setDisabled(false);
         toggleModal();
