@@ -1,14 +1,13 @@
-import {Grid, Paper} from "@mui/material";
+import {CircularProgress, Grid, Paper} from "@mui/material";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import {cycles} from "../../../assets/fakeData.jsx";
 import {useNavigate} from "react-router";
 
-export const CycleTable = () => {
+export const CycleTable = ({cycles, isLoading}) => {
 
     const navigate = useNavigate();
 
@@ -19,6 +18,9 @@ export const CycleTable = () => {
     return (
         <Grid container spacing={2}>
             <Grid size={12} sx={{ flexGrow: 1 }}>
+                {isLoading ? (
+                        <CircularProgress />
+                    ):
                 <TableContainer component={Paper} sx={{width:'100%', overflowX: 'auto'}} >
                     <Table sx={{width:'100%', tableLayout: 'fixed'}}>
                         <TableHead>
@@ -35,7 +37,7 @@ export const CycleTable = () => {
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{cycle.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word'}} align="left">{cycle.initDate}</TableCell>
+                                            wordBreak: 'break-word'}} align="left">{cycle.startDate}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{cycle.endDate}</TableCell>
                                     </TableRow>
@@ -43,7 +45,7 @@ export const CycleTable = () => {
                             })}
                         </TableBody>
                     </Table>
-                </TableContainer>
+                </TableContainer>}
             </Grid>
         </Grid>
     );

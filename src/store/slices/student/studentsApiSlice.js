@@ -7,7 +7,7 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
         getStudents: builder.query({
             query: (stageId) => {
                 // Si se proporciona un stageId (y no es 0 o vacío), lo añade como query parameter
-                if (stageId && stageId !== 0) {
+                if (stageId && stageId !== -1) {
                     return `/students?stageId=${stageId}`;
                 }
                 return '/students';

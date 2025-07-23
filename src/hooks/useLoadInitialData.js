@@ -1,15 +1,23 @@
 import {useGetAreasQuery, useGetCurrentCycleQuery, useGetCurrentStageQuery} from "../store/slices/api/apiSlice.js";
-import {useGetUserQuery} from "../store/slices/user/userApiSlice.js";
+import {useGetCurrentUserQuery, useGetUserQuery} from "../store/slices/user/userApiSlice.js";
 import {useDispatch} from "react-redux";
 import {useEffect} from "react";
 import {setTutorList} from "../store/slices/user/userSlice.js";
 import {setFilter} from "../store/slices/student/studentSlice.js";
 import {setCurrentCycle, setCurrentStage} from "../store/slices/cycle/cycleSlice.js";
+import {setCurrentUser} from "../store/slices/auth/authSlice.js";
 
 export const useLoadInitialData = () => {
     useGetAreasQuery();
 
     const dispatch = useDispatch();
+    const {data: currentUser,isSuccess:isSuccessCurrentUser} = useGetCurrentUserQuery();
+    useEffect(() => {
+        if(isSuccessCurrentUser){
+            dispatch(setCurrentUser(currentUser));
+        }
+    },[currentUser, dispatch, isSuccessCurrentUser]);
+
     const {data: currentCycle, isSuccess:isSuccessCycle} = useGetCurrentCycleQuery();
 
     useEffect(() => {

@@ -10,7 +10,6 @@ export const useActionType = ({onHandleCreate,onHandleUpdate,action,disabled,tog
         } else if (actionType === "update") {
             onHandleUpdate(formData);
         } else if (actionType === 'edit-disabled') {
-            console.log('entra')
             toggleForm();
         }
     },[actionType, disabled, onHandleCreate, onHandleUpdate, toggleForm]);
