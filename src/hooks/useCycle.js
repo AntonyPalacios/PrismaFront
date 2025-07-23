@@ -25,7 +25,7 @@ export const useCycle = ({toggleForm, onCloseForm, onResetForm})=>{
             onResetForm();
             onCloseForm();
         } catch (err) {
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: err, severity: 'error' }));
         }
     },[createCycle, dispatch, onResetForm, onCloseForm]);
 
@@ -36,7 +36,7 @@ export const useCycle = ({toggleForm, onCloseForm, onResetForm})=>{
             dispatch(toggleAlert({ message: 'Ciclo actualizado correctamente', severity: 'success' }));
             toggleForm()
         } catch (err) {
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: err, severity: 'error' }));
         }
     }, [dispatch, toggleForm, updateCycle]);
 
@@ -49,7 +49,7 @@ export const useCycle = ({toggleForm, onCloseForm, onResetForm})=>{
             })
             dispatch(toggleAlert({ message: 'Ciclo borrado correctamente', severity: 'error' }));
         } catch (err) {
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: err, severity: 'error' }));
         }
 
 

@@ -88,15 +88,12 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="areaId"
                     control={control}
-                    rules={{ required: "El Área es obligatoria" }}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                         <MySelect
                             {...field}
                             options={areas}
                             label="Área"
                             disabled={disabled}
-                            error={!!fieldState.error}
-                            helperText={fieldState.error?.message}
                             isForm
                         >
                             <MenuItem value={0}>
@@ -110,7 +107,11 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="name"
                     control={control}
-                    rules={{ required: "El Nombre es obligatorio", minLength: { value: 3, message: "Mínimo 3 caracteres" } }}
+                    rules={{
+                        required: "El Nombre es obligatorio",
+                        minLength: { value: 2 , message: "Mínimo 2 caracteres" },
+                        maxLength: { value: 50, message: "Máximo 50 caracteres"}
+                    }}
                     render={({ field, fieldState }) => (
                         <MyInput
                             {...field}
@@ -148,7 +149,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="phone"
                     control={control}
-                    rules={{ required: "El Teléfono es obligatorio" }}
+                    rules={{ maxLength: { value: 9, message: "Máximo 9 caracteres"} }}
                     render={({ field, fieldState }) => (
                         <MyInput
                             {...field}
@@ -164,14 +165,12 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="tutorId"
                     control={control}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                         <MySelect
                             {...field}
                             options={tutores}
                             label="Tutor"
                             disabled={disabled}
-                            error={!!fieldState.error}
-                            helperText={fieldState.error?.message}
                             isForm
                         >
                             <MenuItem value={0}>
@@ -185,15 +184,12 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="isActive"
                     control={control}
-                    rules={{ required: "El Estado es obligatorio" }}
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                         <MySelect
                             {...field}
                             options={studentStates} // Asegúrate de que studentStates tenga {id: valor, name: etiqueta}
                             label="Estado"
                             disabled={disabled}
-                            error={!!fieldState.error}
-                            helperText={fieldState.error?.message}
                         />
                     )}
                 />
