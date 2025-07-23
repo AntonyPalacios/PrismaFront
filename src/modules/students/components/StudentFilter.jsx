@@ -1,15 +1,16 @@
 import {useEffect} from "react";
 import {Grid} from "@mui/material";
 import {MyInput, MySelect} from "../../../components/ui/index.js";
-import {stages, studentStates} from "../../../assets/fakeData.jsx";
+import {studentStates} from "../../../assets/fakeData.jsx";
 import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
 import {useDispatch, useSelector} from "react-redux";
 import {Controller, useForm} from "react-hook-form";
 import {setFilter} from "../../../store/slices/student/studentSlice.js";
 import MenuItem from "@mui/material/MenuItem";
+import {useGetStagesQuery} from "../../../store/slices/cycle/cycleApiSlice.js";
 
 const defaultFormValues = {
-    stageId:1,
+    stageId:-1,
     areaId:-1, //todas las areas
     tutorId:-1, // todos los tutores
     isActive: 1, // activos
@@ -23,6 +24,8 @@ export const StudentFilter = () => {
     const {data:areas} = useGetAreasQuery();
     const {tutorList} = useSelector((state) => state.user);
     const {user, roles} = useSelector((state) => state.auth);
+    const {currentCycle,currentStage} = useSelector((state) => state.cycle);
+    const {data:stages} = useGetStagesQuery(currentCycle?.id);
     const dispatch = useDispatch();
 
     const isCurrentUserTutor = roles.includes('ROLE_TUTOR');
@@ -42,6 +45,14 @@ export const StudentFilter = () => {
             }
         }
     }, [user, tutorList, setValue, watch, dispatch, isCurrentUserTutor]);
+
+    useEffect(() => {
+        if(currentStage && currentStage.id && watch('stageId') === -1) {
+            setValue('stageId', currentStage.id, { shouldDirty: true });
+            const updatedFormValues = { ...watch(), stageId: currentStage.id };
+            dispatch(setFilter(updatedFormValues));
+        }
+    }, [currentStage, dispatch, setValue, watch]);
 
     // *** CAMBIO CLAVE AQUÍ: Usar la suscripción de watch ***
     useEffect(() => {

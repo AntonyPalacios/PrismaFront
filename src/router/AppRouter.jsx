@@ -1,22 +1,10 @@
 import {Navigate, Route, Routes} from "react-router";
 import {AuthRouter} from "./AuthRouter.jsx";
 import {PrismaRouter} from "./PrismaRouter.jsx";
-import {useDispatch, useSelector} from "react-redux";
+import {useSelector} from "react-redux";
 import {OAuth2RedirectHandler} from "../modules/auth/components/OAuth2RedirectHandler.jsx";
-import {useGetCurrentUserQuery} from "../store/slices/user/userApiSlice.js";
-import {useEffect} from "react";
-import {setCurrentUser} from "../store/slices/auth/authSlice.js";
 
 export const AppRouter = () => {
-
-    const dispatch = useDispatch();
-    const {data: currentUser,isSuccess:isSuccessCurrentUser} = useGetCurrentUserQuery();
-    useEffect(() => {
-        if(isSuccessCurrentUser){
-            dispatch(setCurrentUser(currentUser));
-        }
-    },[currentUser, dispatch, isSuccessCurrentUser]);
-
     // Componente para proteger rutas
     const PrivateRoute = ({ children }) => {
         const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
