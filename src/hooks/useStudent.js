@@ -31,8 +31,7 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
             onCloseForm();
         } catch (err) {
             console.error("Failed to create student:", err);
-            console.log({err})
-            dispatch(toggleAlert({ message: err, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
     }, [createStudent, dispatch, onResetForm, onCloseForm]);
 
@@ -47,8 +46,7 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
             toggleForm()
         } catch (err) {
             console.error("Failed to update student:", err);
-            console.log({err})
-            dispatch(toggleAlert({ message: err, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
     }, [dispatch, toggleForm, updateStudent]);
 
@@ -62,7 +60,7 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
             dispatch(toggleAlert({ message: 'Alumno borrado correctamente', severity: 'error' }));
         } catch (err) {
             console.error("Failed to delete student:", err);
-            dispatch(toggleAlert({ message: err, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
     }, [deleteStudent, dispatch, navigate]);
 

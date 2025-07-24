@@ -36,7 +36,7 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
             // Invalidar caché para que la lista de estudiantes se actualice automáticamente
             invalidatesTags: ['Student'],
             transformErrorResponse: (response) => {
-                return response.data?.message || 'Error desconocido al crear alumno.';
+                return response.data || 'Error desconocido al crear alumno.';
             },
         }),
 
@@ -49,7 +49,7 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Student'], // Invalida la caché para refrescar la lista
             transformErrorResponse: (response) => {
-                return response.data?.message || 'Error desconocido al actualizar alumno.';
+                return response.data || 'Error desconocido al actualizar alumno.';
             },
         }),
 
@@ -61,7 +61,7 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
             }),
             invalidatesTags: ['Student'], // Invalida la caché para refrescar la lista
             transformErrorResponse: (response) => {
-                return response.data?.message || 'Error desconocido al borrar alumno.';
+                return response.data || 'Error desconocido al borrar alumno.';
             },
         }),
     }),
