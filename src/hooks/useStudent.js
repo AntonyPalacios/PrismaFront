@@ -43,11 +43,11 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
         try {
             await updateStudent(formData).unwrap();
             dispatch(toggleAlert({ message: 'Alumno actualizado correctamente', severity: 'success' }));
-            toggleForm()
         } catch (err) {
             console.error("Failed to update student:", err);
             dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
+        toggleForm()
     }, [dispatch, toggleForm, updateStudent]);
 
     const onHandleDelete = useCallback(async (formData) => {
