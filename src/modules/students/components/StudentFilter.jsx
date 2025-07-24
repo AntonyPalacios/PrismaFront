@@ -14,7 +14,7 @@ const defaultFormValues = {
     areaId:-1, //todas las areas
     tutorId:-1, // todos los tutores
     isActive: 1, // activos
-    name:''
+    filterName:''
 }
 
 export const StudentFilter = () => {
@@ -25,7 +25,9 @@ export const StudentFilter = () => {
     const {tutorList} = useSelector((state) => state.user);
     const {user, roles} = useSelector((state) => state.auth);
     const {currentCycle,currentStage} = useSelector((state) => state.cycle);
-    const {data:stages} = useGetStagesQuery(currentCycle?.id);
+    const {data:stages} = useGetStagesQuery(currentCycle?.id, {
+        skip: !currentCycle, // Skip the query if currentCycle.id is null or undefined
+    });
     const dispatch = useDispatch();
 
     const isCurrentUserTutor = roles.includes('ROLE_TUTOR');
@@ -68,7 +70,7 @@ export const StudentFilter = () => {
 
     return (
         <Grid container spacing={2} width="100%">
-            <Grid size={{xs: 6, md: 2, xl: 2}}>
+            <Grid size={{xs: 6, md: 2}}>
                 <Controller
                     name="stageId"
                     control={control}
@@ -136,9 +138,9 @@ export const StudentFilter = () => {
                     )}
                 />
             </Grid>
-            <Grid size={{xs: 12, md: 4}} sx={{display: 'flex', gap: 1, justifyContent: 'space-between'}}>
+            <Grid size={{xs: 12, md: 4}}>
                 <Controller
-                    name="name"
+                    name="filterName"
                     control={control}
                     render={({ field }) => (
                         <MyInput

@@ -14,9 +14,9 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
     const navigate = useNavigate();
 
     // Obtén los mutadores y su estado (isLoading, isSuccess, isError, error)
-    const [createUser, { isLoading: isCreating, isSuccess: createSuccess, isError: createError, error: createErrorData }] = useCreateUserMutation();
-    const [updateUser, { isLoading: isUpdating, isSuccess: updateSuccess, isError: updateError, error: updateErrorData }] = useUpdateUserMutation();
-    const [deleteUser, { isLoading: isDeleting, isSuccess: deleteSuccess, isError: deleteError, error: deleteErrorData }] = useDeleteUserMutation();
+    const [createUser] = useCreateUserMutation();
+    const [updateUser] = useUpdateUserMutation();
+    const [deleteUser] = useDeleteUserMutation();
 
 
     const onHandleCreate = useCallback(async (formData) => {
@@ -27,7 +27,7 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
             onCloseForm();
         } catch (err) {
             console.error("Failed to create user:", err);
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
     },[createUser, dispatch, onResetForm, onCloseForm]);
 
@@ -36,11 +36,11 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
         try {
             await updateUser(formData).unwrap();
             dispatch(toggleAlert({ message: 'Usuario actualizado correctamente', severity: 'success' }));
-            toggleForm()
         } catch (err) {
-            console.error("Failed to update user:", err);
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            console.error("Failed to update user:", {err});
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
+        toggleForm()
     }, [dispatch, toggleForm, updateUser]);
 
     const onHandleDelete = useCallback(async (formData) =>{
@@ -53,7 +53,7 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
             dispatch(toggleAlert({ message: 'Usuario borrado correctamente', severity: 'error' }));
         } catch (err) {
             console.error("Failed to delete user:", err);
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
         
         

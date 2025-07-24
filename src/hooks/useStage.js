@@ -23,7 +23,7 @@ export const useStage = ({ onCloseForm, onResetForm}) => {
             onResetForm();
             onCloseForm();
         } catch (err) {
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: err, severity: 'error' }));
         }
     },[createStage, dispatch, onResetForm, onCloseForm]);
 
@@ -36,7 +36,7 @@ export const useStage = ({ onCloseForm, onResetForm}) => {
             onResetForm();
             onCloseForm();
         } catch (err) {
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: err, severity: 'error' }));
         }
     }, [dispatch, onCloseForm, onResetForm, updateStage]);
 
@@ -49,7 +49,7 @@ export const useStage = ({ onCloseForm, onResetForm}) => {
             onResetForm();
             onCloseForm();
         } catch (err) {
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: err, severity: 'error' }));
         }
 
 

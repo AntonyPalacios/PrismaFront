@@ -31,7 +31,7 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
             onCloseForm();
         } catch (err) {
             console.error("Failed to create student:", err);
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
     }, [createStudent, dispatch, onResetForm, onCloseForm]);
 
@@ -43,11 +43,11 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
         try {
             await updateStudent(formData).unwrap();
             dispatch(toggleAlert({ message: 'Alumno actualizado correctamente', severity: 'success' }));
-            toggleForm()
         } catch (err) {
             console.error("Failed to update student:", err);
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
+        toggleForm()
     }, [dispatch, toggleForm, updateStudent]);
 
     const onHandleDelete = useCallback(async (formData) => {
@@ -60,7 +60,7 @@ export const useStudent = ({toggleForm, onCloseForm, onResetForm}) => {
             dispatch(toggleAlert({ message: 'Alumno borrado correctamente', severity: 'error' }));
         } catch (err) {
             console.error("Failed to delete student:", err);
-            dispatch(toggleAlert({ message: err.message, severity: 'error' }));
+            dispatch(toggleAlert({ message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`, severity: 'error' }));
         }
     }, [deleteStudent, dispatch, navigate]);
 

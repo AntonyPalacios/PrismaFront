@@ -56,6 +56,11 @@ export const CycleForm = ({cycle= initialForm, disabled = false, action="new", t
                 <Controller
                     name="name"
                     control={control}
+                    rules={{
+                        required: "El Nombre es obligatorio",
+                        minLength: { value: 4 , message: "Mínimo 4 caracteres" },
+                        maxLength: { value: 15, message: "Máximo 15 caracteres"}
+                    }}
                     render={({field, fieldState}) =>(
                         <MyInput
                             {...field}

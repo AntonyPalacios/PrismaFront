@@ -60,6 +60,11 @@ export const UserForm = ({user=initialForm, disabled=false, action="new", toggle
                 <Controller
                     name="name"
                     control={control}
+                    rules={{
+                        required: "El Nombre es obligatorio",
+                        minLength: { value: 2 , message: "Mínimo 2 caracteres" },
+                        maxLength: { value: 50, message: "Máximo 50 caracteres"}
+                    }}
                     render={({field,fieldState}) => (
                         <MyInput
                             {...field}
@@ -75,6 +80,13 @@ export const UserForm = ({user=initialForm, disabled=false, action="new", toggle
                 <Controller
                     name="email"
                     control={control}
+                    rules={{
+                        required: "El Correo es obligatorio",
+                        pattern: {
+                            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                            message: "Formato de correo inválido"
+                        }
+                    }}
                     render={({field,fieldState}) => (
                         <MyInput
                             {...field}

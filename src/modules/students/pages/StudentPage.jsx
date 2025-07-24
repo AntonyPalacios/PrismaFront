@@ -17,7 +17,7 @@ export const StudentPage = () => {
     const { stageId: currentStageId } = useSelector(state => state.student.studentFilter);
 
     const dispatch = useDispatch();
-    const {data: studentsList, isSuccess:isSuccessStudent, isLoading} = useGetStudentsQuery(currentStageId); //
+    const {data: studentsList, isSuccess:isSuccessStudent, isLoading,isError,error} = useGetStudentsQuery(currentStageId); //
 
     //hace que siempre tenga la data cargada del backend
     useEffect(() => {
@@ -27,6 +27,12 @@ export const StudentPage = () => {
             dispatch(setStudents([]))
         }
     }, [dispatch, isSuccessStudent, studentsList]);
+    
+    useEffect(() => {
+        if(isError) {
+            dispatch(toggleAlert({ message: error, severity: 'error' }));
+        }
+    },[isError, error, dispatch])
 
     const students= useSelector(selectFilteredStudents);
 
