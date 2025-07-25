@@ -4,7 +4,6 @@ import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
 import {Controller, useForm} from "react-hook-form";
 import {useCallback, useEffect, useState} from "react";
 import {useActionType} from "../../../hooks/useActionType.js";
-import {formatDateToDDMMYYYY} from "../../../helper/formatDateToDDMMYYYY.js";
 import {useStage} from "../../../hooks/useStage.js";
 import {useSelector} from "react-redux";
 import {formatDateToYYYYMMDD} from "../../../helper/formatDateToYYYYMMDD.js";
@@ -13,11 +12,9 @@ import MyModal from "../../../components/ui/MyModal.jsx";
 import {useModal} from "../../../hooks/useModal.js";
 
 
-export const StageForm = ({
-                               disabled = false, toggleForm, onCloseForm
-                          }) => {
+export const StageForm = ({disabled = false, toggleForm, onCloseForm}) => {
 
-    const {open, toggleModal,title} = useModal({title : "Confirmación"});
+    const {open, toggleModal, title} = useModal({title: "Confirmación"});
 
     const {selectedStage} = useSelector(state => state.cycle)
     let stage = {
@@ -27,33 +24,28 @@ export const StageForm = ({
     }
     const [action, setAction] = useState("new")
     useEffect(() => {
-        if(selectedStage.id ===null){
+        if (selectedStage.id === null) {
             setAction("new")
-        }else{
+        } else {
             setAction("edit")
         }
-    },[selectedStage])
+    }, [selectedStage])
 
     const {control, watch, handleSubmit, reset} = useForm({
         defaultValues: stage,
     });
 
-    const {onHandleCreate, onHandleUpdate, onHandleDelete} = useStage({
+    const {onSubmit, onHandleDelete} = useStage({
+        action,
+        disabled,
         onCloseForm,
         onResetForm: () => reset(stage)
     });
 
-    const {actionType,handleConfirmAction, handleCancelAction} = useActionType({onHandleCreate,
-        onHandleUpdate, action,disabled,toggleModal,toggleForm,onCloseForm});
+    const {actionType, handleConfirmAction, handleCancelAction} = useActionType({
+        action, disabled, toggleModal, toggleForm, onCloseForm, triggerSubmit: handleSubmit(onSubmit)
+    });
 
-    const onSubmit = useCallback((data) => {
-        const transformedData = {
-            ...data,
-            startDate: formatDateToDDMMYYYY(data.startDate),
-            endDate: formatDateToDDMMYYYY(data.endDate),
-        };
-        handleConfirmAction(transformedData);
-    }, [handleConfirmAction]);
 
     const onDeleteConfirmed = useCallback(() => {
         const currentDataForDelete = watch();
@@ -69,8 +61,8 @@ export const StageForm = ({
                     control={control}
                     rules={{
                         required: "El Nombre es obligatorio",
-                        minLength: { value: 4 , message: "Mínimo 4 caracteres" },
-                        maxLength: { value: 15, message: "Máximo 15 caracteres"}
+                        minLength: {value: 4, message: "Mínimo 4 caracteres"},
+                        maxLength: {value: 15, message: "Máximo 15 caracteres"}
                     }}
                     render={({field, fieldState}) => (
                         <MyInput
@@ -122,7 +114,7 @@ export const StageForm = ({
                     )}
                 />
             </Grid>
-            <MyActionButtons onConfirmAction={handleSubmit(onSubmit)}
+            <MyActionButtons onConfirmAction={handleConfirmAction}
                              onCancelAction={handleCancelAction}
                              confirmText={
                                  actionType === "edit-disabled" ? "Editar" :

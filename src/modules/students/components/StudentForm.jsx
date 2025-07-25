@@ -21,10 +21,16 @@ const defaultFormValues = {
     email: '',
     phone: '',
     tutorId: 0,
-    stageId:0,
+    stageId: 0,
     isActive: 1
 }
-export const StudentForm = ({student = defaultFormValues, disabled = false, action = "new", toggleForm, onCloseForm}) => {
+export const StudentForm = ({
+                                student = defaultFormValues,
+                                disabled = false,
+                                action = "new",
+                                toggleForm,
+                                onCloseForm
+                            }) => {
 
 
     const {
@@ -33,28 +39,25 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
         watch, // Para observar valores si es necesario (ej. lógica condicional)
         setValue, // Para establecer valores programáticamente
         reset, // Para resetear el formulario
-        formState: { errors, isValid, isDirty } // Acceso al estado de validación y cambios
+        formState: {errors, isValid, isDirty} // Acceso al estado de validación y cambios
     } = useForm({
         defaultValues: student // Usa los datos del estudiante como valores por defecto
     });
 
-    const {open, toggleModal,title} = useModal({title : "Confirmación"});
+    const {open, toggleModal, title} = useModal({title: "Confirmación"});
 
 
-    const {onHandleCreate, onHandleUpdate, onHandleDelete} = useStudent({
+    const {onSubmit, onHandleDelete} = useStudent({
+        action,
+        disabled,
         onCloseForm,
         toggleForm,
         onResetForm: () => reset(defaultFormValues)
     });
 
-    const {actionType,handleConfirmAction, handleCancelAction} = useActionType({onHandleCreate,
-        onHandleUpdate, action,disabled,toggleForm,toggleModal,onCloseForm});
-
-    const onSubmit = useCallback((data) => {
-        console.log("Form submitted with data (from RHF):", data);
-
-        handleConfirmAction(data);
-    }, [handleConfirmAction]);
+    const {actionType, handleConfirmAction, handleCancelAction} = useActionType({
+        action, disabled, toggleForm, toggleModal, onCloseForm, triggerSubmit: handleSubmit(onSubmit)
+    });
 
 
     const onDeleteConfirmed = useCallback(() => {
@@ -62,8 +65,8 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
         onHandleDelete(currentDataForDelete);
     }, [onHandleDelete, watch]);
 
-    const {tutorList:tutores} = useSelector(state => state.user);
-    const { data: areas = [] } = useGetAreasQuery();
+    const {tutorList: tutores} = useSelector(state => state.user);
+    const {data: areas = []} = useGetAreasQuery();
 
     return (
         <Grid container spacing={2} width='100%'>
@@ -71,8 +74,8 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="dni"
                     control={control}
-                    rules={{ required: "El DNI es obligatorio", maxLength: { value: 8, message: "Máximo 8 caracteres" } }}
-                    render={({ field, fieldState }) => (
+                    rules={{required: "El DNI es obligatorio", maxLength: {value: 8, message: "Máximo 8 caracteres"}}}
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field} // Esto mapea name, value, onChange, onBlur a tu MyInput
                             disabled={disabled}
@@ -88,7 +91,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="areaId"
                     control={control}
-                    render={({ field }) => (
+                    render={({field}) => (
                         <MySelect
                             {...field}
                             options={areas}
@@ -109,10 +112,10 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                     control={control}
                     rules={{
                         required: "El Nombre es obligatorio",
-                        minLength: { value: 2 , message: "Mínimo 2 caracteres" },
-                        maxLength: { value: 50, message: "Máximo 50 caracteres"}
+                        minLength: {value: 2, message: "Mínimo 2 caracteres"},
+                        maxLength: {value: 50, message: "Máximo 50 caracteres"}
                     }}
-                    render={({ field, fieldState }) => (
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             label="Nombre"
@@ -134,7 +137,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                             message: "Formato de correo inválido"
                         }
                     }}
-                    render={({ field, fieldState }) => (
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             disabled={disabled}
@@ -149,8 +152,8 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="phone"
                     control={control}
-                    rules={{ maxLength: { value: 9, message: "Máximo 9 caracteres"} }}
-                    render={({ field, fieldState }) => (
+                    rules={{maxLength: {value: 9, message: "Máximo 9 caracteres"}}}
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             disabled={disabled}
@@ -165,7 +168,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="tutorId"
                     control={control}
-                    render={({ field }) => (
+                    render={({field}) => (
                         <MySelect
                             {...field}
                             options={tutores}
@@ -184,7 +187,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                 <Controller
                     name="isActive"
                     control={control}
-                    render={({ field }) => (
+                    render={({field}) => (
                         <MySelect
                             {...field}
                             options={studentStates} // Asegúrate de que studentStates tenga {id: valor, name: etiqueta}
@@ -194,7 +197,7 @@ export const StudentForm = ({student = defaultFormValues, disabled = false, acti
                     )}
                 />
             </Grid>
-            <MyActionButtons onConfirmAction={handleSubmit(onSubmit)}
+            <MyActionButtons onConfirmAction={handleConfirmAction}
                              onCancelAction={handleCancelAction}
                              confirmText={
                                  actionType === "edit-disabled" ? "Editar" :

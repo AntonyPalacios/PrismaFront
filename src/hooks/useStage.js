@@ -7,8 +7,9 @@ import {
     useUpdateStageMutation
 } from "../store/slices/cycle/cycleApiSlice.js";
 import {resetSelectedStage, setSelectedStage} from "../store/slices/cycle/cycleSlice.js";
+import {formatDateToDDMMYYYY} from "../helper/formatDateToDDMMYYYY.js";
 
-export const useStage = ({ onCloseForm, onResetForm}) => {
+export const useStage = ({ onCloseForm, onResetForm, action, disabled}) => {
     const dispatch = useDispatch();
 
     const [createStage] = useCreateStageMutation();
@@ -55,9 +56,23 @@ export const useStage = ({ onCloseForm, onResetForm}) => {
 
     },[deleteStage, dispatch, onCloseForm, onResetForm]);
 
+    const onSubmit = useCallback((data) => {
+        console.log("Form submitted with data (from RHF):", data);
+        const transformedData = {
+            ...data,
+            startDate: formatDateToDDMMYYYY(data.startDate),
+            endDate: formatDateToDDMMYYYY(data.endDate),
+        };
+        if(action === "new") {
+            onHandleCreate(transformedData);
+        }else if (action === "edit" && !disabled){
+            onHandleUpdate(transformedData);
+        }
+    }, [action, disabled, onHandleCreate, onHandleUpdate]);
+
+
     return{
-        onHandleCreate,
-        onHandleUpdate,
+        onSubmit,
         onHandleDelete
     }
 }
