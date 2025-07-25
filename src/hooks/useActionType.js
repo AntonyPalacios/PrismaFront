@@ -1,18 +1,16 @@
 import {useCallback, useEffect, useState} from "react";
 
-export const useActionType = ({onHandleCreate,onHandleUpdate,action,disabled,toggleForm,toggleModal,onCloseForm}) =>{
+export const useActionType = ({action,disabled,toggleForm,toggleModal,onCloseForm,triggerSubmit = () =>{}}) =>{
     const [actionType, setActionType] = useState("create");
 
     const handleConfirmAction = useCallback((formData) => {
         console.log("handleConfirmAction", formData)
-        if (actionType === "create") {
-            onHandleCreate(formData);
-        } else if (actionType === "update") {
-            onHandleUpdate(formData);
+        if (actionType === "create" || actionType === "update") {
+            triggerSubmit();
         } else if (actionType === 'edit-disabled') {
             toggleForm();
         }
-    },[actionType, disabled, onHandleCreate, onHandleUpdate, toggleForm]);
+    },[actionType, toggleForm, triggerSubmit]);
 
     const handleCancelAction = useCallback(() => {
         if (actionType !== "create") {

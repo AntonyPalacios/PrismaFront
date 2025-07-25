@@ -8,8 +8,9 @@ import {
     useUpdateCycleMutation
 } from "../store/slices/cycle/cycleApiSlice.js";
 import {toggleAlert} from "../store/slices/alert/alertSlice.js";
+import {formatDateToDDMMYYYY} from "../helper/formatDateToDDMMYYYY.js";
 
-export const useCycle = ({toggleForm, onCloseForm, onResetForm})=>{
+export const useCycle = ({toggleForm, onCloseForm, onResetForm, action, disabled})=>{
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
@@ -55,9 +56,22 @@ export const useCycle = ({toggleForm, onCloseForm, onResetForm})=>{
 
     },[deleteCycle, dispatch, navigate]);
 
+    const onSubmit = useCallback((data) => {
+        console.log("Form submitted with data (from RHF):", data);
+        const transformedData = {
+            ...data,
+            startDate: formatDateToDDMMYYYY(data.startDate),
+            endDate: formatDateToDDMMYYYY(data.endDate),
+        };
+        if(action === "new") {
+            onHandleCreate(transformedData);
+        }else if (action === "edit" && !disabled){
+            onHandleUpdate(transformedData);
+        }
+    }, [action, disabled, onHandleCreate, onHandleUpdate]);
+
     return{
-        onHandleCreate,
-        onHandleUpdate,
+        onSubmit,
         onHandleDelete
     }
 }

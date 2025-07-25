@@ -9,7 +9,7 @@ import {
 } from "../store/slices/user/userApiSlice.js";
 import {toggleAlert} from "../store/slices/alert/alertSlice.js";
 
-export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
+export const useUser = ({toggleForm, onCloseForm, onResetForm, action, disabled})=>{
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
@@ -59,9 +59,18 @@ export const useUser = ({toggleForm, onCloseForm, onResetForm})=>{
         
     },[deleteUser, dispatch, navigate]);
 
+    const onSubmit = useCallback((data) => {
+        console.log("Form submitted with data (from RHF):", data);
+
+        if(action === "new") {
+            onHandleCreate(data);
+        }else if (action === "edit" && !disabled){
+            onHandleUpdate(data);
+        }
+    }, [action, disabled, onHandleCreate, onHandleUpdate]);
+
     return{
-        onHandleCreate,
-        onHandleUpdate,
+        onSubmit,
         onHandleDelete
     }
 }

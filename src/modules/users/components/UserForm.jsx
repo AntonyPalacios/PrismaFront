@@ -18,35 +18,31 @@ const initialForm = {
     isTutor: false,
     isActive: true
 }
-export const UserForm = ({user=initialForm, disabled=false, action="new", toggleForm, onCloseForm}) => {
+export const UserForm = ({user = initialForm, disabled = false, action = "new", toggleForm, onCloseForm}) => {
 
     const {
         control,
         handleSubmit,
         watch,
-        setValue,
-        reset,
-        formState: { errors, isValid, isDirty }
+        reset
     } = useForm({
         defaultValues: user
     });
 
-    const {open, toggleModal,title} = useModal({title : "Confirmación"});
+    const {open, toggleModal, title} = useModal({title: "Confirmación"});
 
-    const {onHandleCreate, onHandleUpdate, onHandleDelete} = useUser({
+    const {onSubmit, onHandleDelete} = useUser({
+        action,
+        disabled,
         onCloseForm,
         toggleForm,
         onResetForm: () => reset(initialForm)
     });
 
 
-    const {actionType,handleConfirmAction, handleCancelAction} = useActionType({onHandleCreate,
-        onHandleUpdate, action,disabled,toggleForm,toggleModal,onCloseForm});
-
-    const onSubmit = useCallback((data) => {
-        // Llama a tu handleConfirmAction, pasándole los datos validados de RHF
-        handleConfirmAction(data);
-    }, [handleConfirmAction]);
+    const {actionType, handleConfirmAction, handleCancelAction} = useActionType({
+        action, disabled, toggleForm, toggleModal, onCloseForm, triggerSubmit: handleSubmit(onSubmit)
+    });
 
     const onDeleteConfirmed = useCallback(() => {
         const currentDataForDelete = watch();
@@ -55,17 +51,16 @@ export const UserForm = ({user=initialForm, disabled=false, action="new", toggle
 
     return (
         <Grid container spacing={2}>
-
             <Grid size={{xs: 12}}>
                 <Controller
                     name="name"
                     control={control}
                     rules={{
                         required: "El Nombre es obligatorio",
-                        minLength: { value: 2 , message: "Mínimo 2 caracteres" },
-                        maxLength: { value: 50, message: "Máximo 50 caracteres"}
+                        minLength: {value: 2, message: "Mínimo 2 caracteres"},
+                        maxLength: {value: 50, message: "Máximo 50 caracteres"}
                     }}
-                    render={({field,fieldState}) => (
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             label="Nombre"
@@ -87,7 +82,7 @@ export const UserForm = ({user=initialForm, disabled=false, action="new", toggle
                             message: "Formato de correo inválido"
                         }
                     }}
-                    render={({field,fieldState}) => (
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             label="Correo"
@@ -142,7 +137,7 @@ export const UserForm = ({user=initialForm, disabled=false, action="new", toggle
                 />
             </Grid>
 
-            <MyActionButtons onConfirmAction={handleSubmit(onSubmit)}
+            <MyActionButtons onConfirmAction={handleConfirmAction}
                              onCancelAction={handleCancelAction}
                              confirmText={
                                  actionType === "edit-disabled" ? "Editar" :

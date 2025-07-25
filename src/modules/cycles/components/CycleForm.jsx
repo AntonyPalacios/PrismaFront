@@ -8,27 +8,29 @@ import {useActionType} from "../../../hooks/useActionType.js";
 import {useCallback, useEffect} from "react";
 import {useModal} from "../../../hooks/useModal.js";
 import {useCycle} from "../../../hooks/useCycle.js";
-import {formatDateToDDMMYYYY} from "../../../helper/formatDateToDDMMYYYY.js";
 
 const initialForm = {
-    id:null,
+    id: null,
     name: '',
-    startDate:'',
-    endDate:'',
+    startDate: '',
+    endDate: '',
 }
-export const CycleForm = ({cycle= initialForm, disabled = false, action="new", toggleForm, onCloseForm}) => {
-    const { control, handleSubmit, watch, reset} = useForm({defaultValues:cycle});
+export const CycleForm = ({cycle = initialForm, disabled = false, action = "new", toggleForm, onCloseForm}) => {
+    const {control, handleSubmit, watch, reset} = useForm({defaultValues: cycle});
 
-    const {open, toggleModal,title} = useModal({title : "Confirmación"});
+    const {open, toggleModal, title} = useModal({title: "Confirmación"});
 
-    const {onHandleCreate, onHandleUpdate, onHandleDelete} = useCycle({
+    const {onSubmit, onHandleDelete} = useCycle({
+        action,
+        disabled,
         onCloseForm,
         toggleForm,
         onResetForm: () => reset(initialForm)
     });
 
-    const {actionType,handleConfirmAction, handleCancelAction} = useActionType({onHandleCreate,
-        onHandleUpdate, action,disabled,toggleForm,toggleModal,onCloseForm});
+    const {actionType, handleConfirmAction, handleCancelAction} = useActionType({
+        action, disabled, toggleForm, toggleModal, onCloseForm, triggerSubmit: handleSubmit(onSubmit)
+    });
 
     useEffect(() => {
         if (cycle && cycle.id !== null) {
@@ -37,14 +39,6 @@ export const CycleForm = ({cycle= initialForm, disabled = false, action="new", t
             reset(initialForm);
         }
     }, [cycle, reset, action]);
-    const onSubmit = useCallback((data) => {
-        const transformedData = {
-            ...data,
-            startDate: formatDateToDDMMYYYY(data.startDate),
-            endDate: formatDateToDDMMYYYY(data.endDate),
-        };
-        handleConfirmAction(transformedData);
-    }, [handleConfirmAction]);
 
     const onDeleteConfirmed = useCallback(() => {
         const currentDataForDelete = watch();
@@ -52,16 +46,16 @@ export const CycleForm = ({cycle= initialForm, disabled = false, action="new", t
     }, [onHandleDelete, watch]);
     return (
         <Grid container spacing={2}>
-            <Grid size={{xs:12}}>
+            <Grid size={{xs: 12}}>
                 <Controller
                     name="name"
                     control={control}
                     rules={{
                         required: "El Nombre es obligatorio",
-                        minLength: { value: 4 , message: "Mínimo 4 caracteres" },
-                        maxLength: { value: 15, message: "Máximo 15 caracteres"}
+                        minLength: {value: 4, message: "Mínimo 4 caracteres"},
+                        maxLength: {value: 15, message: "Máximo 15 caracteres"}
                     }}
-                    render={({field, fieldState}) =>(
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             label="Nombre"
@@ -73,11 +67,11 @@ export const CycleForm = ({cycle= initialForm, disabled = false, action="new", t
                 />
 
             </Grid>
-            <Grid size={{xs:6}}>
+            <Grid size={{xs: 6}}>
                 <Controller
                     name="startDate"
                     control={control}
-                    render={({field, fieldState}) =>(
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             label="Fecha Inicio"
@@ -93,11 +87,11 @@ export const CycleForm = ({cycle= initialForm, disabled = false, action="new", t
                 />
 
             </Grid>
-            <Grid size={{xs:6}}>
+            <Grid size={{xs: 6}}>
                 <Controller
                     name="endDate"
                     control={control}
-                    render={({field, fieldState}) =>(
+                    render={({field, fieldState}) => (
                         <MyInput
                             {...field}
                             label="Fecha Fin"
@@ -112,7 +106,7 @@ export const CycleForm = ({cycle= initialForm, disabled = false, action="new", t
                     )}
                 />
             </Grid>
-            <MyActionButtons onConfirmAction={handleSubmit(onSubmit)}
+            <MyActionButtons onConfirmAction={handleConfirmAction}
                              onCancelAction={handleCancelAction}
                              confirmText={
                                  actionType === "edit-disabled" ? "Editar" :
