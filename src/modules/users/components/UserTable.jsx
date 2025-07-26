@@ -39,9 +39,9 @@ export const UserTable = ({userList=users}) => {
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{user.email}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{user.isAdmin?"Si":"No"}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{user.isAdmin?"Sí":"No"}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{user.isTutor?"Si":"No"}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{user.isTutor?"Sí":"No"}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{user.isActive?"Sí":"No"}</TableCell>
                                     </TableRow>

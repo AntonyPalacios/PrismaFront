@@ -74,12 +74,11 @@ export const StudentForm = ({
                 <Controller
                     name="dni"
                     control={control}
-                    rules={{required: "El DNI es obligatorio", maxLength: {value: 8, message: "Máximo 8 caracteres"}}}
+                    rules={{maxLength: {value: 8, message: "Máximo 8 caracteres"}}}
                     render={({field, fieldState}) => (
                         <MyInput
                             {...field} // Esto mapea name, value, onChange, onBlur a tu MyInput
                             disabled={disabled}
-                            required
                             label="DNI"
                             error={!!fieldState.error} // Indica error si existe
                             helperText={fieldState.error?.message} // Muestra mensaje de error
@@ -131,7 +130,6 @@ export const StudentForm = ({
                     name="email"
                     control={control}
                     rules={{
-                        required: "El Correo es obligatorio",
                         pattern: {
                             value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
                             message: "Formato de correo inválido"

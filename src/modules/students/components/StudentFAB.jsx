@@ -10,11 +10,13 @@ import {MyButton} from "../../../components/ui/MyButton.jsx";
 import MyModal from "../../../components/ui/MyModal.jsx";
 import {StudentForm} from "./StudentForm.jsx";
 import {useModal} from "../../../hooks/useModal.js";
+import {StudentImport} from "./StudentImport.jsx";
 
 
 export default function StudentFAB() {
     const {isLargeScreen} = useContext(AppContext);
-    const {open, toggleModal,title} = useModal({title : "Nuevo Alumno"});
+    const {open:openModalCreate, toggleModal: toggleModalCreate,title: titleCreate} = useModal({title : "Nuevo Alumno"});
+    const {open:openModalImport, toggleModal: toggleModalImport,title: titleImport} = useModal({title : "Importar Alumnos"});
 
     const [openDial, setOpenDial] = useState(false);
 
@@ -22,30 +24,41 @@ export default function StudentFAB() {
         setOpenDial(!openDial);
     }
 
-    const modal = (
+    const modalCreate = (
         <MyModal
-            open={open}
-            toggleModal={toggleModal}
-            title={title}
+            open={openModalCreate}
+            toggleModal={toggleModalCreate}
+            title={titleCreate}
             content={
-                <StudentForm onCloseForm={toggleModal}/>
+                <StudentForm onCloseForm={toggleModalCreate}/>
             }
         />
     );
+
+    const modalImport = (
+        <MyModal
+            open={openModalImport}
+            toggleModal={toggleModalImport}
+            title={titleImport}
+            content={<StudentImport onCloseForm={toggleModalImport}/>}
+
+        />
+    )
 
 
 
     if (isLargeScreen) {
         return (
             <>
-                {modal}
+                {openModalCreate && modalCreate}
+                {openModalImport && modalImport}
                 <Grid container width="100%" justifyContent="flex-end">
                     <Grid size={2} sx={{
                         justifyContent: "flex-end",
                         display: "flex",
                     }}>
-                        <MyButton sx={{marginRight: '20px'}}>Importar</MyButton>
-                        <MyButton onClick={toggleModal}>Nuevo</MyButton>
+                        <MyButton onClick={toggleModalImport} sx={{marginRight: '20px'}}>Importar</MyButton>
+                        <MyButton onClick={toggleModalCreate}>Nuevo</MyButton>
                     </Grid>
                 </Grid>
             </>
@@ -53,7 +66,8 @@ export default function StudentFAB() {
     }
     return (
         <Box >
-            {modal}
+            {openModalCreate && modalCreate}
+            {openModalImport && modalImport}
             <SpeedDial
                 ariaLabel="SpeedDial basic example"
                 open={openDial}
@@ -71,11 +85,12 @@ export default function StudentFAB() {
             >
                 <SpeedDialAction
                     icon={<Edit/>}
-                    onClick={toggleModal}
+                    onClick={toggleModalCreate}
                     sx={{color: 'primary.main'}}
                 />
                 <SpeedDialAction
                     icon={<Upload/>}
+                    onClick={toggleModalImport}
                     sx={{color: 'primary.main'}}
                 />
 

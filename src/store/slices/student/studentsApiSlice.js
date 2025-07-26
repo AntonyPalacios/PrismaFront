@@ -64,6 +64,17 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
                 return response.data || 'Error desconocido al borrar alumno.';
             },
         }),
+        importStudents: builder.mutation({
+            query: (formData) => ({
+                url: '/students/upload',
+                method: 'POST',
+                body: formData,
+            }),
+            invalidatesTags: ['Student'],
+            transformErrorResponse: (response) => {
+                return response.data || 'Error desconocido al importar alumno.';
+            }
+        })
     }),
 });
 
@@ -73,4 +84,5 @@ export const {
     useCreateStudentMutation,
     useUpdateStudentMutation,
     useDeleteStudentMutation,
+    useImportStudentsMutation,
 } = studentsApiSlice;
