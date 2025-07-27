@@ -64,6 +64,27 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
                 return response.data || 'Error desconocido al borrar alumno.';
             },
         }),
+        importStudents: builder.mutation({
+            query: (formData) => ({
+                url: '/students/upload',
+                method: 'POST',
+                body: formData,
+            }),
+            invalidatesTags: ['Student'],
+            transformErrorResponse: (response) => {
+                return response.data || 'Error desconocido al importar alumno.';
+            }
+        }),
+        downloadTemplate: builder.query({
+            query:()=>({
+                url: '/students/template',
+                responseHandler: (response) => response.blob()
+            }),
+            transformErrorResponse: (response) => {
+                // Assuming the error response is text or JSON, not a blob
+                return response.data || 'Error desconocido al descargar la plantilla.';
+            },
+        })
     }),
 });
 
@@ -73,4 +94,6 @@ export const {
     useCreateStudentMutation,
     useUpdateStudentMutation,
     useDeleteStudentMutation,
+    useImportStudentsMutation,
+    useLazyDownloadTemplateQuery,
 } = studentsApiSlice;

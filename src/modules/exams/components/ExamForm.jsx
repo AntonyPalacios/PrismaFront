@@ -4,7 +4,7 @@ import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
 import {exams} from "../../../assets/fakeData.jsx";
 import {useForm} from "../../../hooks/useForm.js";
 import {useEffect} from "react";
-import {stages} from "../../../assets/fakeData.jsx";
+
 let initialForm = {
     id:null,
     name:'',
