@@ -47,7 +47,7 @@ export const StudentTable = ({students, isLoading}) => {
                                     <TableCell sx={{width: '100px'}} align="left">Área</TableCell>
                                     <TableCell sx={{width: '150px'}} align="left">Correo</TableCell>
                                     <TableCell sx={{width: '120px'}} align="left">Tutor</TableCell>
-                                    <TableCell sx={{width: 'auto'}} align="left">Activo</TableCell>
+                                    <TableCell sx={{width: '80px'}} align="left">Activo</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>

@@ -6,9 +6,8 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import {useNavigate} from "react-router";
-import {users} from "../../../assets/fakeData.jsx";
 
-export const UserTable = ({userList=users}) => {
+export const UserTable = ({userList=[]}) => {
 
     const navigate = useNavigate();
 

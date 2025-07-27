@@ -4,7 +4,10 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import Button from "@mui/material/Button";
 import {useState} from "react";
 import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
-import {useImportStudentsMutation} from "../../../store/slices/student/studentsApiSlice.js";
+import {
+    useImportStudentsMutation,
+    useLazyDownloadTemplateQuery
+} from "../../../store/slices/student/studentsApiSlice.js";
 import {useDispatch, useSelector} from "react-redux";
 import {toggleAlert} from "../../../store/slices/alert/alertSlice.js";
 import {MyAlert} from "../../../components/ui/MyAlert.jsx";
@@ -14,7 +17,6 @@ export const StudentImport = ({onCloseForm}) => {
         clip: 'rect(0 0 0 0)',
         clipPath: 'inset(50%)',
         height: 1,
-
         position: 'absolute',
         bottom: 0,
         left: 0,
@@ -29,9 +31,33 @@ export const StudentImport = ({onCloseForm}) => {
 
     const [uploadFile, {isLoading}] = useImportStudentsMutation();
 
+    const [downloadTemplate] = useLazyDownloadTemplateQuery();
+
     const [selectedFile, setSelectedFile] = useState(null)
     const handleChange = (event) => {
         setSelectedFile(event.target.files[0]);
+    }
+
+    const handleDownload = async () => {
+        try {
+            const response = await downloadTemplate().unwrap();
+            const blob = new Blob([response], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); // Adjust content type as needed
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Plantilla Importar Alumnos.xlsx'); // Set desired filename and extension
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url); // Clean up the URL object
+        } catch (err) {
+            console.log(err)
+            dispatch(toggleAlert({
+                message: `Error ${err.status}: ${err.message || 'Ha ocurrido un error inesperado'}`,
+                severity: 'error'
+            }))
+        }
     }
 
     const handleConfirmAction = async () => {
@@ -67,10 +93,11 @@ export const StudentImport = ({onCloseForm}) => {
             {isLoading ? (<CircularProgress/>) :
                 <Grid container spacing={2} width="100%">
 
-                    <Grid size={12}>
+                    <Grid container spacing={0.5} sx={{display: "flex", alignItems: "center"}}>
                         <Typography variant="body2" color="textPrimary" component="div">
-                            La lista de alumnos será cargada a la etapa actual: {name}
+                            La lista de alumnos será cargada a la etapa actual:
                         </Typography>
+                        <Typography variant="body2" color="primary" sx={{fontWeight: "bold"}}>{name}</Typography>
                     </Grid>
                     <Grid size={4}>
                         <Button
@@ -99,6 +126,12 @@ export const StudentImport = ({onCloseForm}) => {
                     <Grid size={8} sx={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
                         <Typography variant="body2" color="textPrimary"
                                     component="div">{selectedFile?.name || "Por favor, seleccione un archivo"}</Typography>
+                    </Grid>
+                    <Grid container spacing={0.5} sx={{display: "flex", alignItems: "center"}}>
+                        <Typography variant="body2" color="textPrimary">Puedes descargar la plantilla para importar
+                            alumnos haciendo</Typography>
+                        <Typography variant="body2" color="primary" sx={{fontWeight: "bold", cursor: "pointer"}}
+                                    onClick={handleDownload}>click aquí.</Typography>
                     </Grid>
                     <MyActionButtons onConfirmAction={handleConfirmAction}
                                      onCancelAction={handleCancelAction}

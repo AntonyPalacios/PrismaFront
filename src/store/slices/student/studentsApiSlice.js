@@ -74,6 +74,16 @@ export const studentsApiSlice = apiSlice.injectEndpoints({
             transformErrorResponse: (response) => {
                 return response.data || 'Error desconocido al importar alumno.';
             }
+        }),
+        downloadTemplate: builder.query({
+            query:()=>({
+                url: '/students/template',
+                responseHandler: (response) => response.blob()
+            }),
+            transformErrorResponse: (response) => {
+                // Assuming the error response is text or JSON, not a blob
+                return response.data || 'Error desconocido al descargar la plantilla.';
+            },
         })
     }),
 });
@@ -85,4 +95,5 @@ export const {
     useUpdateStudentMutation,
     useDeleteStudentMutation,
     useImportStudentsMutation,
+    useLazyDownloadTemplateQuery,
 } = studentsApiSlice;
