@@ -5,6 +5,7 @@ import {apiSlice} from "./slices/api/apiSlice.js";
 import {userSlice} from "./slices/user/userSlice.js";
 import {cycleSlice} from "./slices/cycle/cycleSlice.js";
 import {authSlice} from "./slices/auth/authSlice.js";
+import {examSlice} from "./slices/exam/examSlice.js";
 
 export const store = configureStore({
     reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
         user:userSlice.reducer,
         cycle: cycleSlice.reducer,
         auth: authSlice.reducer,
+        exam: examSlice.reducer,
         [apiSlice.reducerPath]: apiSlice.reducer
     },
     // Añade el middleware de la API
