@@ -46,23 +46,6 @@ export const menuItems = [
     }
 ];
 
-
-
-export const exams = [
-    {id:1,name:"Examen 1", date:"2025-06-02", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
-    {id:2,name:"Examen 2", date:"2025-06-09", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
-    {id:3,name:"Examen 3", date:"2025-06-16", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
-    {id:4,name:"Examen 4", date:"2025-06-23", stage:{id:1,name:"Regular 1", cycle:{id:1, name:"2025 - 2"}}},
-]
-
-
-export const areas = [
-    {id:1,name:'Ciencias'},
-    {id:2,name:'Letras'},
-    {id:3,name:'Arquitectura'},
-]
-
-
 export const studentStates = [
     {id:1,name:'Activo'},
     {id:2,name:'Inactivo'},

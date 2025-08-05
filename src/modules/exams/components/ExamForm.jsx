@@ -1,14 +1,11 @@
 import {Grid} from "@mui/material";
 import {MyInput, MySelect} from "../../../components/ui/index.js";
 import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
-import {exams} from "../../../assets/fakeData.jsx";
 import {useCallback, useEffect, useState} from "react";
 import {Controller, useForm} from "react-hook-form";
-import {useUser} from "../../../hooks/useUser.js";
 import {useExam} from "../../../hooks/useExam.js";
 import {useActionType} from "../../../hooks/useActionType.js";
 import {useModal} from "../../../hooks/useModal.js";
-import MenuItem from "@mui/material/MenuItem";
 import {useGetStagesQuery} from "../../../store/slices/cycle/cycleApiSlice.js";
 import {useSelector} from "react-redux";
 import {DeleteConfirmation} from "../../../components/layout/DeleteConfirmation.jsx";

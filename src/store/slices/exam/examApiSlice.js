@@ -47,6 +47,24 @@ export const examApiSlice = apiSlice.injectEndpoints({
                 return response.data || 'Error desconocido al borrar exámen.';
             },
         }),
+        getExamResult: builder.query({
+            query: ({studentId, cycleId}) => {
+                return `/exams/results/${studentId}/${cycleId}`
+            },
+            providesTags:['Exam']
+        }),
+        getExamEffective: builder.query({
+            query: ({studentId, cycleId}) => {
+                return `/exams/effective/${studentId}/${cycleId}`
+            },
+            providesTags:['Exam']
+        }),
+        getExamEffectiveByCourse: builder.query({
+            query: ({studentId, cycleId}) => {
+                return `/exams/course/${studentId}/${cycleId}`
+            },
+            providesTags:['Exam']
+        })
 
     })
 })
@@ -56,4 +74,7 @@ export const {
     useCreateExamMutation,
     useUpdateExamMutation,
     useDeleteExamMutation,
+    useGetExamResultQuery,
+    useGetExamEffectiveQuery,
+    useGetExamEffectiveByCourseQuery
 } = examApiSlice
