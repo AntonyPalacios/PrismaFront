@@ -8,6 +8,7 @@ import {useDispatch, useSelector} from "react-redux";
 import {toggleAlert} from "../../../store/slices/alert/alertSlice.js";
 import {useGetUserQuery} from "../../../store/slices/user/userApiSlice.js";
 import {setTutorList} from "../../../store/slices/user/userSlice.js";
+import {SummaryTable} from "../components/SummaryTable.jsx";
 
 export const UserDetailPage = () => {
     const {id} = useParams();
@@ -35,6 +36,9 @@ export const UserDetailPage = () => {
             </Grid>
             <Grid width="100%">
                 <UserForm user={user} disabled={disabled} action="edit" toggleForm={toggleForm}/>
+            </Grid>
+            <Grid  width="100%">
+                <SummaryTable />
             </Grid>
             <MyAlert
                 message={message}
