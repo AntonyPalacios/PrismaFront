@@ -1,9 +1,9 @@
 import {Grid, styled} from "@mui/material";
 import {MySelect, MyTitle} from "../../../components/ui/index.js";
-import {areas} from "../../../assets/fakeData.jsx";
 import Button from '@mui/material/Button';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import {MyActionButtons} from "../../../components/ui/MyActionButtons.jsx";
+import {useGetAreasQuery} from "../../../store/slices/api/apiSlice.js";
 
 export const ExamImport = () => {
     const VisuallyHiddenInput = styled('input')({
@@ -17,6 +17,8 @@ export const ExamImport = () => {
         whiteSpace: 'nowrap',
         width: 1,
     });
+
+    const {data:areas} = useGetAreasQuery();
     return (
         <Grid width="100%" container spacing={2}>
             <Grid size={12}>
@@ -25,7 +27,8 @@ export const ExamImport = () => {
             <Grid size={{xs:12}}>
                 <MySelect
                     label="Área"
-                    options={areas}
+                    options={areas.filter(area => area.main)}
+                    isForm={true}
 
                 />
             </Grid>

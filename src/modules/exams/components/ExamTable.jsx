@@ -1,28 +1,41 @@
-import {Grid, Paper} from "@mui/material";
+import {CircularProgress, Grid, Paper} from "@mui/material";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import {exams} from "../../../assets/fakeData.jsx";
 import MyModal from "../../../components/ui/MyModal.jsx";
 import {useModal} from "../../../hooks/useModal.js";
 import {ExamForm} from "./ExamForm.jsx";
 import {useState} from "react";
 import {ExamImport} from "./ExamImport.jsx";
+import {useDispatch} from "react-redux";
+import {setSelectedExam} from "../../../store/slices/exam/examSlice.js";
 
-export const ExamTable = () => {
+
+export const ExamTable = ({exams=[], isLoading}) => {
 
     const {open,toggleModal, title} = useModal({title: "Exámen"});
-    const [id, setId] = useState(null)
-    const onClickExam = (id) => {
-        setId(id)
+
+    const dispatch = useDispatch();
+
+    const [disabled, setDisabled] = useState(true)
+    const toggleForm = () => {
+        setDisabled(!disabled);
+    }
+
+    const onClickExam = (exam) => {
+        dispatch(setSelectedExam(exam));
+        setDisabled(true)
         toggleModal();
     }
     return (
         <Grid container spacing={2}>
             <Grid size={12} sx={{ flexGrow: 1 }}>
+                {isLoading ? (
+                        <CircularProgress/>
+                    ) :
                 <TableContainer component={Paper} sx={{width:'100%', overflowX: 'auto'}} >
                     <Table sx={{width:'100%', tableLayout: 'fixed'}}>
                         <TableHead>
@@ -36,13 +49,13 @@ export const ExamTable = () => {
                         <TableBody>
                             {exams.map((exam) => {
                                 return (
-                                    <TableRow hover key={exam.id} onClick={() => {onClickExam(exam.id)}}>
+                                    <TableRow hover key={exam.id} onClick={() => {onClickExam(exam)}}>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word'}} align="left">{exam.name}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word'}} align="left">{exam.stage.name}</TableCell>
+                                            wordBreak: 'break-word'}} align="left">{exam.stage}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
-                                            wordBreak: 'break-word',}} align="left">{exam.stage.cycle.name}</TableCell>
+                                            wordBreak: 'break-word',}} align="left">{exam.cycle}</TableCell>
                                         <TableCell sx={{whiteSpace: 'normal',
                                             wordBreak: 'break-word',}} align="left">{exam.date}</TableCell>
                                     </TableRow>
@@ -50,21 +63,23 @@ export const ExamTable = () => {
                             })}
                         </TableBody>
                     </Table>
-                </TableContainer>
+                </TableContainer>}
             </Grid>
-            <MyModal
+            {open ?<MyModal
                 open={open}
                 toggleModal={toggleModal}
                 title={title}
 
                 content={
                 <Grid container spacing={2}>
-                    <ExamForm id={id}/>
+                    <ExamForm disabled={disabled}
+                              onCloseForm={toggleModal}
+                              toggleForm={toggleForm}/>
                     <ExamImport/>
                 </Grid>
 
                 }
-            />
+            />:null}
         </Grid>
     );
 };
