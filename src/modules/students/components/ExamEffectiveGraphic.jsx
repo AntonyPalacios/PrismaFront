@@ -22,6 +22,10 @@ const CustomTooltip = ({ active, payload, label, data }) => {
                 <Typography variant="body2" color="warning.main">
                     {`Matemática: ${examenData.totalMateCorrect} - ${examenData.totalMateIncorrect}`}
                 </Typography>
+                <Typography variant="body2" color="success.main">
+                    {`Total: ${examenData.totalMateCorrect + examenData.totalLectCorrect} - 
+                    ${examenData.totalMateIncorrect + examenData.totalLectIncorrect}`}
+                </Typography>
             </Paper>
         );
     }
