@@ -30,10 +30,10 @@ const CustomTooltip = ({ active, payload, label, data }) => {
                 <Typography variant="body2" color="secondary">
                     {`Mérito: ${examenData.merit}`}
                 </Typography>
-                <Typography variant="body2" color="success.main">
+                <Typography variant="body2" color="error.main">
                     {`Mínimo: ${examenData.min}`}
                 </Typography>
-                <Typography variant="body2" color="error.main">
+                <Typography variant="body2" color="success.main">
                     {`Máximo: ${examenData.max}`}
                 </Typography>
             </Paper>

@@ -64,6 +64,12 @@ export const examApiSlice = apiSlice.injectEndpoints({
                 return `/exams/course/${studentId}/${cycleId}`
             },
             providesTags:['Exam']
+        }),
+        getExamResultsByUser: builder.query({
+            query: ({areaId, userId, cycleId}) => {
+                return `/exams/summary/${areaId}/${userId}/${cycleId}`
+            },
+            providesTags:['Exam']
         })
 
     })
@@ -76,5 +82,6 @@ export const {
     useDeleteExamMutation,
     useGetExamResultQuery,
     useGetExamEffectiveQuery,
-    useGetExamEffectiveByCourseQuery
+    useGetExamEffectiveByCourseQuery,
+    useGetExamResultsByUserQuery,
 } = examApiSlice
