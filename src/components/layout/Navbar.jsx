@@ -46,7 +46,7 @@ export const Navbar = () => {
         >
             <Box>
                 {isLargeScreen && <Toolbar sx={{flexDirection: 'column', alignItems: 'center', py: 2}}>
-                    <Avatar sx={{backgroundColor: 'secondary.main', width: 60, height: 60, mb: 1}}/>
+                    <Avatar sx={{backgroundColor: 'secondary.main', width: 60, height: 60, mb: 1}} src={user?.picture}/>
                     <Typography variant="body1" fontWeight="bold" color="white">{user?.name}</Typography>
                     {/*<Typography variant="body2" color="white" sx={{mb: 2}}>{user.roles.filter(role => role.current)[0].role}</Typography>*/}
                 </Toolbar>}
