@@ -70,7 +70,18 @@ export const examApiSlice = apiSlice.injectEndpoints({
                 return `/exams/summary/${areaId}/${userId}/${cycleId}`
             },
             providesTags:['Exam']
-        })
+        }),
+        importExam: builder.mutation({
+            query: ({formData,examId,area}) => ({
+                url: `/exams/import/${examId}/${area}`,
+                method: 'POST',
+                body: formData,
+            }),
+            invalidatesTags: ['Exam'],
+            transformErrorResponse: (response) => {
+                return response.data || 'Error desconocido al importar exámen.';
+            }
+        }),
 
     })
 })
@@ -84,4 +95,5 @@ export const {
     useGetExamEffectiveQuery,
     useGetExamEffectiveByCourseQuery,
     useGetExamResultsByUserQuery,
+    useImportExamMutation,
 } = examApiSlice

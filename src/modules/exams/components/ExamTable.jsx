@@ -75,7 +75,7 @@ export const ExamTable = ({exams=[], isLoading}) => {
                     <ExamForm disabled={disabled}
                               onCloseForm={toggleModal}
                               toggleForm={toggleForm}/>
-                    <ExamImport/>
+                    <ExamImport onCloseForm={toggleModal} />
                 </Grid>
 
                 }
