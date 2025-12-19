@@ -1,6 +1,5 @@
 import React, {useState} from 'react';
 import {
-    Box,
     CircularProgress,
     Grid,
     Paper,
@@ -17,153 +16,87 @@ import {useParams} from "react-router";
 import {useSelector} from "react-redux";
 import {useGetExamResultsByUserQuery} from "../../../store/slices/exam/examApiSlice.js";
 
-/*const data = {
-    examData: [
-        {
-            id: 1,
-            name: "Examen 1",
-            date: "21/07/2025"
-        },
-        {
-            id: 2,
-            name: "Examen 2",
-            date: "29/07/2025"
-        }
-    ],
-    lectData: [
-        {
-            indicator: "Min",
-            results: [
-                {
-                    examId: 1,
-                    correct: 14,
-                    incorrect: 8
-                },
-                {
-                    examId: 2,
-                    correct: 14,
-                    incorrect: 8
-                }
-            ]
-        },
-        {
-            indicator: "Max",
-            results: [
-                {
-                    examId: 1,
-                    correct: 16,
-                    incorrect: 14
-                },
-                {
-                    examId: 2,
-                    correct: 16,
-                    incorrect: 14
-                }
-            ]
-        },
-        {
-            indicator: "Avg",
-            results: [
-                {
-                    examId: 1,
-                    correct: 15,
-                    incorrect: 11
-                },
-                {
-                    examId: 2,
-                    correct: 15,
-                    incorrect: 11
-                }
-            ]
-        }
-    ],
-    mateData: [
-        {
-            indicator: "Min",
-            results: [
-                {
-                    examId: 1,
-                    correct: 10,
-                    incorrect: 19
-                },
-                {
-                    examId: 2,
-                    correct: 10,
-                    incorrect: 19
-                }
-            ]
-        },
-        {
-            indicator: "Max",
-            results: [
-                {
-                    examId: 1,
-                    correct: 29,
-                    incorrect: 20
-                },
-                {
-                    examId: 2,
-                    correct: 29,
-                    incorrect: 20
-                }
-            ]
-        },
-        {
-            indicator: "Avg",
-            results: [
-                {
-                    examId: 1,
-                    correct: 19,
-                    incorrect: 19
-                },
-                {
-                    examId: 2,
-                    correct: 19,
-                    incorrect: 19
-                }
-            ]
-        }
-    ]
-}*/
+const options = [{id: 1, name: "Ciencias"}, {id: 2, name: "Letras"}, {id: 3, name: "Arquitectura"},]
 
-const options = [
-    {id: 1, name: "Ciencias"},
-    {id: 2, name: "Letras"},
-    {id: 3, name: "Arquitectura"},
-]
-const setIndicatorName = (indicator) => {
-    switch (indicator) {
-        case "Min":
-            return "Mínimo";
-        case "Max":
-            return "Máximo"
-        case "Avg":
-            return "Promedio";
-        default:
-            return indicator;
-    }
-}
+const DATA_CELL_STYLE = {border: '1px solid  #e0e0e0', textAlign: 'center'};
+
+const EMPTY_CELL_STYLE = {backgroundColor: 'white', color: 'white', width: "50px"};
+
+const HEADER_CELL_STYLE = {
+    backgroundColor: 'secondary.main',
+    color: 'white',
+    borderRight: '1px solid #e0e0e0',
+    width: "auto"
+};
 export const SummaryTable = () => {
-    const renderTableRows = (examData, data) => (
-        <React.Fragment>
-            {data.map((result, index) => (
-                <TableRow key={index}>
 
-                    <TableCell
-                        sx={{backgroundColor: 'secondary.main', color: 'white', borderRight: '1px solid #e0e0e0', width:"auto"}}>
-                        {setIndicatorName(result.indicator)}
+
+    const renderRow = (exam, sectionData, type) => {
+        if (exam.id === sectionData.examId) return (
+            <React.Fragment key={exam.id}>
+                <TableCell sx={DATA_CELL_STYLE}>{sectionData[`${type}Correct`]}</TableCell>
+                <TableCell sx={DATA_CELL_STYLE}>{sectionData[`${type}Incorrect`]}</TableCell>
+            </React.Fragment>)
+    }
+
+    const renderData = (examData, data, section) => {
+        /* primero debe armar el ROW de 3 con lectura y llenar los datos de mínimo con table cell
+        luego debe crear otro row con los datos de máximo
+        finalmente debe crear otro row con los datos de promedio
+        */
+        return (
+            <React.Fragment>
+                <TableRow>
+                    <TableCell rowSpan={3} sx={HEADER_CELL_STYLE}>
+                        <Typography variant="subtitle1"
+                                    sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
+                            {section}
+                        </Typography>
+
                     </TableCell>
+                    <TableCell sx={HEADER_CELL_STYLE}>
+                        <Typography variant="subtitle1"
+                                    sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
+                            Mínimo
+                        </Typography>
+                    </TableCell>
+                    {
+                        examData.flatMap(exam =>
+                            data.map((sectionData) => renderRow(exam, sectionData, "min"))
+                        )
+                    }
 
-                    {examData.map((header) => (
-                        <React.Fragment key={header.id}>
-                            <TableCell>{result.results.filter(r => r.examId === header.id)[0].correct}</TableCell>
-                            <TableCell>{result.results.filter(r => r.examId === header.id)[0].incorrect}</TableCell>
-                        </React.Fragment>
-                    ))}
                 </TableRow>
-            ))}
-        </React.Fragment>
-    );
+                <TableRow>
+                    <TableCell sx={HEADER_CELL_STYLE}>
+                        <Typography variant="subtitle1"
+                                    sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
+                            Máximo
+                        </Typography>
+                    </TableCell>
+                    {
+                        examData.flatMap(exam =>
+                            data.map((sectionData) => renderRow(exam, sectionData, "max"))
+                        )
+                    }
+                </TableRow>
+                <TableRow>
+                    <TableCell sx={HEADER_CELL_STYLE}>
+                        <Typography variant="subtitle1"
+                                    sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
+                            Promedio
+                        </Typography>
+                    </TableCell>
+                    {
+                        examData.flatMap(exam =>
+                            data.map((sectionData) => renderRow(exam, sectionData, "avg"))
+                        )
+                    }
+                </TableRow>
+            </React.Fragment>
+        )
+    }
+
     const [areaId, setAreaId] = useState(-1);
 
     const handleAreaId = (event) => {
@@ -176,115 +109,57 @@ export const SummaryTable = () => {
     const {data, isLoading} = useGetExamResultsByUserQuery({areaId, userId, cycleId})
 
 
-    return (
-        <Grid container spacing={2}>
-            <Grid size={12}>
-                <MyTitle>Datos Salón</MyTitle>
-            </Grid>
-            <Grid size={{xs: 6, md: 3}}>
-                <MySelect
-                    label="Area"
-                    options={options}
-                    value={areaId}
-                    onChange={handleAreaId}
-                    defaultItem="Todas las áreas"
-                    isForm={false}
-                />
-            </Grid>
-            {isLoading ? (<CircularProgress color="secondary"/>) :
-                <Grid size={12}>
-                    <TableContainer component={Paper} sx={{margin: '20px', width: 'auto'}}>
-                        <Table sx={{minWidth: 650}} aria-label="custom table">
-                            <TableHead>
-
-                                <TableRow>
-
-                                    <TableCell rowSpan={2} sx={{
-                                        backgroundColor: 'secondary.main',
-                                        color: 'white',
-                                        borderRight: '1px solid #e0e0e0',
-                                        width: "50px"
-
-                                    }}/>
-                                    <TableCell rowSpan={2} sx={{
-                                        backgroundColor: 'secondary.main',
-                                        color: 'white',
-                                        borderRight: '1px solid #e0e0e0',
-                                        width: "50px"
-
-                                    }}/>
-
-                                    {data.examData.map((header) => (
-                                        <TableCell key={header.id} colSpan={2} align="center" sx={{
-                                            backgroundColor: 'secondary.main',
-                                            color: 'white',
-                                            borderRight: '1px solid #e0e0e0'
-                                        }}>
-                                            {header.date} <br/> {header.name}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-
-                                <TableRow>
-
-                                    {data.examData.map((header) => (
-                                        <React.Fragment key={header.id}>
-                                            <TableCell align="center"
-                                                       sx={{
-                                                           backgroundColor: 'success.main',
-                                                           color: 'white',
-                                                       }}>Buenas</TableCell>
-                                            <TableCell align="center" sx={{
-                                                backgroundColor: 'error.main',
-                                                color: 'white',
-                                                borderRight: '1px solid #e0e0e0'
-                                            }}>Malas</TableCell>
-                                        </React.Fragment>
-                                    ))}
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-
-                                <TableRow>
-
-                                    <TableCell rowSpan={data.lectData.length + 1} sx={{
-                                        backgroundColor: 'secondary.main',
-                                        color: 'white',
-                                        borderRight: '1px solid #e0e0e0',
-                                        width: "auto"
-                                    }}>
-                                        <Typography variant="subtitle1"
-                                                    sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
-                                            LECT
-                                        </Typography>
-
-                                    </TableCell>
-                                </TableRow>
-
-                                {renderTableRows(data.examData, data.lectData)}
-
-
-                                <TableRow>
-
-                                    <TableCell rowSpan={data.mateData.length + 1} sx={{
-                                        backgroundColor: 'secondary.main',
-                                        color: 'white',
-                                        borderRight: '1px solid #e0e0e0',
-                                        width: "auto"
-                                    }}>
-                                        <Typography variant="subtitle1"
-                                                    sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
-                                            MATE
-                                        </Typography>
-
-                                    </TableCell>
-                                </TableRow>
-
-                                {renderTableRows(data.examData, data.mateData)}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                </Grid>}
+    return (<Grid container spacing={2}>
+        <Grid size={12}>
+            <MyTitle>Datos Salón</MyTitle>
         </Grid>
-    );
+        <Grid size={{xs: 6, md: 3}}>
+            <MySelect
+                label="Area"
+                options={options}
+                value={areaId}
+                onChange={handleAreaId}
+                defaultItem="Todas las áreas"
+                isForm={false}
+            />
+        </Grid>
+        {isLoading ? (<CircularProgress color="secondary"/>) : <Grid size={12}>
+            <TableContainer component={Paper} sx={{margin: '20px', width: 'auto'}}>
+                <Table sx={{minWidth: 650}} aria-label="custom table">
+                    <TableHead>
+
+                        <TableRow>
+
+                            <TableCell rowSpan={2} sx={EMPTY_CELL_STYLE}/>
+                            <TableCell rowSpan={2} sx={EMPTY_CELL_STYLE}/>
+
+                            {data.examData.map((header) => (
+                                <TableCell key={header.id} colSpan={2} align="center" sx={HEADER_CELL_STYLE}>
+                                    {header.date} <br/> {header.name}
+                                </TableCell>))}
+                        </TableRow>
+
+                        <TableRow>
+
+                            {data.examData.map((header) => (
+                                <React.Fragment key={header.id}>
+                                    <TableCell align="center" sx={{backgroundColor: 'success.main', color: 'white'}}>
+                                        Buenas
+                                    </TableCell>
+                                    <TableCell align="center" sx={{backgroundColor: 'error.main', color: 'white'}}>
+                                        Malas
+                                    </TableCell>
+                                </React.Fragment>))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {renderData(data.examData, data.lectData, "LECT")}
+
+                        {renderData(data.examData, data.mateData, "MATE")}
+
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Grid>}
+    </Grid>);
 };
