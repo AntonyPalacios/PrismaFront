@@ -18,14 +18,24 @@ import {useGetExamResultsByUserQuery} from "../../../store/slices/exam/examApiSl
 
 const options = [{id: 1, name: "Ciencias"}, {id: 2, name: "Letras"}, {id: 3, name: "Arquitectura"},]
 
+const DATA_CELL_STYLE = {border: '1px solid  #e0e0e0', textAlign: 'center'};
+
+const EMPTY_CELL_STYLE = {backgroundColor: 'white', color: 'white', width: "50px"};
+
+const HEADER_CELL_STYLE = {
+    backgroundColor: 'secondary.main',
+    color: 'white',
+    borderRight: '1px solid #e0e0e0',
+    width: "auto"
+};
 export const SummaryTable = () => {
 
 
     const renderRow = (exam, sectionData, type) => {
         if (exam.id === sectionData.examId) return (
             <React.Fragment key={exam.id}>
-                <TableCell sx={{border: '1px solid black'}}>{sectionData[`${type}Correct`]}</TableCell>
-                <TableCell sx={{border: '1px solid black'}}>{sectionData[`${type}Incorrect`]}</TableCell>
+                <TableCell sx={DATA_CELL_STYLE}>{sectionData[`${type}Correct`]}</TableCell>
+                <TableCell sx={DATA_CELL_STYLE}>{sectionData[`${type}Incorrect`]}</TableCell>
             </React.Fragment>)
     }
 
@@ -37,24 +47,14 @@ export const SummaryTable = () => {
         return (
             <React.Fragment>
                 <TableRow>
-                    <TableCell rowSpan={3} sx={{
-                        backgroundColor: 'secondary.main',
-                        color: 'white',
-                        borderRight: '1px solid #e0e0e0',
-                        width: "auto"
-                    }}>
+                    <TableCell rowSpan={3} sx={HEADER_CELL_STYLE}>
                         <Typography variant="subtitle1"
                                     sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
                             {section}
                         </Typography>
 
                     </TableCell>
-                    <TableCell sx={{
-                        backgroundColor: 'secondary.main',
-                        color: 'white',
-                        borderRight: '1px solid #e0e0e0',
-                        width: "auto"
-                    }}>
+                    <TableCell sx={HEADER_CELL_STYLE}>
                         <Typography variant="subtitle1"
                                     sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
                             Mínimo
@@ -68,12 +68,7 @@ export const SummaryTable = () => {
 
                 </TableRow>
                 <TableRow>
-                    <TableCell sx={{
-                        backgroundColor: 'secondary.main',
-                        color: 'white',
-                        borderRight: '1px solid #e0e0e0',
-                        width: "auto"
-                    }}>
+                    <TableCell sx={HEADER_CELL_STYLE}>
                         <Typography variant="subtitle1"
                                     sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
                             Máximo
@@ -86,12 +81,7 @@ export const SummaryTable = () => {
                     }
                 </TableRow>
                 <TableRow>
-                    <TableCell sx={{
-                        backgroundColor: 'secondary.main',
-                        color: 'white',
-                        borderRight: '1px solid #e0e0e0',
-                        width: "auto"
-                    }}>
+                    <TableCell sx={HEADER_CELL_STYLE}>
                         <Typography variant="subtitle1"
                                     sx={{whiteSpace: 'nowrap', textAlign: 'center'}}>
                             Promedio
@@ -140,44 +130,26 @@ export const SummaryTable = () => {
 
                         <TableRow>
 
-                            <TableCell rowSpan={2} sx={{
-                                backgroundColor: 'secondary.main',
-                                color: 'white',
-                                borderRight: '1px solid #e0e0e0',
-                                width: "50px"
-
-                            }}/>
-                            <TableCell rowSpan={2} sx={{
-                                backgroundColor: 'secondary.main',
-                                color: 'white',
-                                borderRight: '1px solid #e0e0e0',
-                                width: "50px"
-
-                            }}/>
+                            <TableCell rowSpan={2} sx={EMPTY_CELL_STYLE}/>
+                            <TableCell rowSpan={2} sx={EMPTY_CELL_STYLE}/>
 
                             {data.examData.map((header) => (
-                                <TableCell key={header.id} colSpan={2} align="center" sx={{
-                                    backgroundColor: 'secondary.main',
-                                    color: 'white',
-                                    borderRight: '1px solid #e0e0e0'
-                                }}>
+                                <TableCell key={header.id} colSpan={2} align="center" sx={HEADER_CELL_STYLE}>
                                     {header.date} <br/> {header.name}
                                 </TableCell>))}
                         </TableRow>
 
                         <TableRow>
 
-                            {data.examData.map((header) => (<React.Fragment key={header.id}>
-                                <TableCell align="center"
-                                           sx={{
-                                               backgroundColor: 'success.main', color: 'white',
-                                           }}>Buenas</TableCell>
-                                <TableCell align="center" sx={{
-                                    backgroundColor: 'error.main',
-                                    color: 'white',
-                                    borderRight: '1px solid #e0e0e0'
-                                }}>Malas</TableCell>
-                            </React.Fragment>))}
+                            {data.examData.map((header) => (
+                                <React.Fragment key={header.id}>
+                                    <TableCell align="center" sx={{backgroundColor: 'success.main', color: 'white'}}>
+                                        Buenas
+                                    </TableCell>
+                                    <TableCell align="center" sx={{backgroundColor: 'error.main', color: 'white'}}>
+                                        Malas
+                                    </TableCell>
+                                </React.Fragment>))}
                         </TableRow>
                     </TableHead>
                     <TableBody>
