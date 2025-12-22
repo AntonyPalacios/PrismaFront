@@ -82,6 +82,12 @@ export const examApiSlice = apiSlice.injectEndpoints({
                 return response.data || 'Error desconocido al importar exámen.';
             }
         }),
+        getExamGoalsByStudent: builder.query({
+            query: ({studentId, cycleId}) => {
+                return `/exams/goals/${studentId}/${cycleId}`
+            },
+            providesTags:['Exam']
+        }),
 
     })
 })
@@ -96,4 +102,5 @@ export const {
     useGetExamEffectiveByCourseQuery,
     useGetExamResultsByUserQuery,
     useImportExamMutation,
+    useGetExamGoalsByStudentQuery,
 } = examApiSlice
