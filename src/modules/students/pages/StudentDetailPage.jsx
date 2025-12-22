@@ -9,6 +9,7 @@ import {StudentGraphics} from "../components/StudentGraphics.jsx";
 import {useDispatch, useSelector} from "react-redux";
 import {toggleAlert} from "../../../store/slices/alert/alertSlice.js";
 import {useGetStudentsQuery} from "../../../store/slices/student/studentsApiSlice.js";
+import {StudentGoals} from "../components/StudentGoals.jsx";
 
 export const StudentDetailPage = () => {
     const {id} = useParams();
@@ -36,6 +37,7 @@ export const StudentDetailPage = () => {
                     <StudentForm student={student} action="edit" disabled={disabled} toggleForm={toggleForm} />
                 </Grid>
                 <StudentGraphics/>
+                <StudentGoals/>
                 <MyAlert
                     message={message}
                     severity={severity}
