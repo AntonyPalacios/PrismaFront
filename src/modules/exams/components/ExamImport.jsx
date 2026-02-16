@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useImportExamMutation } from "../../../store/slices/exam/examApiSlice.js";
 import { useDispatch, useSelector } from "react-redux";
 import { MyAlert } from "../../../components/ui/MyAlert.jsx";
+import Typography from "@mui/material/Typography";
 
 export const ExamImport = ({ onCloseForm }) => {
     const VisuallyHiddenInput = styled('input')({
@@ -32,7 +33,7 @@ export const ExamImport = ({ onCloseForm }) => {
     const { message, severity, open } = useSelector(state => state.alert);
     const { id: examId } = useSelector(state => state.exam.selectedExam);
 
-    // 🎯 Reemplazo de react-hook-form con useState
+    // Reemplazo de react-hook-form con useState
     const [selectedFile, setSelectedFile] = useState(null);
     const [areaId, setAreaId] = useState(''); // Estado para el área, inicializado en ''
 
@@ -97,7 +98,7 @@ export const ExamImport = ({ onCloseForm }) => {
                     isForm
                 />
             </Grid>
-            <Grid size={12}>
+            <Grid size={3}>
                 <Button
                     component="label"
                     role={undefined}
@@ -112,6 +113,11 @@ export const ExamImport = ({ onCloseForm }) => {
                         multiple
                     />
                 </Button>
+            </Grid>
+            <Grid size={9}>
+                <Typography>
+                    {selectedFile?.name}
+                </Typography>
             </Grid>
             <MyActionButtons
                 onConfirmAction={handleConfirmAction}
