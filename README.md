@@ -1,12 +1,35 @@
-# React + Vite
+# Prisma frontend v2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 · Vite · MUI · RTK Query · JavaScript
 
-Currently, two official plugins are available:
+> v1 (built without AI) lives on the `legacy` branch.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Run locally
 
-## Expanding the ESLint configuration
+1. Start the backend (`prisma-v2/backend`, see its README) on `:8080`.
+2. `npm install`
+3. `npm run dev` → http://localhost:5173
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+In development Vite proxies `/api` to the backend, so the session cookie and
+the `XSRF-TOKEN` cookie behave as if front and back shared one origin.
+The "Continuar con Google" button goes straight to the backend
+(`VITE_BACKEND_URL`, default `http://localhost:8080`).
+
+## Scripts
+
+- `npm run build` — production build
+- `npm test` — unit tests (Vitest)
+- `npm run lint` — ESLint
+
+## Structure
+
+Folders by business module, mirroring the backend:
+
+- `src/app/` — store, theme, routes, shared RTK Query `baseApi`/`baseQuery`
+- `src/users/` — sign-in, session (`getMe`, `logout`), route guard
+- `src/layout/` — app shell (drawer, top bar, logo)
+- `src/home/` — temporary landing page
+
+Rules: server state only in RTK Query (never copied to slices), the JWT is
+never read by JavaScript, user-facing text in Spanish, code in English.
+See `prisma-v2/CLAUDE.md` for all agreements.
