@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router';
+import CatalogPage from '../catalog/pages/CatalogPage';
 import HomePage from '../home/HomePage';
 import AppLayout from '../layout/AppLayout';
 import PrivateRoute from '../users/components/PrivateRoute';
@@ -13,7 +14,10 @@ export const routes = [
     children: [
       {
         element: <AppLayout />,
-        children: [{ index: true, element: <HomePage /> }],
+        children: [
+          { index: true, element: <HomePage /> },
+          { path: 'catalog', element: <CatalogPage /> },
+        ],
       },
     ],
   },
