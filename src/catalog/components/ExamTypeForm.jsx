@@ -6,16 +6,13 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import Drawer from '@mui/material/Drawer';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
+import ResponsiveSheet from '../../layout/ResponsiveSheet';
 import { groupCoursesByArea, useGetAreasQuery, useGetCoursesQuery } from '../api/catalogApi';
 import { useCreateExamTypeMutation, useUpdateExamTypeMutation } from '../api/examTypesApi';
 import { examTypeSchema } from './examTypeSchema';
@@ -26,27 +23,10 @@ import { examTypeSchema } from './examTypeSchema';
  * the prototype's "Nueva carrera"), dialog on desktop.
  */
 export default function ExamTypeForm({ examType, onClose }) {
-  const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  const content = <ExamTypeFormContent examType={examType} onClose={onClose} />;
-
-  if (isDesktop) {
-    return (
-      <Dialog open onClose={onClose} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: '20px' } } }}>
-        {content}
-      </Dialog>
-    );
-  }
   return (
-    <Drawer
-      anchor="bottom"
-      open
-      onClose={onClose}
-      slotProps={{ paper: { sx: { borderRadius: '24px 24px 0 0', maxHeight: '92dvh' } } }}
-    >
-      <Box aria-hidden="true" sx={{ width: 36, height: 4, borderRadius: 2, bgcolor: '#C5CCD8', mx: 'auto', mt: 1.25 }} />
-      {content}
-    </Drawer>
+    <ResponsiveSheet onClose={onClose}>
+      <ExamTypeFormContent examType={examType} onClose={onClose} />
+    </ResponsiveSheet>
   );
 }
 

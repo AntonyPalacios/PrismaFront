@@ -4,11 +4,13 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import AreasCoursesPanel from '../components/AreasCoursesPanel';
+import CareersPanel from '../components/CareersPanel';
 import ExamTypesPanel from '../components/ExamTypesPanel';
 
 const TABS = [
   { value: 'areas', label: 'Áreas y cursos' },
   { value: 'exam-types', label: 'Tipos de examen' },
+  { value: 'careers', label: 'Carreras' },
 ];
 
 /**
@@ -27,7 +29,7 @@ export default function CatalogPage() {
           Catálogo
         </Typography>
         <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-          Áreas, cursos y los tipos de examen que los evalúan.
+          Áreas, cursos, tipos de examen y carreras.
         </Typography>
       </Box>
 
@@ -44,7 +46,8 @@ export default function CatalogPage() {
           borderBottom: 1,
           borderColor: 'divider',
           borderRadius: { md: '12px 12px 0 0' },
-          '& .MuiTab-root': { fontSize: 14, fontWeight: 500, minHeight: 48 },
+          // three tabs at 375 px: less side padding on mobile so each label stays on one line
+          '& .MuiTab-root': { fontSize: 14, fontWeight: 500, minHeight: 48, px: { xs: 0.5, md: 2 } },
         }}
       >
         {TABS.map((t) => (
@@ -52,7 +55,9 @@ export default function CatalogPage() {
         ))}
       </Tabs>
 
-      {tab === 'areas' ? <AreasCoursesPanel /> : <ExamTypesPanel />}
+      {tab === 'areas' && <AreasCoursesPanel />}
+      {tab === 'exam-types' && <ExamTypesPanel />}
+      {tab === 'careers' && <CareersPanel />}
     </Box>
   );
 }
