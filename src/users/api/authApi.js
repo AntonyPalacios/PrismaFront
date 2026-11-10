@@ -25,7 +25,13 @@ export const authApi = baseApi.injectEndpoints({
 
 export const { useGetMeQuery, useLogoutMutation } = authApi;
 
-export const ROLE_LABELS = { ADMIN: 'Admin', TUTOR: 'Tutor', COORDINADOR: 'Coordinador' };
+/** True when the logged-in user has the ADMIN role (UI only; the backend enforces it). */
+export function useIsAdmin() {
+  const { data: me } = useGetMeQuery();
+  return Boolean(me?.roles?.includes('ADMIN'));
+}
+
+export const ROLE_LABELS ={ ADMIN: 'Admin', TUTOR: 'Tutor', COORDINADOR: 'Coordinador' };
 
 /** "Apellidos, Nombres" — the display order agreed for every person in the app. */
 export function displayName(me) {

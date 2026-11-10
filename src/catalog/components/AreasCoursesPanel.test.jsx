@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { makeStore } from '../../app/store';
 import { theme } from '../../app/theme';
 import { groupCoursesByArea } from '../api/catalogApi';
-import CatalogPage from './CatalogPage';
+import AreasCoursesPanel from './AreasCoursesPanel';
 
 const AREAS = [
   { id: 1, name: 'Lectura', abbreviation: 'LECT', active: true },
@@ -25,7 +25,7 @@ function renderPage() {
   return render(
     <Provider store={makeStore()}>
       <ThemeProvider theme={theme}>
-        <CatalogPage />
+        <AreasCoursesPanel />
       </ThemeProvider>
     </Provider>,
   );
@@ -44,7 +44,7 @@ describe('groupCoursesByArea', () => {
   });
 });
 
-describe('CatalogPage', () => {
+describe('AreasCoursesPanel', () => {
   let fetchMock;
 
   beforeEach(() => {
