@@ -8,7 +8,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { colors } from '../app/theme';
-import { ROLE_LABELS, displayName, initials, useGetMeQuery, useLogoutMutation } from '../users/api/authApi';
+import { ROLE_LABELS, displayName, initials, useGetMeQuery, useIsAdmin, useLogoutMutation } from '../users/api/authApi';
 import { NAV_ITEMS } from './navItems';
 import PrismaLogo from './PrismaLogo';
 
@@ -24,6 +24,7 @@ const itemSx = {
 
 export default function NavContent({ onNavigate }) {
   const { data: me } = useGetMeQuery();
+  const isAdmin = useIsAdmin();
   const [logout, { isLoading: loggingOut }] = useLogoutMutation();
   const navigate = useNavigate();
 
@@ -64,8 +65,8 @@ export default function NavContent({ onNavigate }) {
       </Box>
 
       <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-        {NAV_ITEMS.map((item) => (
-          <ListItemButton key={item.to} component={NavLink} to={item.to} end onClick={onNavigate} sx={itemSx}>
+        {NAV_ITEMS.filter((item) => isAdmin || !item.adminOnly).map((item) => (
+          <ListItemButton key={item.to} component={NavLink} to={item.to} end={item.to === '/'} onClick={onNavigate} sx={itemSx}>
             <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={item.label} />
           </ListItemButton>
