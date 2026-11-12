@@ -230,14 +230,49 @@ describe('Cycles screens', () => {
     expect(await request.json()).toEqual({ name: 'Ciclo 2026-I', startDate: '2026-03-01', endDate: null });
   });
 
-  it('shows a closed cycle as read-only, and never offers to delete', async () => {
+  it('deletes a cycle after confirming and goes back to the list', async () => {
+    writeResponse = () => json(204);
+    const router = renderAt('/cycles/1'); // a closed one: any status can be deleted
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Eliminar ciclo' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Eliminar ciclo?' });
+    expect(within(dialog).getByText(/no podrás recuperarlo/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Solo se puede eliminar un ciclo sin etapas/)).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+
+    cycles = [NEXT, CURRENT]; // what the backend lists once it is gone
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
+
+    expect(await screen.findByText('Ciclo eliminado.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('DELETE');
+    expect(new URL(request.url).pathname).toMatch(/\/cycles\/1$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/cycles'));
+    expect(await screen.findByRole('button', { name: 'Ver 2026-I' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver 2025-II' })).not.toBeInTheDocument();
+  });
+
+  it('stays on the cycle and shows why when the backend refuses to delete', async () => {
+    const refusal = 'Este ciclo tiene etapas, así que no se puede eliminar. Elimina primero sus etapas.';
+    writeResponse = () => json(409, { status: 409, detail: refusal });
+    const router = renderAt('/cycles/2');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Eliminar ciclo' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+
+    expect(await screen.findByText(refusal)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/cycles/2');
+    expect(screen.getByRole('heading', { name: '2026-I' })).toBeInTheDocument();
+  });
+
+  it('shows a closed cycle as read-only', async () => {
     renderAt('/cycles/1');
 
     const data = await screen.findByRole('region', { name: 'Datos del ciclo' });
     expect(within(data).getByText('Cerrado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
     expect(screen.getByText(/ya no se puede editar/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /eliminar|borrar/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /activar ciclo|cerrar ciclo/i })).not.toBeInTheDocument();
   });
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router';
+import { Link as RouterLink, useNavigate, useParams } from 'react-router';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -10,7 +10,7 @@ import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
 import ConfirmDialog from '../../layout/ConfirmDialog';
-import { useChangeCycleStatusMutation, useGetCycleQuery } from '../api/cyclesApi';
+import { useChangeCycleStatusMutation, useDeleteCycleMutation, useGetCycleQuery } from '../api/cyclesApi';
 import CycleForm from '../components/CycleForm';
 import CycleStatusChip from '../components/CycleStatusChip';
 import { formatDate, todayIso } from '../cycleDisplay';
@@ -21,7 +21,8 @@ const NEXT_CYCLE_WARNING = 'el siguiente ciclo solo podrá empezar después de e
  * A cycle's detail (Claude Design: CycleDetailMobile): status chip,
  * "Editar", its dates, and the one action that moves it forward:
  * "Activar ciclo" (planned) or "Cerrar ciclo" (active). A closed cycle is
- * read-only. The "Etapas" section of the prototype arrives with its slice.
+ * read-only. "Eliminar ciclo" is always at the bottom. The "Etapas" section
+ * of the prototype arrives with its slice.
  */
 export default function CycleDetailPage() {
   const { id } = useParams();
@@ -93,8 +94,55 @@ export default function CycleDetailPage() {
         </Typography>
       )}
 
+      <DeleteAction cycle={cycle} />
+
       {editing && <CycleForm cycle={cycle} onClose={() => setEditing(false)} />}
     </Box>
+  );
+}
+
+/**
+ * "Eliminar ciclo", in any status: the way out when a cycle was created or
+ * closed with the wrong dates. The backend refuses if the cycle has stages.
+ */
+function DeleteAction({ cycle }) {
+  const notify = useNotify();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [deleteCycle, { isLoading }] = useDeleteCycleMutation();
+
+  const confirmDelete = async () => {
+    try {
+      await deleteCycle(cycle.id).unwrap();
+      notify('Ciclo eliminado.');
+      navigate('/cycles', { replace: true });
+    } catch (error) {
+      setConfirming(false);
+      notify(errorDetail(error), 'error');
+    }
+  };
+
+  return (
+    <>
+      <Button onClick={() => setConfirming(true)} sx={{ alignSelf: 'center', color: colors.danger }}>
+        Eliminar ciclo
+      </Button>
+
+      {confirming && (
+        <ConfirmDialog
+          title="¿Eliminar ciclo?"
+          message={
+            `"${cycle.name}" dejará de aparecer en la lista y no podrás recuperarlo. ` +
+            'Su nombre y sus fechas quedarán libres para otro ciclo. Solo se puede eliminar un ciclo sin etapas.'
+          }
+          confirmLabel="Eliminar"
+          danger
+          loading={isLoading}
+          onConfirm={confirmDelete}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
+    </>
   );
 }
 
