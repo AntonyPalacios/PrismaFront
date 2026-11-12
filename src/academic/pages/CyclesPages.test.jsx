@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,7 +14,11 @@ import CyclesPage from './CyclesPage';
 const NEXT = { id: 3, name: '2026-II', startDate: '2026-08-04', endDate: null, status: 'PLANNED' };
 const CURRENT = { id: 2, name: '2026-I', startDate: '2026-03-01', endDate: '2026-07-31', status: 'ACTIVE' };
 const PAST = { id: 1, name: '2025-II', startDate: '2025-08-01', endDate: '2025-12-15', status: 'CLOSED' };
-const BY_ID = { 1: PAST, 2: CURRENT, 3: NEXT };
+// active cycles for the "Cerrar ciclo" cases, with dates that don't depend on the day the tests run
+const ACTIVE_ENDED = { id: 4, name: 'Terminado', startDate: '2020-01-01', endDate: '2020-12-31', status: 'ACTIVE' };
+const ACTIVE_RUNNING = { id: 5, name: 'En curso', startDate: '2020-01-01', endDate: '2999-12-31', status: 'ACTIVE' };
+const ACTIVE_OPEN = { id: 6, name: 'Sin fin', startDate: '2020-01-01', endDate: null, status: 'ACTIVE' };
+const BY_ID = { 1: PAST, 2: CURRENT, 3: NEXT, 4: ACTIVE_ENDED, 5: ACTIVE_RUNNING, 6: ACTIVE_OPEN };
 
 function json(status, body) {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -226,14 +230,142 @@ describe('Cycles screens', () => {
     expect(await request.json()).toEqual({ name: 'Ciclo 2026-I', startDate: '2026-03-01', endDate: null });
   });
 
-  it('shows a closed cycle as read-only, and never offers to delete', async () => {
+  it('deletes a cycle after confirming and goes back to the list', async () => {
+    writeResponse = () => json(204);
+    const router = renderAt('/cycles/1'); // a closed one: any status can be deleted
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Eliminar ciclo' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Eliminar ciclo?' });
+    expect(within(dialog).getByText(/no podrás recuperarlo/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Solo se puede eliminar un ciclo sin etapas/)).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+
+    cycles = [NEXT, CURRENT]; // what the backend lists once it is gone
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
+
+    expect(await screen.findByText('Ciclo eliminado.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('DELETE');
+    expect(new URL(request.url).pathname).toMatch(/\/cycles\/1$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/cycles'));
+    expect(await screen.findByRole('button', { name: 'Ver 2026-I' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver 2025-II' })).not.toBeInTheDocument();
+  });
+
+  it('stays on the cycle and shows why when the backend refuses to delete', async () => {
+    const refusal = 'Este ciclo tiene etapas, así que no se puede eliminar. Elimina primero sus etapas.';
+    writeResponse = () => json(409, { status: 409, detail: refusal });
+    const router = renderAt('/cycles/2');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Eliminar ciclo' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Eliminar' }));
+
+    expect(await screen.findByText(refusal)).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/cycles/2');
+    expect(screen.getByRole('heading', { name: '2026-I' })).toBeInTheDocument();
+  });
+
+  it('shows a closed cycle as read-only', async () => {
     renderAt('/cycles/1');
 
     const data = await screen.findByRole('region', { name: 'Datos del ciclo' });
     expect(within(data).getByText('Cerrado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
     expect(screen.getByText(/ya no se puede editar/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /eliminar|borrar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /activar ciclo|cerrar ciclo/i })).not.toBeInTheDocument();
+  });
+
+  it('activates a planned cycle after confirming', async () => {
+    writeResponse = () => json(200, { ...NEXT, status: 'ACTIVE' });
+    renderAt('/cycles/3');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Activar ciclo' }));
+    expect(screen.queryByRole('button', { name: 'Cerrar ciclo' })).not.toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: '¿Activar ciclo?' });
+    expect(within(dialog).getByText(/no se puede deshacer/)).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Activar' }));
+
+    expect(await screen.findByText('Ciclo activado.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('PATCH');
+    expect(new URL(request.url).pathname).toMatch(/\/cycles\/3\/status$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+    expect(await request.json()).toEqual({ status: 'ACTIVE', confirm: false });
+  });
+
+  it('does nothing when the confirmation is cancelled', async () => {
+    renderAt('/cycles/3');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Activar ciclo' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancelar' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('shows why the backend refuses to activate', async () => {
+    writeResponse = () => json(409, { status: 409, detail: 'Ya hay otro ciclo activo. Ciérralo antes de activar este.' });
+    renderAt('/cycles/3');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Activar ciclo' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Activar' }));
+
+    expect(await screen.findByText('Ya hay otro ciclo activo. Ciérralo antes de activar este.')).toBeInTheDocument();
+  });
+
+  it('closes a cycle whose end date already passed with a plain confirmation', async () => {
+    writeResponse = () => json(200, { ...ACTIVE_ENDED, status: 'CLOSED' });
+    renderAt('/cycles/4');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar ciclo' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Cerrar ciclo?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar ciclo' }));
+
+    expect(await screen.findByText('Ciclo cerrado.')).toBeInTheDocument();
+    expect(await writes()[0].json()).toEqual({ status: 'CLOSED', confirm: false });
+  });
+
+  it('warns that closing early moves the end date to today, and confirms it to the backend', async () => {
+    writeResponse = () => json(200, { ...ACTIVE_RUNNING, status: 'CLOSED' });
+    renderAt('/cycles/5');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar ciclo' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Cerrar el ciclo antes de su fecha de fin?' });
+    expect(within(dialog).getByText(/termina el 31 dic 2999/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/su fecha de fin pasará a ser hoy/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/el siguiente ciclo solo podrá empezar después de esa fecha/)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar hoy' }));
+
+    expect(await screen.findByText('Ciclo cerrado.')).toBeInTheDocument();
+    expect(await writes()[0].json()).toEqual({ status: 'CLOSED', confirm: true });
+  });
+
+  it('asks for the end date first when closing a cycle that has none', async () => {
+    renderAt('/cycles/6');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar ciclo' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Falta la fecha de fin' });
+    expect(within(dialog).getByText(/Elígela con cuidado/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/el siguiente ciclo solo podrá empezar después de esa fecha/)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Definir fecha de fin' }));
+
+    expect(await screen.findByRole('form', { name: 'Editar Sin fin' })).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('asks again when the backend says closing needs confirmation', async () => {
+    writeResponse = () => json(409, { status: 409, detail: 'Vas a cerrar el ciclo antes…', requiresConfirmation: true });
+    renderAt('/cycles/4');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar ciclo' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: '¿Cerrar ciclo?' })).getByRole('button', { name: 'Cerrar ciclo' }));
+
+    expect(await screen.findByRole('dialog', { name: '¿Cerrar el ciclo antes de su fecha de fin?' })).toBeInTheDocument();
   });
 
   it('shows the backend message for an unknown cycle', async () => {

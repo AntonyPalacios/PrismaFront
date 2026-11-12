@@ -15,7 +15,7 @@ import { cycleSchema, toCycleBody } from './cycleSchema';
 /**
  * Create (cycle = null) or edit a cycle: Nombre *, Fecha de inicio *,
  * Fecha de fin. Bottom sheet on mobile, dialog on desktop. There is no
- * delete action: a cycle is closed, never removed.
+ * delete action here: "Eliminar ciclo" lives in the cycle detail.
  */
 export default function CycleForm({ cycle, onClose }) {
   return (
