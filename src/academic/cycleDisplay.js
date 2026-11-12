@@ -17,6 +17,14 @@ export function formatDate(isoDate) {
   return `${day} ${MONTHS[Number(month) - 1]} ${year}`;
 }
 
+/**
+ * Today as "2026-11-11" in the academy's time zone, the same "today" the
+ * backend uses for its rules (en-CA formats dates as ISO).
+ */
+export function todayIso() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
+}
+
 /** "04 ago 2026 – 19 dic 2026", or "04 ago 2026 – sin fecha de fin". */
 export function cycleDates(cycle) {
   return `${formatDate(cycle.startDate)} – ${formatDate(cycle.endDate) ?? 'sin fecha de fin'}`;

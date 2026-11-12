@@ -23,7 +23,19 @@ export const cyclesApi = baseApi.injectEndpoints({
       query: ({ id, ...body }) => ({ url: `/cycles/${id}`, method: 'PUT', body }),
       invalidatesTags: ['Cycle'],
     }),
+    // forward only: PLANNED → ACTIVE → CLOSED. `confirm: true` accepts closing
+    // before the end date (the backend then moves the end date to today)
+    changeCycleStatus: build.mutation({
+      query: ({ id, status, confirm = false }) => ({ url: `/cycles/${id}/status`, method: 'PATCH', body: { status, confirm } }),
+      invalidatesTags: ['Cycle'],
+    }),
   }),
 });
 
-export const { useGetCyclesQuery, useGetCycleQuery, useCreateCycleMutation, useUpdateCycleMutation } = cyclesApi;
+export const {
+  useGetCyclesQuery,
+  useGetCycleQuery,
+  useCreateCycleMutation,
+  useUpdateCycleMutation,
+  useChangeCycleStatusMutation,
+} = cyclesApi;

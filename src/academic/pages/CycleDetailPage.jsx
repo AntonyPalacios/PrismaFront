@@ -7,16 +7,21 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import { errorDetail } from '../../app/api/errors';
+import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
-import { useGetCycleQuery } from '../api/cyclesApi';
+import ConfirmDialog from '../../layout/ConfirmDialog';
+import { useChangeCycleStatusMutation, useGetCycleQuery } from '../api/cyclesApi';
 import CycleForm from '../components/CycleForm';
 import CycleStatusChip from '../components/CycleStatusChip';
-import { formatDate } from '../cycleDisplay';
+import { formatDate, todayIso } from '../cycleDisplay';
+
+const NEXT_CYCLE_WARNING = 'el siguiente ciclo solo podrá empezar después de esa fecha';
 
 /**
  * A cycle's detail (Claude Design: CycleDetailMobile): status chip,
- * "Editar", and its dates. A closed cycle is read-only. "Cerrar ciclo" and
- * the "Etapas" section of the prototype arrive with their own slices.
+ * "Editar", its dates, and the one action that moves it forward:
+ * "Activar ciclo" (planned) or "Cerrar ciclo" (active). A closed cycle is
+ * read-only. The "Etapas" section of the prototype arrives with its slice.
  */
 export default function CycleDetailPage() {
   const { id } = useParams();
@@ -79,6 +84,7 @@ export default function CycleDetailPage() {
           <DateField label="Inicio" value={formatDate(cycle.startDate)} />
           <DateField label="Fin" value={formatDate(cycle.endDate) ?? 'Sin fecha de fin'} muted={!cycle.endDate} />
         </Box>
+        {!closed && <StatusAction cycle={cycle} onEdit={() => setEditing(true)} />}
       </Box>
 
       {closed && (
@@ -89,6 +95,100 @@ export default function CycleDetailPage() {
 
       {editing && <CycleForm cycle={cycle} onClose={() => setEditing(false)} />}
     </Box>
+  );
+}
+
+/**
+ * "Activar ciclo" or "Cerrar ciclo", always behind a dialog because neither
+ * can be undone. The dialog is one of:
+ *  - 'activate'   confirm activating;
+ *  - 'close'      confirm closing on or after the end date;
+ *  - 'closeEarly' confirm closing before the end date (it becomes today);
+ *  - 'noEndDate'  closing is not possible yet: send the admin to the form.
+ * The backend always has the last word; its rejections are shown as they come.
+ */
+function StatusAction({ cycle, onEdit }) {
+  const notify = useNotify();
+  const [dialog, setDialog] = useState(null);
+  const [changeStatus, { isLoading }] = useChangeCycleStatusMutation();
+  const planned = cycle.status === 'PLANNED';
+
+  const askToClose = () => {
+    if (!cycle.endDate) setDialog('noEndDate');
+    else setDialog(cycle.endDate > todayIso() ? 'closeEarly' : 'close');
+  };
+
+  const change = async (status, confirm) => {
+    try {
+      await changeStatus({ id: cycle.id, status, confirm }).unwrap();
+      notify(status === 'ACTIVE' ? 'Ciclo activado.' : 'Ciclo cerrado.');
+      setDialog(null);
+    } catch (error) {
+      if (error?.data?.requiresConfirmation) {
+        setDialog('closeEarly'); // the backend's "today" disagrees with this browser's: ask properly
+        return;
+      }
+      setDialog(null);
+      notify(errorDetail(error), 'error');
+    }
+  };
+
+  const dialogs = {
+    activate: {
+      title: '¿Activar ciclo?',
+      message: `"${cycle.name}" pasará a ser el ciclo activo. Este cambio no se puede deshacer.`,
+      confirmLabel: 'Activar',
+      onConfirm: () => change('ACTIVE', false),
+    },
+    close: {
+      title: '¿Cerrar ciclo?',
+      message: `"${cycle.name}" quedará cerrado como historial y ya no se podrá editar. Este cambio no se puede deshacer.`,
+      confirmLabel: 'Cerrar ciclo',
+      onConfirm: () => change('CLOSED', false),
+    },
+    closeEarly: {
+      title: '¿Cerrar el ciclo antes de su fecha de fin?',
+      message:
+        `"${cycle.name}" termina el ${formatDate(cycle.endDate)}. Si lo cierras ahora, su fecha de fin pasará a ser hoy ` +
+        `y ${NEXT_CYCLE_WARNING}. El ciclo quedará como historial y ya no se podrá editar.`,
+      confirmLabel: 'Cerrar hoy',
+      onConfirm: () => change('CLOSED', true),
+    },
+    noEndDate: {
+      title: 'Falta la fecha de fin',
+      message:
+        `Para cerrar "${cycle.name}" primero define su fecha de fin. Elígela con cuidado: ${NEXT_CYCLE_WARNING}, ` +
+        'y un ciclo cerrado ya no se puede editar.',
+      confirmLabel: 'Definir fecha de fin',
+      onConfirm: () => {
+        setDialog(null);
+        onEdit();
+      },
+    },
+  };
+  const current = dialog && dialogs[dialog];
+
+  return (
+    <>
+      <Button
+        variant="outlined"
+        onClick={planned ? () => setDialog('activate') : askToClose}
+        sx={{ height: 44, borderColor: '#C5CCD8', color: planned ? colors.primary : '#3A4150' }}
+      >
+        {planned ? 'Activar ciclo' : 'Cerrar ciclo'}
+      </Button>
+
+      {current && (
+        <ConfirmDialog
+          title={current.title}
+          message={current.message}
+          confirmLabel={current.confirmLabel}
+          loading={isLoading}
+          onConfirm={current.onConfirm}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+    </>
   );
 }
 
