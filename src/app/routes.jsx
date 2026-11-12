@@ -1,4 +1,6 @@
 import { Navigate } from 'react-router';
+import CycleDetailPage from '../academic/pages/CycleDetailPage';
+import CyclesPage from '../academic/pages/CyclesPage';
 import CatalogPage from '../catalog/pages/CatalogPage';
 import HomePage from '../home/HomePage';
 import AppLayout from '../layout/AppLayout';
@@ -23,6 +25,8 @@ export const routes = [
           {
             element: <AdminRoute />,
             children: [
+              { path: 'cycles', element: <CyclesPage /> },
+              { path: 'cycles/:id', element: <CycleDetailPage /> },
               { path: 'users', element: <UsersPage /> },
               { path: 'users/:id', element: <UserDetailPage /> },
             ],
