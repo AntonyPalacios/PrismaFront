@@ -256,14 +256,39 @@ describe('Students screens', () => {
   it('cancelling an edit restores the data', async () => {
     renderAt('/students/1');
     fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
-    const form = screen.getByRole('form', { name: 'Datos' });
+    let form = screen.getByRole('form', { name: 'Datos' });
 
     type(form, /Nombres/, 'Otro nombre');
     fireEvent.click(within(form).getByRole('button', { name: 'Cancelar' }));
 
+    form = screen.getByRole('form', { name: 'Datos' });
     expect(within(form).getByLabelText(/Nombres/)).toHaveValue('Lucía');
     expect(within(form).getByLabelText(/Nombres/)).toBeDisabled();
     expect(writes()).toHaveLength(0);
+  });
+
+  it('after emptying the fields and cancelling, the labels sit above the restored data', async () => {
+    renderAt('/students/1');
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    let form = screen.getByRole('form', { name: 'Datos' });
+    const fields = [/Nombres/, /Apellido paterno/, /Apellido materno/, /DNI/, /Correo/, /Teléfono/];
+
+    fields.forEach((label) => type(form, label, ''));
+    fireEvent.click(within(form).getByRole('button', { name: 'Cancelar' }));
+
+    // MUI keeps a label down (over the text) unless it knows the field is filled
+    form = screen.getByRole('form', { name: 'Datos' });
+    fields.forEach((label) => {
+      const input = within(form).getByLabelText(label);
+      expect(form.querySelector(`label[for="${input.id}"]`)).toHaveAttribute('data-shrink', 'true');
+    });
+    expect(within(form).getByLabelText(/Nombres/)).toHaveValue('Lucía');
+
+    // and so they stay when editing again
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    form = screen.getByRole('form', { name: 'Datos' });
+    const name = within(form).getByLabelText(/Nombres/);
+    expect(form.querySelector(`label[for="${name.id}"]`)).toHaveAttribute('data-shrink', 'true');
   });
 
   it('lets a coordinator see and search students, without create or edit actions', async () => {

@@ -26,6 +26,8 @@ import { StudentAvatar } from './StudentsPage';
 export default function StudentDetailPage() {
   const { id } = useParams();
   const { data: student, isLoading, error } = useGetStudentQuery(id);
+  // bumped by "Cancelar": see StudentDetail's onCancel
+  const [formVersion, setFormVersion] = useState(0);
 
   if (isLoading) {
     return (
@@ -42,8 +44,14 @@ export default function StudentDetailPage() {
       </Box>
     );
   }
-  // key: a fresh form whenever the server copy changes (after saving)
-  return <StudentDetail key={JSON.stringify(student)} student={student} />;
+  // key: a fresh form whenever the server copy changes (after saving) or the edit is cancelled
+  return (
+    <StudentDetail
+      key={`${JSON.stringify(student)}#${formVersion}`}
+      student={student}
+      onCancel={() => setFormVersion((v) => v + 1)}
+    />
+  );
 }
 
 function BackLink() {
@@ -54,7 +62,14 @@ function BackLink() {
   );
 }
 
-function StudentDetail({ student }) {
+/**
+ * "Cancelar" never calls react-hook-form's reset(): it writes the values
+ * straight into the uncontrolled inputs without an input event, so MUI keeps
+ * the labels where they were (over the restored text if the user had emptied
+ * a field). Instead the parent remounts this form (onCancel) and MUI measures
+ * every field again.
+ */
+function StudentDetail({ student, onCancel }) {
   const notify = useNotify();
   const canManage = useCanManageStudents();
   const [editing, setEditing] = useState(false);
@@ -65,15 +80,8 @@ function StudentDetail({ student }) {
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(studentSchema), defaultValues: toStudentForm(student) });
-
-  const cancelEdit = () => {
-    reset();
-    setServerError(null);
-    setEditing(false);
-  };
 
   const onSubmit = async (values) => {
     setServerError(null);
@@ -151,7 +159,7 @@ function StudentDetail({ student }) {
 
         {editing && (
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-            <Button variant="outlined" onClick={cancelEdit} disabled={isSubmitting} sx={{ minWidth: 120, height: 44 }}>
+            <Button variant="outlined" onClick={onCancel} disabled={isSubmitting} sx={{ minWidth: 120, height: 44 }}>
               Cancelar
             </Button>
             <Button type="submit" variant="contained" color="secondary" disabled={isSubmitting} sx={{ minWidth: 120, height: 44 }}>

@@ -210,6 +210,24 @@ describe('Users screens', () => {
     expect(await request.json()).toEqual({ firstName: 'Julia', lastNamePat: 'Vargas', lastNameMat: 'Soto', roles: ['TUTOR'] });
   });
 
+  it('after emptying the fields and cancelling, the data and the labels are back in place', async () => {
+    renderAt('/users/7');
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    const fields = [/Nombres/, /Apellido paterno/, /Apellido materno/];
+
+    fields.forEach((label) => fireEvent.change(screen.getByLabelText(label), { target: { value: '' } }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    // MUI keeps a label down (over the text) unless it knows the field is filled
+    fields.forEach((label) => {
+      const input = screen.getByLabelText(label);
+      expect(input).toBeDisabled();
+      expect(document.querySelector(`label[for="${input.id}"]`)).toHaveAttribute('data-shrink', 'true');
+    });
+    expect(screen.getByLabelText(/Nombres/)).toHaveValue('Julia');
+    expect(writes()).toHaveLength(0);
+  });
+
   it('deactivates only after confirming, with non-destructive wording', async () => {
     writeResponse = () => new Response(null, { status: 204 });
     renderAt('/users/7');
