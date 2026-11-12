@@ -5,6 +5,13 @@ export const CYCLE_STATUS = {
   CLOSED: { label: 'Cerrado', bg: '#ECEFF3', fg: '#4A5160' },
 };
 
+// same colors, feminine labels ("la etapa")
+export const STAGE_STATUS = {
+  PLANNED: { ...CYCLE_STATUS.PLANNED, label: 'Planificada' },
+  ACTIVE: { ...CYCLE_STATUS.ACTIVE, label: 'Activa' },
+  CLOSED: { ...CYCLE_STATUS.CLOSED, label: 'Cerrada' },
+};
+
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 /**
@@ -15,6 +22,18 @@ export function formatDate(isoDate) {
   if (!isoDate) return null;
   const [year, month, day] = isoDate.split('-');
   return `${day} ${MONTHS[Number(month) - 1]} ${year}`;
+}
+
+/** "2026-08-04" → "04 ago": stages live inside one cycle, so the prototype drops the year. */
+export function formatShortDate(isoDate) {
+  if (!isoDate) return null;
+  const [, month, day] = isoDate.split('-');
+  return `${day} ${MONTHS[Number(month) - 1]}`;
+}
+
+/** "04 ago – 27 sep", or "16 nov – sin fin", as in the prototype's stage cards. */
+export function stageDates(stage) {
+  return `${formatShortDate(stage.startDate)} – ${formatShortDate(stage.endDate) ?? 'sin fin'}`;
 }
 
 /**

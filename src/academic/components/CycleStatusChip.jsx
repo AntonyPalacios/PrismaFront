@@ -1,8 +1,9 @@
 import Box from '@mui/material/Box';
 import { CYCLE_STATUS } from '../cycleDisplay';
 
-export default function CycleStatusChip({ status }) {
-  const display = CYCLE_STATUS[status] ?? { label: status, bg: '#ECEFF3', fg: '#4A5160' };
+/** Status chip of a cycle, or of a stage when given STAGE_STATUS (same states, feminine labels). */
+export default function CycleStatusChip({ status, statuses = CYCLE_STATUS }) {
+  const display = statuses[status] ?? { label: status, bg: '#ECEFF3', fg: '#4A5160' };
   return (
     <Box
       component="span"

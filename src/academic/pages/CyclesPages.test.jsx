@@ -36,6 +36,8 @@ function route(request) {
   const url = new URL(request.url);
   if (url.pathname.endsWith('/auth/me')) return json(200, { id: 1, firstName: 'A', lastName: 'B', roles });
   if (request.method === 'GET' && url.pathname.endsWith('/cycles')) return json(200, cycles);
+  // the detail also loads its stages; they have their own tests (StagesSection.test.jsx)
+  if (request.method === 'GET' && url.pathname.endsWith('/stages')) return json(200, []);
   const detail = url.pathname.match(/\/cycles\/(\d+)$/);
   if (request.method === 'GET' && detail) {
     return BY_ID[detail[1]]
