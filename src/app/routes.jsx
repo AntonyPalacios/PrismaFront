@@ -6,6 +6,8 @@ import HomePage from '../home/HomePage';
 import AppLayout from '../layout/AppLayout';
 import AdminRoute from '../users/components/AdminRoute';
 import PrivateRoute from '../users/components/PrivateRoute';
+import StudentDetailPage from '../students/pages/StudentDetailPage';
+import StudentsPage from '../students/pages/StudentsPage';
 import LoginPage from '../users/pages/LoginPage';
 import OAuth2RedirectHandler from '../users/pages/OAuth2RedirectHandler';
 import UserDetailPage from '../users/pages/UserDetailPage';
@@ -21,6 +23,8 @@ export const routes = [
         element: <AppLayout />,
         children: [
           { index: true, element: <HomePage /> },
+          { path: 'students', element: <StudentsPage /> },
+          { path: 'students/:id', element: <StudentDetailPage /> },
           { path: 'catalog', element: <CatalogPage /> },
           {
             element: <AdminRoute />,
