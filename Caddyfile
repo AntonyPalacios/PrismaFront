@@ -1,0 +1,20 @@
+# Plain http inside the container; HTTPS is added when there is a real domain.
+:80 {
+	encode gzip
+
+	# Backend routes: the API and the Google login round trip. Same origin as
+	# the SPA, so the auth cookie and the CSRF cookie keep working.
+	# (/oauth2/redirect is a frontend route, so it is not listed here.)
+	@backend path /api/* /oauth2/authorization/* /login/oauth2/*
+	handle @backend {
+		reverse_proxy {$BACKEND_UPSTREAM:backend:8080}
+	}
+
+	# Everything else is the SPA: unknown paths fall back to index.html so
+	# deep links like /catalog load the app instead of a 404.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
