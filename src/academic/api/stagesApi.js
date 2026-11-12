@@ -25,7 +25,19 @@ export const stagesApi = baseApi.injectEndpoints({
       query: ({ cycleId, id }) => ({ url: `/cycles/${cycleId}/stages/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Stage'],
     }),
+    // forward only: PLANNED -> ACTIVE -> CLOSED. No `confirm` here: the backend
+    // never changes a stage's end date, so there is nothing to accept
+    changeStageStatus: build.mutation({
+      query: ({ cycleId, id, status }) => ({ url: `/cycles/${cycleId}/stages/${id}/status`, method: 'PATCH', body: { status } }),
+      invalidatesTags: ['Stage'],
+    }),
   }),
 });
 
-export const { useGetStagesQuery, useCreateStageMutation, useUpdateStageMutation, useDeleteStageMutation } = stagesApi;
+export const {
+  useGetStagesQuery,
+  useCreateStageMutation,
+  useUpdateStageMutation,
+  useDeleteStageMutation,
+  useChangeStageStatusMutation,
+} = stagesApi;
