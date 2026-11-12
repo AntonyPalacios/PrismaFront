@@ -211,6 +211,89 @@ describe('Stages section', () => {
     expect(within(await section()).getByText('Nivelación')).toBeInTheDocument();
   });
 
+  it('offers to activate planned stages and to close the active one, never a closed one', async () => {
+    renderCycle(2);
+
+    const items = within(await section()).getAllByRole('listitem');
+    expect(within(items[0]).queryByRole('button', { name: /Activar etapa|Cerrar etapa/ })).not.toBeInTheDocument();
+    expect(within(items[1]).getByRole('button', { name: 'Cerrar etapa: Reforzamiento' })).toBeInTheDocument();
+    expect(within(items[2]).getByRole('button', { name: 'Activar etapa: Simulacros' })).toBeInTheDocument();
+  });
+
+  it('activates a planned stage after confirming', async () => {
+    writeResponse = () => json(200, { ...THIRD, status: 'ACTIVE' });
+    renderCycle(2);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Activar etapa: Simulacros' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Activar etapa?' });
+    expect(within(dialog).getByText(/no se puede deshacer/)).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Activar' }));
+
+    expect(await screen.findByText('Etapa activada.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('PATCH');
+    expect(new URL(request.url).pathname).toMatch(/\/cycles\/2\/stages\/12\/status$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+    expect(await request.json()).toEqual({ status: 'ACTIVE' });
+  });
+
+  it('shows why the backend refuses to activate a stage', async () => {
+    const refusal = 'Ya hay otra etapa activa en este ciclo. Ciérrala antes de activar esta.';
+    writeResponse = () => json(409, { status: 409, detail: refusal });
+    renderCycle(2);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Activar etapa: Simulacros' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Activar' }));
+
+    expect(await screen.findByText(refusal)).toBeInTheDocument();
+  });
+
+  it('closes an active stage whose end date already arrived after confirming', async () => {
+    const ended = { ...SECOND, endDate: '2020-12-31' };
+    stages = [FIRST, ended, THIRD];
+    writeResponse = () => json(200, { ...ended, status: 'CLOSED' });
+    renderCycle(2);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar etapa: Reforzamiento' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Cerrar etapa?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar etapa' }));
+
+    expect(await screen.findByText('Etapa cerrada.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(new URL(request.url).pathname).toMatch(/\/cycles\/2\/stages\/11\/status$/);
+    expect(await request.json()).toEqual({ status: 'CLOSED' });
+  });
+
+  it('sends the admin to correct the end date instead of closing a stage early', async () => {
+    stages = [FIRST, { ...SECOND, endDate: '2999-12-31' }, THIRD];
+    renderCycle(2);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar etapa: Reforzamiento' }));
+    const dialog = await screen.findByRole('dialog', { name: 'La fecha de fin todavía no llega' });
+    expect(within(dialog).getByText(/termina el 31 dic/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/el sistema no la cambia por ti/)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Corregir fecha de fin' }));
+
+    expect(await screen.findByRole('form', { name: 'Editar Reforzamiento' })).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('asks for the end date first when closing a stage that has none', async () => {
+    stages = [FIRST, { ...SECOND, endDate: null }, THIRD];
+    renderCycle(2);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar etapa: Reforzamiento' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Falta la fecha de fin' });
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Definir fecha de fin' }));
+
+    expect(await screen.findByRole('form', { name: 'Editar Reforzamiento' })).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+  });
+
   it('in a closed cycle only offers to delete stages', async () => {
     stages = [{ ...FIRST, cycleId: 1 }, { ...THIRD, cycleId: 1 }];
     renderCycle(1);
@@ -220,5 +303,6 @@ describe('Stages section', () => {
     expect(within(stagesSection).getByRole('button', { name: 'Eliminar Simulacros' })).toBeInTheDocument();
     expect(within(stagesSection).queryByRole('button', { name: /nueva etapa/i })).not.toBeInTheDocument();
     expect(within(stagesSection).queryByRole('button', { name: /^Editar / })).not.toBeInTheDocument();
+    expect(within(stagesSection).queryByRole('button', { name: /Activar etapa|Cerrar etapa/ })).not.toBeInTheDocument();
   });
 });
