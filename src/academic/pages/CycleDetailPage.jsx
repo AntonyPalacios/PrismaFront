@@ -13,6 +13,7 @@ import ConfirmDialog from '../../layout/ConfirmDialog';
 import { useChangeCycleStatusMutation, useDeleteCycleMutation, useGetCycleQuery } from '../api/cyclesApi';
 import CycleForm from '../components/CycleForm';
 import CycleStatusChip from '../components/CycleStatusChip';
+import StagesSection from '../components/StagesSection';
 import { formatDate, todayIso } from '../cycleDisplay';
 
 const NEXT_CYCLE_WARNING = 'el siguiente ciclo solo podrá empezar después de esa fecha';
@@ -21,8 +22,8 @@ const NEXT_CYCLE_WARNING = 'el siguiente ciclo solo podrá empezar después de e
  * A cycle's detail (Claude Design: CycleDetailMobile): status chip,
  * "Editar", its dates, and the one action that moves it forward:
  * "Activar ciclo" (planned) or "Cerrar ciclo" (active). A closed cycle is
- * read-only. "Eliminar ciclo" is always at the bottom. The "Etapas" section
- * of the prototype arrives with its slice.
+ * read-only. Below come its stages (StagesSection) and, always at the
+ * bottom, "Eliminar ciclo".
  */
 export default function CycleDetailPage() {
   const { id } = useParams();
@@ -48,7 +49,7 @@ export default function CycleDetailPage() {
   const closed = cycle.status === 'CLOSED';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 640 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 640, pb: { xs: 10, md: 0 } }}>
       <BackLink />
 
       <Typography component="h1" sx={{ fontSize: { xs: 22, md: 26 }, fontWeight: 500 }}>
@@ -93,6 +94,8 @@ export default function CycleDetailPage() {
           Este ciclo está cerrado: se conserva como historial y ya no se puede editar.
         </Typography>
       )}
+
+      <StagesSection cycle={cycle} />
 
       <DeleteAction cycle={cycle} />
 
