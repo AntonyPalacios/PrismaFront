@@ -20,6 +20,7 @@ import {
   useUpdateEnrollmentMutation,
   useWithdrawEnrollmentMutation,
 } from '../api/enrollmentsApi';
+import TutorCard from '../../tutoring/components/TutorCard';
 import { careerLabel, isEnrollmentEditable } from '../enrollmentDisplay';
 import { studentFullName } from '../studentDisplay';
 
@@ -271,6 +272,8 @@ function EditEnrollment({ student, enrollment, onClose }) {
 
       {editable ? <CareerSelect register={register} careers={careers} /> : <Alert severity="info">{readOnlyNote}</Alert>}
 
+      <TutorCard enrollment={enrollment} editable={editable} />
+
       {serverError && <Alert severity="error">{serverError}</Alert>}
 
       {editable ? (
@@ -284,7 +287,7 @@ function EditEnrollment({ student, enrollment, onClose }) {
             Retirar de la etapa
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ flex: 1, height: 48 }}>
-            Guardar carrera
+            Guardar
           </Button>
         </Box>
       ) : (
