@@ -193,7 +193,7 @@ function StudentDetail({ student, onCancel }) {
           Datos
         </Typography>
 
-        <StudentFields register={register} errors={errors} disabled={!editing} />
+        <StudentFields register={register} errors={errors} disabled={!editing} compact />
 
         {serverError && <Alert severity="error">{serverError}</Alert>}
 

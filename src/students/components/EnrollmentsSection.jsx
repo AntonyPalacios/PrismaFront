@@ -14,7 +14,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
 import { useGetEnrollmentsQuery } from '../api/enrollmentsApi';
-import { careerLabel, enrollmentStatus } from '../enrollmentDisplay';
+import { careerLabel, enrollmentStatus, tutorLabel } from '../enrollmentDisplay';
 import EnrollmentForm from './EnrollmentForm';
 
 /**
@@ -22,7 +22,7 @@ import EnrollmentForm from './EnrollmentForm';
  * the history, newest stage first, as a table on desktop and cards on
  * mobile. A row opens the enrollment; "+ Nueva matrícula" only for an
  * active student. Only ADMIN and TUTOR get here (the parent decides).
- * The tutor column arrives with tutoring.
+ * Each row shows its current tutor ("Sin tutor" when none).
  */
 export default function EnrollmentsSection({ student }) {
   const { data: enrollments = [], isLoading, error } = useGetEnrollmentsQuery(student.id);
@@ -94,7 +94,9 @@ export default function EnrollmentsSection({ student }) {
                       {enrollment.cycleName} · {enrollment.stageName}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{careerLabel(enrollment)}</Typography>
+                      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+                        {careerLabel(enrollment)} · {tutorLabel(enrollment)}
+                      </Typography>
                       <EnrollmentStatusChip enrollment={enrollment} />
                     </Box>
                   </Box>
@@ -112,6 +114,7 @@ export default function EnrollmentsSection({ student }) {
                   <TableCell>Ciclo</TableCell>
                   <TableCell>Etapa</TableCell>
                   <TableCell>Carrera</TableCell>
+                  <TableCell>Tutor</TableCell>
                   <TableCell>Estado</TableCell>
                 </TableRow>
               </TableHead>
@@ -131,6 +134,7 @@ export default function EnrollmentsSection({ student }) {
                       </ButtonBase>
                     </TableCell>
                     <TableCell sx={{ color: enrollment.careerName ? 'inherit' : 'text.secondary' }}>{careerLabel(enrollment)}</TableCell>
+                    <TableCell sx={{ color: enrollment.tutorName ? 'inherit' : 'text.secondary' }}>{tutorLabel(enrollment)}</TableCell>
                     <TableCell>
                       <EnrollmentStatusChip enrollment={enrollment} />
                     </TableCell>
