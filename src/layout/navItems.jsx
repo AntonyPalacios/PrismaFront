@@ -2,12 +2,14 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 
 // Grows with each module slice. Sections like "Seguimiento" and
 // "Administración" from the prototype come back when they have more items.
 // adminOnly items are hidden for other roles (the routes are guarded too).
 export const NAV_ITEMS = [
   { to: '/', label: 'Inicio', icon: <HomeOutlinedIcon /> },
+  { to: '/students', label: 'Alumnos', icon: <PeopleAltOutlinedIcon /> },
   { to: '/cycles', label: 'Ciclos', icon: <CalendarMonthOutlinedIcon />, adminOnly: true },
   { to: '/catalog', label: 'Catálogo', icon: <MenuBookOutlinedIcon /> },
   { to: '/users', label: 'Usuarios', icon: <ManageAccountsOutlinedIcon />, adminOnly: true },
