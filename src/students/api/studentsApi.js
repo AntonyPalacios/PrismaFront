@@ -1,14 +1,19 @@
 import { baseApi } from '../../app/api/baseApi';
 
-// Students (REQ-STUDENTS-01). Every role reads and searches; ADMIN and TUTOR
-// register and edit. A student is
+// Students (REQ-STUDENTS-01, -04). Every role reads and searches, inactive
+// ones included on request; ADMIN and TUTOR register and edit; only ADMIN
+// retires (deactivates) and reactivates. A student is
 // { id, firstName, lastNamePat, lastNameMat, dni, email, phone, birthDate, active }
 // (everything but the names may be null; birthDate is an ISO date).
 export const studentsApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    // active students sorted by surnames (by the backend); `search` filters by name or DNI
+    // sorted by surnames (by the backend); `search` filters by name or DNI;
+    // inactive students only with `includeInactive`
     getStudents: build.query({
-      query: (search = '') => ({ url: '/students', params: search ? { search } : undefined }),
+      query: ({ search = '', includeInactive = false } = {}) => ({
+        url: '/students',
+        params: { ...(search ? { search } : {}), ...(includeInactive ? { includeInactive } : {}) },
+      }),
       providesTags: ['Student'],
     }),
     getStudent: build.query({
@@ -23,7 +28,22 @@ export const studentsApi = baseApi.injectEndpoints({
       query: ({ id, ...body }) => ({ url: `/students/${id}`, method: 'PUT', body }),
       invalidatesTags: ['Student'],
     }),
+    deactivateStudent: build.mutation({
+      query: (id) => ({ url: `/students/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Student'],
+    }),
+    reactivateStudent: build.mutation({
+      query: (id) => ({ url: `/students/${id}/reactivate`, method: 'POST' }),
+      invalidatesTags: ['Student'],
+    }),
   }),
 });
 
-export const { useGetStudentsQuery, useGetStudentQuery, useCreateStudentMutation, useUpdateStudentMutation } = studentsApi;
+export const {
+  useGetStudentsQuery,
+  useGetStudentQuery,
+  useCreateStudentMutation,
+  useUpdateStudentMutation,
+  useDeactivateStudentMutation,
+  useReactivateStudentMutation,
+} = studentsApi;

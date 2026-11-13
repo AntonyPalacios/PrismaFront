@@ -34,7 +34,18 @@ const MATEO = {
   birthDate: null,
   active: true,
 };
-const BY_ID = { 1: LUCIA, 2: MATEO };
+const VALERIA = {
+  id: 3,
+  firstName: 'Valeria',
+  lastNamePat: 'Díaz',
+  lastNameMat: null,
+  dni: '70011223',
+  email: null,
+  phone: null,
+  birthDate: null,
+  active: false,
+};
+const BY_ID = { 1: LUCIA, 2: MATEO, 3: VALERIA };
 
 function json(status, body) {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -52,7 +63,8 @@ function route(request) {
   if (url.pathname.endsWith('/auth/me')) return json(200, { id: 9, firstName: 'A', lastName: 'B', roles });
   if (request.method === 'GET' && url.pathname.endsWith('/students')) {
     const search = (url.searchParams.get('search') ?? '').toLowerCase();
-    return json(200, [LUCIA, MATEO].filter((s) => studentFullName(s).toLowerCase().includes(search)));
+    const all = url.searchParams.get('includeInactive') === 'true' ? [LUCIA, VALERIA, MATEO] : [LUCIA, MATEO];
+    return json(200, all.filter((s) => studentFullName(s).toLowerCase().includes(search)));
   }
   const detail = url.pathname.match(/\/students\/(\d+)$/);
   if (request.method === 'GET' && detail) {
@@ -302,6 +314,72 @@ describe('Students screens', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ver Campos Herrera, Lucía' }));
     expect(await screen.findByRole('heading', { name: 'Campos Herrera, Lucía' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+  });
+
+  it.each([['TUTOR'], ['COORDINADOR']])('lets a %s show inactive students and open their file, without retire actions', async (role) => {
+    roles = [role];
+    renderAt('/students');
+    await screen.findByRole('button', { name: 'Ver Chávez, Mateo' });
+    expect(screen.queryByRole('button', { name: 'Ver Díaz, Valeria' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Mostrar inactivos'));
+
+    const valeria = (await screen.findByRole('button', { name: 'Ver Díaz, Valeria' })).closest('li');
+    expect(within(valeria).getByText('Inactivo')).toBeInTheDocument();
+    expect(screen.getByText('3 alumnos · 1 inactivo · orden A–Z por apellido')).toBeInTheDocument();
+    const lastList = requests()
+      .map((r) => new URL(r.url))
+      .filter((url) => url.pathname.endsWith('/students'))
+      .at(-1);
+    expect(lastList.searchParams.get('includeInactive')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Díaz, Valeria' }));
+    expect(await screen.findByRole('heading', { name: 'Díaz, Valeria' })).toBeInTheDocument();
+    expect(screen.getByText(/Su historial sigue intacto/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reactivar' })).not.toBeInTheDocument();
+  });
+
+  it('a tutor cannot retire an active student', async () => {
+    renderAt('/students/1');
+
+    expect(await screen.findByRole('button', { name: 'Editar' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dar de baja' })).not.toBeInTheDocument();
+  });
+
+  it('an admin retires a student after confirming', async () => {
+    roles = ['ADMIN'];
+    writeResponse = () => json(204);
+    renderAt('/students/1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dar de baja' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Dar de baja al alumno?' });
+    expect(writes()).toHaveLength(0);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Dar de baja' }));
+
+    expect(await screen.findByText('Alumno dado de baja.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('DELETE');
+    expect(new URL(request.url).pathname).toMatch(/\/students\/1$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+  });
+
+  it('an admin reactivates an inactive student, who cannot be edited meanwhile', async () => {
+    roles = ['ADMIN'];
+    writeResponse = () => json(200, { ...VALERIA, active: true });
+    renderAt('/students/3');
+
+    expect(await screen.findByRole('heading', { name: 'Díaz, Valeria' })).toBeInTheDocument();
+    expect(screen.getByText('Inactivo')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dar de baja' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reactivar' }));
+
+    expect(await screen.findByText('Alumno reactivado.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('POST');
+    expect(new URL(request.url).pathname).toMatch(/\/students\/3\/reactivate$/);
   });
 
   it('shows the backend message for an unknown student', async () => {
