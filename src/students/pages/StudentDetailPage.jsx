@@ -11,16 +11,27 @@ import Typography from '@mui/material/Typography';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
-import { useGetStudentQuery, useUpdateStudentMutation } from '../api/studentsApi';
+import ConfirmDialog from '../../layout/ConfirmDialog';
+import { useIsAdmin } from '../../users/api/authApi';
+import {
+  useDeactivateStudentMutation,
+  useGetStudentQuery,
+  useReactivateStudentMutation,
+  useUpdateStudentMutation,
+} from '../api/studentsApi';
 import StudentFields from '../components/StudentFields';
 import { studentSchema, toStudentBody, toStudentForm } from '../components/studentSchema';
 import { studentFullName, useCanManageStudents } from '../studentDisplay';
-import { StudentAvatar } from './StudentsPage';
+import { StudentAvatar, StudentStatusChip } from './StudentsPage';
+
+const actionSx = { height: 44, px: 2.25, borderColor: '#C5CCD8', bgcolor: 'background.paper' };
 
 /**
  * A student's file (Claude Design: StudentDetailMobile / StudentDetailDesktop):
  * avatar, "Apellidos, Nombres", status and DNI, and the "Datos" card,
- * read-only until "Editar". The other sections of the prototype (Matrícula,
+ * read-only until "Editar". An ADMIN retires (confirmed) or reactivates the
+ * student; an inactive student is read-only until reactivated, but every
+ * role can still open their file. The other sections of the prototype (Matrícula,
  * Apoderados, Progreso, Metas) arrive with their own slices.
  */
 export default function StudentDetailPage() {
@@ -74,7 +85,11 @@ function StudentDetail({ student, onCancel }) {
   const canManage = useCanManageStudents();
   const [editing, setEditing] = useState(false);
   const [serverError, setServerError] = useState(null);
+  const isAdmin = useIsAdmin();
+  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
   const [updateStudent] = useUpdateStudentMutation();
+  const [deactivateStudent, { isLoading: deactivating }] = useDeactivateStudentMutation();
+  const [reactivateStudent, { isLoading: reactivating }] = useReactivateStudentMutation();
   const name = studentFullName(student);
 
   const {
@@ -94,6 +109,26 @@ function StudentDetail({ student, onCancel }) {
     }
   };
 
+  const confirmDeactivate = async () => {
+    try {
+      await deactivateStudent(student.id).unwrap();
+      notify('Alumno dado de baja.');
+    } catch (error) {
+      notify(errorDetail(error), 'error');
+    } finally {
+      setConfirmingDeactivate(false);
+    }
+  };
+
+  const reactivate = async () => {
+    try {
+      await reactivateStudent(student.id).unwrap();
+      notify('Alumno reactivado.');
+    } catch (error) {
+      notify(errorDetail(error), 'error');
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 760 }}>
       <BackLink />
@@ -105,31 +140,34 @@ function StudentDetail({ student, onCancel }) {
             {name}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, fontSize: 14, color: 'text.secondary' }}>
-            <Box
-              component="span"
-              sx={{
-                fontSize: 12,
-                fontWeight: 500,
-                px: 1.25,
-                py: 0.375,
-                borderRadius: '12px',
-                bgcolor: student.active ? '#E8F5D6' : '#ECEFF3',
-                color: student.active ? '#2F5A08' : '#4A5160',
-              }}
-            >
-              {student.active ? 'Activo' : 'Inactivo'}
-            </Box>
+            <StudentStatusChip active={student.active} />
             <span>{student.dni ? `DNI ${student.dni}` : 'Sin DNI'}</span>
           </Box>
         </Box>
-        {canManage && !editing && (
-          <Button
-            variant="outlined"
-            onClick={() => setEditing(true)}
-            sx={{ height: 44, px: 2.25, borderColor: '#C5CCD8', bgcolor: 'background.paper', color: colors.primary }}
-          >
-            Editar
-          </Button>
+        {student.active ? (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {canManage && !editing && (
+              <Button variant="outlined" onClick={() => setEditing(true)} sx={{ ...actionSx, color: colors.primary }}>
+                Editar
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                variant="outlined"
+                onClick={() => setConfirmingDeactivate(true)}
+                disabled={editing}
+                sx={{ ...actionSx, color: colors.danger }}
+              >
+                Dar de baja
+              </Button>
+            )}
+          </Box>
+        ) : (
+          isAdmin && (
+            <Button variant="outlined" onClick={reactivate} disabled={reactivating} sx={{ ...actionSx, color: colors.primary }}>
+              Reactivar
+            </Button>
+          )
         )}
       </Box>
 
@@ -168,6 +206,24 @@ function StudentDetail({ student, onCancel }) {
           </Box>
         )}
       </Box>
+
+      {!student.active && (
+        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+          Este alumno está dado de baja: no aparece en las listas de trabajo. Su historial sigue intacto.
+        </Typography>
+      )}
+
+      {confirmingDeactivate && (
+        <ConfirmDialog
+          title="¿Dar de baja al alumno?"
+          message={`${name} dejará de aparecer en las listas de alumnos activos, pero su historial (exámenes, metas y bitácora) permanece intacto. Podrás reactivarlo cuando quieras.`}
+          confirmLabel="Dar de baja"
+          danger
+          loading={deactivating}
+          onConfirm={confirmDeactivate}
+          onCancel={() => setConfirmingDeactivate(false)}
+        />
+      )}
     </Box>
   );
 }
