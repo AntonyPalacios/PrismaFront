@@ -9,6 +9,6 @@ import { baseQuery } from './baseQuery';
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['Me', 'ExamType', 'Career', 'User', 'Cycle', 'CycleList', 'Stage', 'Student'],
+  tagTypes: ['Me', 'ExamType', 'Career', 'User', 'Cycle', 'CycleList', 'Stage', 'Student', 'Enrollment'],
   endpoints: () => ({}),
 });

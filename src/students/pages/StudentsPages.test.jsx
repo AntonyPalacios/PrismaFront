@@ -54,13 +54,74 @@ function json(status, body) {
   });
 }
 
+// newest stage first, as the backend sends them
+const ENROLLMENT_CURRENT = {
+  id: 11,
+  studentId: 1,
+  cycleId: 20,
+  cycleName: '2026-II',
+  cycleStatus: 'ACTIVE',
+  stageId: 31,
+  stageName: 'Etapa 2',
+  stageStatus: 'ACTIVE',
+  careerId: null,
+  careerName: null,
+  active: true,
+};
+const ENROLLMENT_WITHDRAWN = {
+  ...ENROLLMENT_CURRENT,
+  id: 10,
+  stageId: 30,
+  stageName: 'Etapa 1',
+  stageStatus: 'CLOSED',
+  careerId: 2,
+  careerName: 'Letras',
+  active: false,
+};
+const ENROLLMENT_OLD = {
+  ...ENROLLMENT_CURRENT,
+  id: 9,
+  cycleId: 19,
+  cycleName: '2026-I',
+  cycleStatus: 'CLOSED',
+  stageId: 29,
+  stageName: 'Etapa 3',
+  stageStatus: 'CLOSED',
+  careerId: 1,
+  careerName: 'Ciencias',
+};
+const CYCLES = [
+  { id: 21, name: '2027-I', status: 'PLANNED' },
+  { id: 20, name: '2026-II', status: 'ACTIVE' },
+  { id: 19, name: '2026-I', status: 'CLOSED' },
+];
+const STAGES = {
+  20: [
+    { id: 30, cycleId: 20, name: 'Etapa 1', status: 'CLOSED' },
+    { id: 31, cycleId: 20, name: 'Etapa 2', status: 'ACTIVE' },
+    { id: 32, cycleId: 20, name: 'Etapa 3', status: 'PLANNED' },
+  ],
+  21: [{ id: 40, cycleId: 21, name: 'Etapa 1', status: 'PLANNED' }],
+};
+const CAREERS = [
+  { id: 1, name: 'Ciencias', active: true },
+  { id: 2, name: 'Letras', active: true },
+  { id: 3, name: 'Artes', active: false },
+];
+
 let fetchMock;
 let roles;
 let writeResponse;
+let enrollments;
 
 function route(request) {
   const url = new URL(request.url);
   if (url.pathname.endsWith('/auth/me')) return json(200, { id: 9, firstName: 'A', lastName: 'B', roles });
+  if (request.method === 'GET' && url.pathname.endsWith('/enrollments')) return json(200, enrollments);
+  if (request.method === 'GET' && url.pathname.endsWith('/cycles')) return json(200, CYCLES);
+  if (request.method === 'GET' && url.pathname.endsWith('/careers')) return json(200, CAREERS);
+  const stagesOf = url.pathname.match(/\/cycles\/(\d+)\/stages$/);
+  if (request.method === 'GET' && stagesOf) return json(200, STAGES[stagesOf[1]] ?? []);
   if (request.method === 'GET' && url.pathname.endsWith('/students')) {
     const search = (url.searchParams.get('search') ?? '').toLowerCase();
     const all = url.searchParams.get('includeInactive') === 'true' ? [LUCIA, VALERIA, MATEO] : [LUCIA, MATEO];
@@ -127,6 +188,7 @@ describe('Student display', () => {
 describe('Students screens', () => {
   beforeEach(() => {
     roles = ['TUTOR'];
+    enrollments = [];
     writeResponse = () => json(201, MATEO);
     fetchMock = vi.fn((request) => Promise.resolve(route(request)));
     vi.stubGlobal('fetch', fetchMock);
@@ -387,5 +449,170 @@ describe('Students screens', () => {
 
     expect(await screen.findByText('No encontramos el alumno solicitado.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '‹ Alumnos' })).toBeInTheDocument();
+  });
+});
+
+describe('Enrollments in the student file', () => {
+  beforeEach(() => {
+    roles = ['TUTOR'];
+    enrollments = [ENROLLMENT_CURRENT, ENROLLMENT_WITHDRAWN, ENROLLMENT_OLD];
+    writeResponse = () => json(201, ENROLLMENT_CURRENT);
+    fetchMock = vi.fn((request) => Promise.resolve(route(request)));
+    vi.stubGlobal('fetch', fetchMock);
+    document.cookie = 'XSRF-TOKEN=csrf-1';
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const section = () => screen.findByRole('region', { name: 'Matrículas' });
+  const card = (s, name) => within(s).getByRole('button', { name: `Matrícula ${name}` }).closest('li');
+
+  it('shows the history with career and status, newest stage first', async () => {
+    renderAt('/students/1');
+    const s = await section();
+
+    await within(s).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' });
+    const cards = within(s).getAllByRole('button', { name: /^Matrícula / }).map((b) => b.getAttribute('aria-label'));
+    expect(cards).toEqual(['Matrícula 2026-II · Etapa 2', 'Matrícula 2026-II · Etapa 1', 'Matrícula 2026-I · Etapa 3']);
+    expect(within(card(s, '2026-II · Etapa 2')).getByText('Sin definir')).toBeInTheDocument();
+    expect(within(card(s, '2026-II · Etapa 2')).getByText('Activa')).toBeInTheDocument();
+    expect(within(card(s, '2026-II · Etapa 1')).getByText('Retirada')).toBeInTheDocument();
+    expect(within(card(s, '2026-I · Etapa 3')).getByText('Cerrada')).toBeInTheDocument();
+    const request = requests().find((r) => new URL(r.url).pathname.endsWith('/enrollments'));
+    expect(new URL(request.url).searchParams.get('studentId')).toBe('1');
+  });
+
+  it('a coordinator does not see enrollments', async () => {
+    roles = ['COORDINADOR'];
+    renderAt('/students/1');
+
+    expect(await screen.findByRole('heading', { name: 'Campos Herrera, Lucía' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Matrículas' })).not.toBeInTheDocument();
+    expect(requests().some((r) => new URL(r.url).pathname.endsWith('/enrollments'))).toBe(false);
+  });
+
+  it('an inactive student shows the history but cannot be enrolled', async () => {
+    renderAt('/students/3');
+    const s = await section();
+
+    expect(await within(s).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' })).toBeInTheDocument();
+    expect(within(s).queryByRole('button', { name: '+ Nueva matrícula' })).not.toBeInTheDocument();
+  });
+
+  it('enrolls in a stage of an open cycle the student is not in yet, with an optional career', async () => {
+    renderAt('/students/1');
+    fireEvent.click(within(await section()).getByRole('button', { name: '+ Nueva matrícula' }));
+    const form = await screen.findByRole('form', { name: 'Nueva matrícula' });
+
+    // the active cycle comes first; closed cycles are not offered
+    const cycle = within(form).getByLabelText('Ciclo');
+    await waitFor(() => expect(cycle).toHaveValue('20'));
+    expect(within(cycle).queryByRole('option', { name: '2026-I' })).not.toBeInTheDocument();
+    // stages already enrolled (active or withdrawn) are not offered
+    const stage = within(form).getByLabelText(/Etapa/);
+    await within(stage).findByRole('option', { name: 'Etapa 3' });
+    expect(within(stage).getAllByRole('option').map((o) => o.textContent)).toEqual(['Elige una etapa…', 'Etapa 3']);
+    // only active careers
+    const career = within(form).getByLabelText(/Carrera/);
+    await within(career).findByRole('option', { name: 'Letras' });
+    expect(within(career).queryByRole('option', { name: 'Artes' })).not.toBeInTheDocument();
+
+    fireEvent.click(within(form).getByRole('button', { name: 'Matricular' }));
+    expect(await within(form).findByText('Elige la etapa de la matrícula.')).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+
+    fireEvent.change(stage, { target: { value: '32' } });
+    fireEvent.change(career, { target: { value: '2' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Matricular' }));
+
+    expect(await screen.findByText('Alumno matriculado.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('POST');
+    expect(new URL(request.url).pathname).toMatch(/\/enrollments$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+    expect(await request.json()).toEqual({ studentId: 1, stageId: 32, careerId: 2 });
+  });
+
+  it('changing the cycle offers its stages', async () => {
+    renderAt('/students/1');
+    fireEvent.click(within(await section()).getByRole('button', { name: '+ Nueva matrícula' }));
+    const form = await screen.findByRole('form', { name: 'Nueva matrícula' });
+    const cycle = within(form).getByLabelText('Ciclo');
+    await waitFor(() => expect(cycle).toHaveValue('20'));
+
+    fireEvent.change(cycle, { target: { value: '21' } });
+
+    const stage = within(form).getByLabelText(/Etapa/);
+    await within(stage).findByRole('option', { name: 'Etapa 1' });
+    fireEvent.change(stage, { target: { value: '40' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Matricular' }));
+
+    await screen.findByText('Alumno matriculado.');
+    expect(await writes()[0].json()).toEqual({ studentId: 1, stageId: 40, careerId: null });
+  });
+
+  it('keeps the form open with the backend message', async () => {
+    writeResponse = () => json(409, { status: 409, detail: 'No se puede matricular en una etapa de un ciclo cerrado.' });
+    renderAt('/students/1');
+    fireEvent.click(within(await section()).getByRole('button', { name: '+ Nueva matrícula' }));
+    const form = await screen.findByRole('form', { name: 'Nueva matrícula' });
+    const stage = within(form).getByLabelText(/Etapa/);
+    await within(stage).findByRole('option', { name: 'Etapa 3' });
+
+    fireEvent.change(stage, { target: { value: '32' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Matricular' }));
+
+    expect(await within(form).findByText('No se puede matricular en una etapa de un ciclo cerrado.')).toBeInTheDocument();
+  });
+
+  it('saves the career of an active enrollment', async () => {
+    writeResponse = () => json(200, { ...ENROLLMENT_CURRENT, careerId: 1, careerName: 'Ciencias' });
+    renderAt('/students/1');
+    const s = await section();
+    fireEvent.click(await within(s).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' }));
+    const form = await screen.findByRole('form', { name: 'Matrícula' });
+
+    const career = within(form).getByLabelText(/Carrera/);
+    await within(career).findByRole('option', { name: 'Ciencias' });
+    fireEvent.change(career, { target: { value: '1' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Guardar carrera' }));
+
+    expect(await screen.findByText('Carrera guardada.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('PUT');
+    expect(new URL(request.url).pathname).toMatch(/\/enrollments\/11$/);
+    expect(await request.json()).toEqual({ careerId: 1 });
+  });
+
+  it('withdraws from the stage after confirming', async () => {
+    writeResponse = () => json(204);
+    renderAt('/students/1');
+    fireEvent.click(await within(await section()).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' }));
+    const form = await screen.findByRole('form', { name: 'Matrícula' });
+
+    fireEvent.click(within(form).getByRole('button', { name: 'Retirar de la etapa' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Retirar de la etapa?' });
+    expect(writes()).toHaveLength(0);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Retirar' }));
+
+    expect(await screen.findByText('Alumno retirado de la etapa.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('DELETE');
+    expect(new URL(request.url).pathname).toMatch(/\/enrollments\/11$/);
+  });
+
+  it.each([
+    ['2026-II · Etapa 1', 'El alumno se retiró de esta etapa: la matrícula queda como historial.', 'Letras'],
+    ['2026-I · Etapa 3', 'Esta matrícula es de un ciclo cerrado: queda como historial.', 'Ciencias'],
+  ])('opens %s read-only', async (name, note, careerName) => {
+    renderAt('/students/1');
+    fireEvent.click(await within(await section()).findByRole('button', { name: `Matrícula ${name}` }));
+    const form = await screen.findByRole('form', { name: 'Matrícula' });
+
+    expect(within(form).getByText(note)).toBeInTheDocument();
+    expect(within(form).getByText(careerName)).toBeInTheDocument();
+    expect(within(form).queryByLabelText(/Carrera/)).not.toBeInTheDocument();
+    expect(within(form).queryByRole('button', { name: 'Guardar carrera' })).not.toBeInTheDocument();
+    expect(within(form).queryByRole('button', { name: 'Retirar de la etapa' })).not.toBeInTheDocument();
   });
 });

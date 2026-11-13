@@ -19,6 +19,7 @@ import {
   useReactivateStudentMutation,
   useUpdateStudentMutation,
 } from '../api/studentsApi';
+import EnrollmentsSection from '../components/EnrollmentsSection';
 import StudentFields from '../components/StudentFields';
 import { studentSchema, toStudentBody, toStudentForm } from '../components/studentSchema';
 import { studentFullName, useCanManageStudents } from '../studentDisplay';
@@ -31,8 +32,9 @@ const actionSx = { height: 44, px: 2.25, borderColor: '#C5CCD8', bgcolor: 'backg
  * avatar, "Apellidos, Nombres", status and DNI, and the "Datos" card,
  * read-only until "Editar". An ADMIN retires (confirmed) or reactivates the
  * student; an inactive student is read-only until reactivated, but every
- * role can still open their file. The other sections of the prototype (Matrícula,
- * Apoderados, Progreso, Metas) arrive with their own slices.
+ * role can still open their file. ADMIN and TUTOR also see "Matrículas".
+ * The other sections of the prototype (Apoderados, Progreso, Metas) arrive
+ * with their own slices.
  */
 export default function StudentDetailPage() {
   const { id } = useParams();
@@ -206,6 +208,9 @@ function StudentDetail({ student, onCancel }) {
           </Box>
         )}
       </Box>
+
+      {/* ADMIN and TUTOR: a coordinator does not see enrollments */}
+      {canManage && <EnrollmentsSection student={student} />}
 
       {!student.active && (
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
