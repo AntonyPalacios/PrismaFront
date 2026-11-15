@@ -710,6 +710,10 @@ describe('Tutor of an enrollment', () => {
     fireEvent.click(button);
 
     expect(await screen.findByText('Tutor asignado.')).toBeInTheDocument();
+    // the student (file and list) is fetched again: it carries the current tutor
+    const studentGets = () =>
+      requests().filter((r) => r.method === 'GET' && new URL(r.url).pathname.endsWith('/students/1')).length;
+    await waitFor(() => expect(studentGets()).toBe(2));
     const [request] = writes();
     expect(request.method).toBe('POST');
     expect(new URL(request.url).pathname).toMatch(/\/enrollments\/11\/tutor-assignments$/);
