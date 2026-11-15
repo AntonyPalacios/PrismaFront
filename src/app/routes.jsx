@@ -2,6 +2,7 @@ import { Navigate } from 'react-router';
 import CycleDetailPage from '../academic/pages/CycleDetailPage';
 import CyclesPage from '../academic/pages/CyclesPage';
 import CatalogPage from '../catalog/pages/CatalogPage';
+import ExamsPage from '../exams/pages/ExamsPage';
 import HomePage from '../home/HomePage';
 import AppLayout from '../layout/AppLayout';
 import AdminRoute from '../users/components/AdminRoute';
@@ -25,6 +26,7 @@ export const routes = [
           { index: true, element: <HomePage /> },
           { path: 'students', element: <StudentsPage /> },
           { path: 'students/:id', element: <StudentDetailPage /> },
+          { path: 'exams', element: <ExamsPage /> },
           { path: 'catalog', element: <CatalogPage /> },
           {
             element: <AdminRoute />,

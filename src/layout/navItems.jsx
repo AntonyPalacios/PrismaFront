@@ -1,3 +1,4 @@
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
@@ -11,6 +12,7 @@ export const NAV_ITEMS = [
   { to: '/', label: 'Inicio', icon: <HomeOutlinedIcon /> },
   // a tutor (not admin) only gets their own students
   { to: '/students', label: 'Alumnos', tutorLabel: 'Mis alumnos', icon: <PeopleAltOutlinedIcon /> },
+  { to: '/exams', label: 'Exámenes', icon: <AssignmentOutlinedIcon /> },
   { to: '/cycles', label: 'Ciclos', icon: <CalendarMonthOutlinedIcon />, adminOnly: true },
   { to: '/catalog', label: 'Catálogo', icon: <MenuBookOutlinedIcon /> },
   { to: '/users', label: 'Usuarios', icon: <ManageAccountsOutlinedIcon />, adminOnly: true },
