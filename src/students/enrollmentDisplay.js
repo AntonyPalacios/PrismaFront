@@ -19,3 +19,7 @@ export function isEnrollmentEditable(enrollment) {
 export function careerLabel(enrollment) {
   return enrollment.careerName ?? 'Sin definir';
 }
+
+export function tutorLabel(enrollment) {
+  return enrollment.tutorName ?? 'Sin tutor';
+}

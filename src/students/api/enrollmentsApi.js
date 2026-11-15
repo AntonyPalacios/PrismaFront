@@ -25,7 +25,8 @@ export const enrollmentsApi = baseApi.injectEndpoints({
     // withdraw from the stage (soft): the enrollment stays in the history
     withdrawEnrollment: build.mutation({
       query: (id) => ({ url: `/enrollments/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Enrollment'],
+      // withdrawing also ends the current tutor
+      invalidatesTags: ['Enrollment', 'TutorAssignment'],
     }),
   }),
 });

@@ -89,7 +89,23 @@ const ENROLLMENT_OLD = {
   stageStatus: 'CLOSED',
   careerId: 1,
   careerName: 'Ciencias',
+  tutorId: 51,
+  tutorName: 'Vargas Soto, Julia',
 };
+// tutor history per enrollment, newest first
+const TUTOR_HISTORY = {
+  9: [
+    { id: 72, enrollmentId: 9, tutorId: 51, tutorName: 'Vargas Soto, Julia', validFrom: '2026-03-02T10:00:00-05:00', validTo: null },
+    { id: 71, enrollmentId: 9, tutorId: 50, tutorName: 'Ríos Paredes, María', validFrom: '2026-01-05T09:00:00-05:00', validTo: '2026-03-02T10:00:00-05:00' },
+  ],
+};
+const USERS = [
+  { id: 52, firstName: 'Jorge', lastNamePat: 'Arce', lastNameMat: 'Delgado', roles: ['TUTOR'], active: true },
+  { id: 53, firstName: 'Rosa', lastNamePat: 'Lima', lastNameMat: null, roles: ['COORDINADOR'], active: true },
+  { id: 50, firstName: 'María', lastNamePat: 'Ríos', lastNameMat: 'Paredes', roles: ['TUTOR', 'ADMIN'], active: true },
+  { id: 54, firstName: 'Ana', lastNamePat: 'Soto', lastNameMat: null, roles: ['TUTOR'], active: false },
+  { id: 51, firstName: 'Julia', lastNamePat: 'Vargas', lastNameMat: 'Soto', roles: ['TUTOR'], active: true },
+];
 const CYCLES = [
   { id: 21, name: '2027-I', status: 'PLANNED' },
   { id: 20, name: '2026-II', status: 'ACTIVE' },
@@ -120,6 +136,9 @@ function route(request) {
   if (request.method === 'GET' && url.pathname.endsWith('/enrollments')) return json(200, enrollments);
   if (request.method === 'GET' && url.pathname.endsWith('/cycles')) return json(200, CYCLES);
   if (request.method === 'GET' && url.pathname.endsWith('/careers')) return json(200, CAREERS);
+  const tutorsOf = url.pathname.match(/\/enrollments\/(\d+)\/tutor-assignments$/);
+  if (request.method === 'GET' && tutorsOf) return json(200, TUTOR_HISTORY[tutorsOf[1]] ?? []);
+  if (request.method === 'GET' && url.pathname.endsWith('/users')) return json(200, USERS);
   const stagesOf = url.pathname.match(/\/cycles\/(\d+)\/stages$/);
   if (request.method === 'GET' && stagesOf) return json(200, STAGES[stagesOf[1]] ?? []);
   if (request.method === 'GET' && url.pathname.endsWith('/students')) {
@@ -474,7 +493,8 @@ describe('Enrollments in the student file', () => {
     await within(s).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' });
     const cards = within(s).getAllByRole('button', { name: /^Matrícula / }).map((b) => b.getAttribute('aria-label'));
     expect(cards).toEqual(['Matrícula 2026-II · Etapa 2', 'Matrícula 2026-II · Etapa 1', 'Matrícula 2026-I · Etapa 3']);
-    expect(within(card(s, '2026-II · Etapa 2')).getByText('Sin definir')).toBeInTheDocument();
+    expect(within(card(s, '2026-II · Etapa 2')).getByText('Sin definir · Sin tutor')).toBeInTheDocument();
+    expect(within(card(s, '2026-I · Etapa 3')).getByText('Ciencias · Vargas Soto, Julia')).toBeInTheDocument();
     expect(within(card(s, '2026-II · Etapa 2')).getByText('Activa')).toBeInTheDocument();
     expect(within(card(s, '2026-II · Etapa 1')).getByText('Retirada')).toBeInTheDocument();
     expect(within(card(s, '2026-I · Etapa 3')).getByText('Cerrada')).toBeInTheDocument();
@@ -575,7 +595,7 @@ describe('Enrollments in the student file', () => {
     const career = within(form).getByLabelText(/Carrera/);
     await within(career).findByRole('option', { name: 'Ciencias' });
     fireEvent.change(career, { target: { value: '1' } });
-    fireEvent.click(within(form).getByRole('button', { name: 'Guardar carrera' }));
+    fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
 
     expect(await screen.findByText('Carrera guardada.')).toBeInTheDocument();
     const [request] = writes();
@@ -612,7 +632,100 @@ describe('Enrollments in the student file', () => {
     expect(within(form).getByText(note)).toBeInTheDocument();
     expect(within(form).getByText(careerName)).toBeInTheDocument();
     expect(within(form).queryByLabelText(/Carrera/)).not.toBeInTheDocument();
-    expect(within(form).queryByRole('button', { name: 'Guardar carrera' })).not.toBeInTheDocument();
+    expect(within(form).queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument();
     expect(within(form).queryByRole('button', { name: 'Retirar de la etapa' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Tutor of an enrollment', () => {
+  beforeEach(() => {
+    roles = ['TUTOR'];
+    enrollments = [ENROLLMENT_CURRENT, ENROLLMENT_WITHDRAWN, ENROLLMENT_OLD];
+    writeResponse = () => json(201, TUTOR_HISTORY[9][0]);
+    fetchMock = vi.fn((request) => Promise.resolve(route(request)));
+    vi.stubGlobal('fetch', fetchMock);
+    document.cookie = 'XSRF-TOKEN=csrf-1';
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function openEnrollment(name) {
+    renderAt('/students/1');
+    const s = await screen.findByRole('region', { name: 'Matrículas' });
+    fireEvent.click(await within(s).findByRole('button', { name: `Matrícula ${name}` }));
+    const form = await screen.findByRole('form', { name: 'Matrícula' });
+    return within(form).getByRole('region', { name: 'Tutor' });
+  }
+
+  it('a tutor sees the current tutor and the history, without the selector', async () => {
+    enrollments = [{ ...ENROLLMENT_OLD, cycleStatus: 'ACTIVE', stageStatus: 'ACTIVE' }];
+    const card = await openEnrollment('2026-I · Etapa 3');
+
+    expect(await within(card).findByText('Vigente desde 02 mar 2026')).toBeInTheDocument();
+    const history = within(card).getByRole('list', { name: 'Historial de tutores' });
+    const rows = within(history).getAllByRole('listitem').map((li) => li.textContent);
+    expect(rows).toEqual(['Vargas Soto, Julia02 mar – vigente', 'Ríos Paredes, María05 ene – 02 mar']);
+    expect(within(card).queryByRole('button', { name: /tutor$/ })).not.toBeInTheDocument();
+    expect(requests().some((r) => new URL(r.url).pathname.endsWith('/users'))).toBe(false);
+  });
+
+  it('an enrollment without tutor says so', async () => {
+    const card = await openEnrollment('2026-II · Etapa 2');
+
+    expect(await within(card).findByText('Sin tutor asignado')).toBeInTheDocument();
+    expect(within(card).queryByRole('list', { name: 'Historial de tutores' })).not.toBeInTheDocument();
+  });
+
+  it('an admin assigns a tutor among the active tutors', async () => {
+    roles = ['ADMIN'];
+    const card = await openEnrollment('2026-II · Etapa 2');
+
+    const select = await within(card).findByLabelText('Tutor (A–Z por apellido)');
+    await within(select).findByRole('option', { name: 'Arce Delgado, Jorge' });
+    // active users with the TUTOR role only, in the backend's order
+    expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Elige un tutor…',
+      'Arce Delgado, Jorge',
+      'Ríos Paredes, María',
+      'Vargas Soto, Julia',
+    ]);
+    const button = within(card).getByRole('button', { name: 'Asignar tutor' });
+    expect(button).toBeDisabled();
+
+    fireEvent.change(select, { target: { value: '52' } });
+    fireEvent.click(button);
+
+    expect(await screen.findByText('Tutor asignado.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('POST');
+    expect(new URL(request.url).pathname).toMatch(/\/enrollments\/11\/tutor-assignments$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+    expect(await request.json()).toEqual({ tutorUserId: 52 });
+  });
+
+  it('an admin reassigns: the current tutor is not offered again', async () => {
+    roles = ['ADMIN'];
+    enrollments = [{ ...ENROLLMENT_OLD, cycleStatus: 'ACTIVE', stageStatus: 'ACTIVE' }];
+    const card = await openEnrollment('2026-I · Etapa 3');
+
+    const select = await within(card).findByLabelText('Nuevo tutor (A–Z por apellido)');
+    await within(select).findByRole('option', { name: 'Arce Delgado, Jorge' });
+    expect(within(select).queryByRole('option', { name: 'Vargas Soto, Julia' })).not.toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: '50' } });
+    fireEvent.click(within(card).getByRole('button', { name: 'Reasignar tutor' }));
+
+    expect(await screen.findByText('Tutor reasignado.')).toBeInTheDocument();
+    expect(await writes()[0].json()).toEqual({ tutorUserId: 50 });
+  });
+
+  it('a closed-cycle enrollment shows the history without the selector, even for an admin', async () => {
+    roles = ['ADMIN'];
+    const card = await openEnrollment('2026-I · Etapa 3');
+
+    expect(await within(card).findByText('Vigente desde 02 mar 2026')).toBeInTheDocument();
+    expect(within(card).getByRole('list', { name: 'Historial de tutores' })).toBeInTheDocument();
+    expect(within(card).queryByLabelText(/tutor \(A–Z/i)).not.toBeInTheDocument();
+    expect(within(card).queryByRole('button', { name: /tutor$/ })).not.toBeInTheDocument();
   });
 });
