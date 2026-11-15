@@ -12,16 +12,20 @@ import { useCreateStudentMutation } from '../api/studentsApi';
 import StudentFields from './StudentFields';
 import { EMPTY_STUDENT, studentSchema, toStudentBody } from './studentSchema';
 
-/** "Nuevo alumno": bottom sheet on mobile, dialog on desktop. */
-export default function CreateStudentForm({ onClose }) {
+/**
+ * "Nuevo alumno": bottom sheet on mobile, dialog on desktop. Once registered,
+ * onCreated gets the new student (the list opens their file, so a tutor can
+ * enroll them right away even if they are not "theirs" yet).
+ */
+export default function CreateStudentForm({ onClose, onCreated }) {
   return (
     <ResponsiveSheet onClose={onClose}>
-      <CreateStudentFormContent onClose={onClose} />
+      <CreateStudentFormContent onClose={onClose} onCreated={onCreated} />
     </ResponsiveSheet>
   );
 }
 
-function CreateStudentFormContent({ onClose }) {
+function CreateStudentFormContent({ onClose, onCreated }) {
   const notify = useNotify();
   const [serverError, setServerError] = useState(null);
   const [createStudent] = useCreateStudentMutation();
@@ -34,9 +38,10 @@ function CreateStudentFormContent({ onClose }) {
   const onSubmit = async (values) => {
     setServerError(null);
     try {
-      await createStudent(toStudentBody(values)).unwrap();
+      const created = await createStudent(toStudentBody(values)).unwrap();
       notify('Alumno registrado.');
       onClose();
+      onCreated?.(created);
     } catch (error) {
       setServerError(errorDetail(error)); // e.g. 409 duplicate DNI: keep what was typed
     }

@@ -22,7 +22,7 @@ import {
 import EnrollmentsSection from '../components/EnrollmentsSection';
 import StudentFields from '../components/StudentFields';
 import { studentSchema, toStudentBody, toStudentForm } from '../components/studentSchema';
-import { studentFullName, useCanManageStudents } from '../studentDisplay';
+import { studentFullName, useCanEditStudent, useCanManageStudents } from '../studentDisplay';
 import { StudentAvatar, StudentStatusChip } from './StudentsPage';
 
 const actionSx = { height: 44, px: 2.25, borderColor: '#C5CCD8', bgcolor: 'background.paper' };
@@ -85,6 +85,7 @@ function BackLink() {
 function StudentDetail({ student, onCancel }) {
   const notify = useNotify();
   const canManage = useCanManageStudents();
+  const canEdit = useCanEditStudent(student);
   const [editing, setEditing] = useState(false);
   const [serverError, setServerError] = useState(null);
   const isAdmin = useIsAdmin();
@@ -148,7 +149,7 @@ function StudentDetail({ student, onCancel }) {
         </Box>
         {student.active ? (
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {canManage && !editing && (
+            {canEdit && !editing && (
               <Button variant="outlined" onClick={() => setEditing(true)} sx={{ ...actionSx, color: colors.primary }}>
                 Editar
               </Button>

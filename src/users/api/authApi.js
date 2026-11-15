@@ -31,6 +31,12 @@ export function useIsAdmin() {
   return Boolean(me?.roles?.includes('ADMIN'));
 }
 
+/** A TUTOR who is not also an ADMIN: sees "Mis alumnos" (only their current students). */
+export function useIsOnlyTutor() {
+  const { data: me } = useGetMeQuery();
+  return Boolean(me?.roles?.includes('TUTOR') && !me.roles.includes('ADMIN'));
+}
+
 export const ROLE_LABELS ={ ADMIN: 'Admin', TUTOR: 'Tutor', COORDINADOR: 'Coordinador' };
 
 /** "Apellidos, Nombres" — the display order agreed for every person in the app. */

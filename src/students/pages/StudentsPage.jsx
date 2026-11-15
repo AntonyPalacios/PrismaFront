@@ -10,6 +10,7 @@ import Fab from '@mui/material/Fab';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import InputBase from '@mui/material/InputBase';
 import Switch from '@mui/material/Switch';
+import TextField from '@mui/material/TextField';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -23,6 +24,8 @@ import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
 import { useGetStudentsQuery } from '../api/studentsApi';
 import CreateStudentForm from '../components/CreateStudentForm';
+import { useIsAdmin, useIsOnlyTutor } from '../../users/api/authApi';
+import { useGetUsersQuery } from '../../users/api/usersApi';
 import { studentFullName, studentInitials, useCanManageStudents } from '../studentDisplay';
 
 const SEARCH_DELAY_MS = 300;
@@ -42,8 +45,12 @@ function useDebounced(value, delayMs) {
  * (name or DNI, resolved by the backend), cards on mobile and a table on
  * desktop, always in the backend's A–Z order by surnames. A row opens the
  * student's file. Inactive (retired) students only appear with "Mostrar
- * inactivos", for every role. The tutor filter and each student's tutor arrive with
- * enrollment and tutoring.
+ * inactivos", for every role.
+ * Each student shows the stage and tutor of their current enrollment. An
+ * ADMIN filters by tutor or "Sin tutor asignado"; a TUTOR (not admin) gets
+ * "Mis alumnos": only their current students, without tutor column or filter
+ * (the backend already narrows the list). A COORDINADOR sees the tutor but
+ * does not filter. Registering a student opens their file.
  */
 export default function StudentsPage() {
   const navigate = useNavigate();
@@ -51,14 +58,27 @@ export default function StudentsPage() {
   const [typed, setTyped] = useState('');
   const [creating, setCreating] = useState(false);
   const [includeInactive, setIncludeInactive] = useState(false);
+  // '' = every tutor, 'none' = without tutor, otherwise a tutor's id (ADMIN only)
+  const [tutorFilter, setTutorFilter] = useState('');
+  const isAdmin = useIsAdmin();
+  const onlyTutor = useIsOnlyTutor();
+  const showTutor = !onlyTutor;
   const search = useDebounced(typed.trim(), SEARCH_DELAY_MS);
-  const { data: students = [], isLoading, isFetching, error } = useGetStudentsQuery({ search, includeInactive });
+  const { data: students = [], isLoading, isFetching, error } = useGetStudentsQuery({
+    search,
+    includeInactive,
+    tutorId: tutorFilter && tutorFilter !== 'none' ? Number(tutorFilter) : null,
+    withoutTutor: tutorFilter === 'none',
+  });
   const open = (student) => navigate(`/students/${student.id}`);
 
   const inactiveCount = students.filter((student) => !student.active).length;
   const count = `${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'}`;
   let countLabel = search ? `${count} para "${search}"` : count;
-  if (includeInactive) {
+  if (onlyTutor && !search) {
+    countLabel = `${count} ${students.length === 1 ? 'asignado' : 'asignados'} a ti`;
+    if (includeInactive) countLabel += ` · ${inactiveCount} ${inactiveCount === 1 ? 'inactivo' : 'inactivos'}`;
+  } else if (includeInactive) {
     countLabel += ` · ${inactiveCount} ${inactiveCount === 1 ? 'inactivo' : 'inactivos'}`;
   } else if (!search) {
     countLabel += ` ${students.length === 1 ? 'activo' : 'activos'}`;
@@ -69,9 +89,11 @@ export default function StudentsPage() {
       <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'flex-end', justifyContent: 'space-between', gap: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           <Typography component="h1" sx={{ fontSize: 28, fontWeight: 500 }}>
-            Alumnos
+            {onlyTutor ? 'Mis alumnos' : 'Alumnos'}
           </Typography>
-          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>La ficha de cada alumno de la academia.</Typography>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+            {onlyTutor ? 'Los alumnos que tienes asignados en la etapa vigente.' : 'La ficha de cada alumno de la academia.'}
+          </Typography>
         </Box>
         {canManage && (
           <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={() => setCreating(true)}>
@@ -112,6 +134,7 @@ export default function StudentsPage() {
             sx={{ flex: 1, minWidth: 0, fontSize: 15 }}
           />
         </Box>
+        {isAdmin && <TutorFilter value={tutorFilter} onChange={setTutorFilter} />}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           <Typography role="status" sx={{ fontSize: 12, color: 'text.secondary' }}>
             {isLoading || isFetching ? 'Buscando…' : `${countLabel} · orden A–Z por apellido`}
@@ -136,7 +159,7 @@ export default function StudentsPage() {
 
       {!isLoading && !error && students.length === 0 && (
         <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
-          {search ? 'Ningún alumno coincide con la búsqueda.' : 'Aún no hay alumnos registrados.'}
+          {emptyMessage({ search, tutorFilter, onlyTutor })}
         </Typography>
       )}
 
@@ -149,7 +172,7 @@ export default function StudentsPage() {
           >
             {students.map((student) => (
               <Box component="li" key={student.id}>
-                <StudentCard student={student} onOpen={() => open(student)} />
+                <StudentCard student={student} showTutor={showTutor} onOpen={() => open(student)} />
               </Box>
             ))}
           </Box>
@@ -170,7 +193,8 @@ export default function StudentsPage() {
                 <TableRow>
                   <TableCell>Nombre</TableCell>
                   <TableCell>DNI</TableCell>
-                  <TableCell>Correo</TableCell>
+                  {showTutor && <TableCell>Tutor actual</TableCell>}
+                  <TableCell>Etapa vigente</TableCell>
                   <TableCell>Teléfono</TableCell>
                   <TableCell>Estado</TableCell>
                 </TableRow>
@@ -193,7 +217,12 @@ export default function StudentsPage() {
                       </Box>
                     </TableCell>
                     <TableCell>{student.dni ?? <Muted>Sin DNI</Muted>}</TableCell>
-                    <TableCell>{student.email ?? <Muted>—</Muted>}</TableCell>
+                    {showTutor && (
+                      <TableCell>
+                        <TutorLabel student={student} />
+                      </TableCell>
+                    )}
+                    <TableCell>{student.currentStageName ?? <Muted>—</Muted>}</TableCell>
                     <TableCell>{student.phone ?? <Muted>—</Muted>}</TableCell>
                     <TableCell>
                       <StudentStatusChip active={student.active} />
@@ -229,7 +258,48 @@ export default function StudentsPage() {
         </Fab>
       )}
 
-      {creating && <CreateStudentForm onClose={() => setCreating(false)} />}
+      {creating && <CreateStudentForm onClose={() => setCreating(false)} onCreated={open} />}
+    </Box>
+  );
+}
+
+function emptyMessage({ search, tutorFilter, onlyTutor }) {
+  if (search || tutorFilter) return 'Ningún alumno coincide con la búsqueda.';
+  if (onlyTutor) return 'Aún no tienes alumnos asignados en la etapa vigente.';
+  return 'Aún no hay alumnos registrados.';
+}
+
+/** ADMIN only: every tutor, "Sin tutor asignado" or one active tutor (A–Z by surname, from the backend). */
+function TutorFilter({ value, onChange }) {
+  const { data: users = [] } = useGetUsersQuery();
+  const tutors = users.filter((user) => user.active && user.roles.includes('TUTOR'));
+  return (
+    <TextField
+      select
+      size="small"
+      label="Tutor"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      slotProps={{ select: { native: true }, inputLabel: { shrink: true }, htmlInput: { 'aria-label': 'Filtrar por tutor' } }}
+      sx={{ maxWidth: { md: 320 } }}
+    >
+      <option value="">Todos los tutores</option>
+      <option value="none">Sin tutor asignado</option>
+      {tutors.map((tutor) => (
+        <option key={tutor.id} value={tutor.id}>
+          {[tutor.lastNamePat, tutor.lastNameMat].filter(Boolean).join(' ')}, {tutor.firstName}
+        </option>
+      ))}
+    </TextField>
+  );
+}
+
+/** The current tutor, or a "Sin tutor" chip in warning orange, as in the prototype. */
+function TutorLabel({ student }) {
+  if (student.tutorName) return student.tutorName;
+  return (
+    <Box component="span" sx={{ fontSize: 13, fontWeight: 500, px: 1.25, py: 0.375, borderRadius: '12px', bgcolor: '#FFF0DD', color: '#7A4100' }}>
+      Sin tutor
     </Box>
   );
 }
@@ -242,7 +312,7 @@ function Muted({ children }) {
   );
 }
 
-function StudentCard({ student, onOpen }) {
+function StudentCard({ student, showTutor, onOpen }) {
   return (
     <ButtonBase
       onClick={onOpen}
@@ -271,6 +341,11 @@ function StudentCard({ student, onOpen }) {
           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{student.dni ? `DNI ${student.dni}` : 'Sin DNI'}</Typography>
           {!student.active && <StudentStatusChip active={false} />}
         </Box>
+        {showTutor && (
+          <Typography sx={{ fontSize: 12, fontWeight: 500, color: student.tutorName ? '#3A4150' : '#7A4100' }}>
+            {student.tutorName ? `Tutor: ${student.tutorName}` : 'Sin tutor asignado'}
+          </Typography>
+        )}
       </Box>
       <ChevronRightIcon aria-hidden="true" sx={{ fontSize: 20, color: '#8C96A8' }} />
     </ButtonBase>

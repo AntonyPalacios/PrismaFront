@@ -22,6 +22,10 @@ const LUCIA = {
   phone: '987654321',
   birthDate: '2009-05-17',
   active: true,
+  // her current tutor is the logged-in user (id 9 in /auth/me): a TUTOR may edit her
+  currentStageName: 'Etapa 2',
+  tutorId: 9,
+  tutorName: 'B, A',
 };
 const MATEO = {
   id: 2,
@@ -144,7 +148,15 @@ function route(request) {
   if (request.method === 'GET' && url.pathname.endsWith('/students')) {
     const search = (url.searchParams.get('search') ?? '').toLowerCase();
     const all = url.searchParams.get('includeInactive') === 'true' ? [LUCIA, VALERIA, MATEO] : [LUCIA, MATEO];
-    return json(200, all.filter((s) => studentFullName(s).toLowerCase().includes(search)));
+    const tutorId = url.searchParams.get('tutorId');
+    const withoutTutor = url.searchParams.get('withoutTutor') === 'true';
+    return json(
+      200,
+      all
+        .filter((s) => studentFullName(s).toLowerCase().includes(search))
+        .filter((s) => !tutorId || String(s.tutorId) === tutorId)
+        .filter((s) => !withoutTutor || !s.tutorId),
+    );
   }
   const detail = url.pathname.match(/\/students\/(\d+)$/);
   if (request.method === 'GET' && detail) {
@@ -226,7 +238,8 @@ describe('Students screens', () => {
 
     const cards = screen.getAllByRole('button', { name: /^Ver / }).map((card) => card.getAttribute('aria-label'));
     expect(cards).toEqual(['Ver Campos Herrera, Lucía', 'Ver Chávez, Mateo']);
-    expect(screen.getByText('2 alumnos activos · orden A–Z por apellido')).toBeInTheDocument();
+    // a TUTOR only gets their own students (the backend narrows the list)
+    expect(screen.getByText('2 alumnos asignados a ti · orden A–Z por apellido')).toBeInTheDocument();
   });
 
   it('asks the backend for what is typed in the search box, once the user pauses', async () => {
@@ -407,7 +420,8 @@ describe('Students screens', () => {
 
     const valeria = (await screen.findByRole('button', { name: 'Ver Díaz, Valeria' })).closest('li');
     expect(within(valeria).getByText('Inactivo')).toBeInTheDocument();
-    expect(screen.getByText('3 alumnos · 1 inactivo · orden A–Z por apellido')).toBeInTheDocument();
+    const count = role === 'TUTOR' ? '3 alumnos asignados a ti · 1 inactivo' : '3 alumnos · 1 inactivo';
+    expect(screen.getByText(`${count} · orden A–Z por apellido`)).toBeInTheDocument();
     const lastList = requests()
       .map((r) => new URL(r.url))
       .filter((url) => url.pathname.endsWith('/students'))
@@ -727,5 +741,107 @@ describe('Tutor of an enrollment', () => {
     expect(within(card).getByRole('list', { name: 'Historial de tutores' })).toBeInTheDocument();
     expect(within(card).queryByLabelText(/tutor \(A–Z/i)).not.toBeInTheDocument();
     expect(within(card).queryByRole('button', { name: /tutor$/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('Students by tutor', () => {
+  beforeEach(() => {
+    roles = ['ADMIN'];
+    enrollments = [];
+    writeResponse = () => json(201, { ...MATEO, id: 2 });
+    fetchMock = vi.fn((request) => Promise.resolve(route(request)));
+    vi.stubGlobal('fetch', fetchMock);
+    document.cookie = 'XSRF-TOKEN=csrf-1';
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const lastListUrl = () =>
+    requests()
+      .map((r) => new URL(r.url))
+      .filter((url) => url.pathname.endsWith('/students'))
+      .at(-1);
+
+  it('an admin sees each current tutor and stage and filters by tutor or without tutor', async () => {
+    renderAt('/students');
+
+    const lucia = (await screen.findByRole('button', { name: 'Ver Campos Herrera, Lucía' })).closest('li');
+    expect(within(lucia).getByText('Tutor: B, A')).toBeInTheDocument();
+    const mateo = screen.getByRole('button', { name: 'Ver Chávez, Mateo' }).closest('li');
+    expect(within(mateo).getByText('Sin tutor asignado')).toBeInTheDocument();
+    const table = screen.getByRole('table', { name: 'Alumnos' });
+    expect(within(table).getByRole('columnheader', { name: 'Tutor actual' })).toBeInTheDocument();
+    expect(within(table).getByRole('columnheader', { name: 'Etapa vigente' })).toBeInTheDocument();
+    expect(within(table).getByText('Etapa 2')).toBeInTheDocument();
+    expect(within(table).getByText('Sin tutor')).toBeInTheDocument();
+
+    const filter = screen.getByRole('combobox', { name: 'Filtrar por tutor' });
+    await within(filter).findByRole('option', { name: 'Ríos Paredes, María' });
+    // active tutors only, after "all" and "without tutor"
+    expect(within(filter).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Todos los tutores',
+      'Sin tutor asignado',
+      'Arce Delgado, Jorge',
+      'Ríos Paredes, María',
+      'Vargas Soto, Julia',
+    ]);
+
+    fireEvent.change(filter, { target: { value: 'none' } });
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Ver Campos Herrera, Lucía' })).not.toBeInTheDocument());
+    expect(lastListUrl().searchParams.get('withoutTutor')).toBe('true');
+
+    fireEvent.change(filter, { target: { value: '50' } });
+    await waitFor(() => expect(lastListUrl().searchParams.get('tutorId')).toBe('50'));
+    expect(lastListUrl().searchParams.get('withoutTutor')).toBeNull();
+  });
+
+  it('a tutor gets "Mis alumnos" without tutor column or filter', async () => {
+    roles = ['TUTOR'];
+    renderAt('/students');
+
+    expect(await screen.findByRole('heading', { name: 'Mis alumnos' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Filtrar por tutor' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Tutor actual' })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Etapa vigente' })).toBeInTheDocument();
+    const lucia = screen.getByRole('button', { name: 'Ver Campos Herrera, Lucía' }).closest('li');
+    expect(within(lucia).queryByText(/Tutor:/)).not.toBeInTheDocument();
+    expect(lastListUrl().searchParams.get('tutorId')).toBeNull();
+  });
+
+  it('a coordinator sees the tutor but cannot filter by it', async () => {
+    roles = ['COORDINADOR'];
+    renderAt('/students');
+
+    expect(await screen.findByRole('heading', { name: 'Alumnos' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Tutor actual' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Filtrar por tutor' })).not.toBeInTheDocument();
+    expect(requests().some((r) => new URL(r.url).pathname.endsWith('/users'))).toBe(false);
+  });
+
+  it('registering a student opens their file', async () => {
+    const router = renderAt('/students');
+    fireEvent.click((await screen.findAllByRole('button', { name: /nuevo alumno/i }))[0]);
+    const form = await screen.findByRole('form', { name: 'Nuevo alumno' });
+
+    fireEvent.change(within(form).getByLabelText(/Nombres/), { target: { value: 'Mateo' } });
+    fireEvent.change(within(form).getByLabelText(/Apellido paterno/), { target: { value: 'Chávez' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Registrar alumno' }));
+
+    expect(await screen.findByRole('heading', { name: 'Chávez, Mateo' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/students/2');
+  });
+
+  it('only an admin or the current tutor can edit a student', async () => {
+    roles = ['TUTOR'];
+    renderAt('/students/2'); // Mateo has no tutor
+
+    expect(await screen.findByRole('heading', { name: 'Chávez, Mateo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+  });
+
+  it('an admin edits any student', async () => {
+    renderAt('/students/2');
+
+    expect(await screen.findByRole('button', { name: 'Editar' })).toBeInTheDocument();
   });
 });
