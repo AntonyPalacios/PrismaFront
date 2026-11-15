@@ -21,6 +21,8 @@ import {
   useWithdrawEnrollmentMutation,
 } from '../api/enrollmentsApi';
 import TutorCard from '../../tutoring/components/TutorCard';
+import { useIsAdmin } from '../../users/api/authApi';
+import { useGetUsersQuery } from '../../users/api/usersApi';
 import { careerLabel, isEnrollmentEditable } from '../enrollmentDisplay';
 import { studentFullName } from '../studentDisplay';
 
@@ -30,7 +32,7 @@ const createSchema = z.object({
   careerId: z.string(),
 });
 
-const editSchema = z.object({ careerId: z.string() });
+const editSchema = z.object({ careerId: z.string(), tutorId: z.string() });
 
 const toId = (value) => (value ? Number(value) : null);
 
@@ -41,9 +43,10 @@ const selectProps = { select: true, fullWidth: true, slotProps: { select: { nati
  * "Nueva matrícula" (enrollment = null) or an existing enrollment
  * (Claude Design: EnrollmentTutorMobile). Creating: Ciclo (cycles not
  * closed), Etapa (its stages where the student has no enrollment yet) and
- * an optional Carrera. Editing: only the career changes, and "Retirar de la
- * etapa" asks first; a withdrawn enrollment or one of a closed cycle only
- * shows its data. Bottom sheet on mobile, dialog on desktop.
+ * an optional Carrera. Editing: the career and, for an ADMIN, the tutor,
+ * saved together by one "Guardar" (enabled only when something changed);
+ * "Retirar de la etapa" asks first. A withdrawn enrollment or one of a
+ * closed cycle only shows its data. Bottom sheet on mobile, dialog on desktop.
  */
 export default function EnrollmentForm({ student, enrollment, enrollments, onClose }) {
   return (
@@ -198,6 +201,30 @@ function CareerSelect({ register, careers }) {
   );
 }
 
+/**
+ * ADMIN only: the enrollment's tutor among the active tutors (A–Z by
+ * surname, from the backend). The current tutor stays listed even if they
+ * were deactivated later. There is no "remove the tutor" option.
+ */
+function TutorSelect({ register, enrollment }) {
+  const { data: users = [] } = useGetUsersQuery();
+  const tutors = users.filter((u) => u.active && u.roles.includes('TUTOR'));
+  const options =
+    enrollment.tutorId && !tutors.some((t) => t.id === enrollment.tutorId)
+      ? [...tutors, { id: enrollment.tutorId, label: enrollment.tutorName }]
+      : tutors;
+  return (
+    <TextField {...selectProps} label="Tutor (A–Z por apellido)" {...register('tutorId')}>
+      {!enrollment.tutorId && <option value="">Sin tutor asignado</option>}
+      {options.map((tutor) => (
+        <option key={tutor.id} value={tutor.id}>
+          {tutor.label ?? `${[tutor.lastNamePat, tutor.lastNameMat].filter(Boolean).join(' ')}, ${tutor.firstName}`}
+        </option>
+      ))}
+    </TextField>
+  );
+}
+
 function InfoRow({ label, value }) {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, fontSize: 14, py: 0.5 }}>
@@ -225,22 +252,32 @@ function EditEnrollment({ student, enrollment, onClose }) {
       ? [...activeCareers, { id: enrollment.careerId, name: enrollment.careerName }]
       : activeCareers;
   const name = studentFullName(student);
+  // only an admin assigns tutors, and only on an editable enrollment
+  const isAdmin = useIsAdmin();
+  const choosesTutor = isAdmin && editable;
+  const currentTutorId = enrollment.tutorId ? String(enrollment.tutorId) : '';
 
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isDirty },
   } = useForm({
     resolver: zodResolver(editSchema),
-    values: { careerId: enrollment.careerId ? String(enrollment.careerId) : '' },
+    values: { careerId: enrollment.careerId ? String(enrollment.careerId) : '', tutorId: currentTutorId },
     resetOptions: { keepDirtyValues: true },
   });
 
   const onSubmit = async (values) => {
     setServerError(null);
+    // the tutor travels only when it changed: the backend leaves it alone otherwise
+    const tutorChanged = choosesTutor && values.tutorId !== '' && values.tutorId !== currentTutorId;
     try {
-      await updateEnrollment({ id: enrollment.id, careerId: toId(values.careerId) }).unwrap();
-      notify('Carrera guardada.');
+      await updateEnrollment({
+        id: enrollment.id,
+        careerId: toId(values.careerId),
+        tutorUserId: tutorChanged ? Number(values.tutorId) : null,
+      }).unwrap();
+      notify('Matrícula actualizada.');
       onClose();
     } catch (error) {
       setServerError(errorDetail(error));
@@ -272,7 +309,10 @@ function EditEnrollment({ student, enrollment, onClose }) {
 
       {editable ? <CareerSelect register={register} careers={careers} /> : <Alert severity="info">{readOnlyNote}</Alert>}
 
-      <TutorCard enrollment={enrollment} editable={editable} />
+      <TutorCard
+        enrollment={enrollment}
+        selector={choosesTutor ? <TutorSelect register={register} enrollment={enrollment} /> : null}
+      />
 
       {serverError && <Alert severity="error">{serverError}</Alert>}
 
@@ -286,7 +326,7 @@ function EditEnrollment({ student, enrollment, onClose }) {
           >
             Retirar de la etapa
           </Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting} sx={{ flex: 1, height: 48 }}>
+          <Button type="submit" variant="contained" disabled={isSubmitting || !isDirty} sx={{ flex: 1, height: 48 }}>
             Guardar
           </Button>
         </Box>

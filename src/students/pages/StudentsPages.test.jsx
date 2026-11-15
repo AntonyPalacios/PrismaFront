@@ -608,14 +608,19 @@ describe('Enrollments in the student file', () => {
 
     const career = within(form).getByLabelText(/Carrera/);
     await within(career).findByRole('option', { name: 'Ciencias' });
+    // nothing changed yet: nothing to save
+    const save = within(form).getByRole('button', { name: 'Guardar' });
+    expect(save).toBeDisabled();
     fireEvent.change(career, { target: { value: '1' } });
-    fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
 
-    expect(await screen.findByText('Carrera guardada.')).toBeInTheDocument();
+    expect(await screen.findByText('Matrícula actualizada.')).toBeInTheDocument();
     const [request] = writes();
     expect(request.method).toBe('PUT');
     expect(new URL(request.url).pathname).toMatch(/\/enrollments\/11$/);
-    expect(await request.json()).toEqual({ careerId: 1 });
+    // a tutor never sends a tutor
+    expect(await request.json()).toEqual({ careerId: 1, tutorUserId: null });
   });
 
   it('withdraws from the stage after confirming', async () => {
@@ -690,51 +695,79 @@ describe('Tutor of an enrollment', () => {
     expect(within(card).queryByRole('list', { name: 'Historial de tutores' })).not.toBeInTheDocument();
   });
 
-  it('an admin assigns a tutor among the active tutors', async () => {
+  it('an admin chooses the tutor in the enrollment and saves it with "Guardar"', async () => {
     roles = ['ADMIN'];
+    writeResponse = () => json(200, { ...ENROLLMENT_CURRENT, tutorId: 52, tutorName: 'Arce Delgado, Jorge' });
     const card = await openEnrollment('2026-II · Etapa 2');
+    const form = screen.getByRole('form', { name: 'Matrícula' });
 
     const select = await within(card).findByLabelText('Tutor (A–Z por apellido)');
     await within(select).findByRole('option', { name: 'Arce Delgado, Jorge' });
     // active users with the TUTOR role only, in the backend's order
     expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual([
-      'Elige un tutor…',
+      'Sin tutor asignado',
       'Arce Delgado, Jorge',
       'Ríos Paredes, María',
       'Vargas Soto, Julia',
     ]);
-    const button = within(card).getByRole('button', { name: 'Asignar tutor' });
-    expect(button).toBeDisabled();
+    // no separate button: the tutor is saved with the enrollment
+    expect(within(card).queryByRole('button')).not.toBeInTheDocument();
+    const save = within(form).getByRole('button', { name: 'Guardar' });
+    expect(save).toBeDisabled();
 
     fireEvent.change(select, { target: { value: '52' } });
-    fireEvent.click(button);
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
 
-    expect(await screen.findByText('Tutor asignado.')).toBeInTheDocument();
+    expect(await screen.findByText('Matrícula actualizada.')).toBeInTheDocument();
+    const [request] = writes();
+    expect(request.method).toBe('PUT');
+    expect(new URL(request.url).pathname).toMatch(/\/enrollments\/11$/);
+    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
+    expect(await request.json()).toEqual({ careerId: null, tutorUserId: 52 });
     // the student (file and list) is fetched again: it carries the current tutor
     const studentGets = () =>
       requests().filter((r) => r.method === 'GET' && new URL(r.url).pathname.endsWith('/students/1')).length;
     await waitFor(() => expect(studentGets()).toBe(2));
-    const [request] = writes();
-    expect(request.method).toBe('POST');
-    expect(new URL(request.url).pathname).toMatch(/\/enrollments\/11\/tutor-assignments$/);
-    expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
-    expect(await request.json()).toEqual({ tutorUserId: 52 });
   });
 
-  it('an admin reassigns: the current tutor is not offered again', async () => {
+  it('an admin reassigns: the current tutor comes selected and only a change enables "Guardar"', async () => {
     roles = ['ADMIN'];
+    writeResponse = () => json(200, { ...ENROLLMENT_OLD, cycleStatus: 'ACTIVE', tutorId: 50 });
     enrollments = [{ ...ENROLLMENT_OLD, cycleStatus: 'ACTIVE', stageStatus: 'ACTIVE' }];
     const card = await openEnrollment('2026-I · Etapa 3');
+    const form = screen.getByRole('form', { name: 'Matrícula' });
 
-    const select = await within(card).findByLabelText('Nuevo tutor (A–Z por apellido)');
+    const select = await within(card).findByLabelText('Tutor (A–Z por apellido)');
     await within(select).findByRole('option', { name: 'Arce Delgado, Jorge' });
-    expect(within(select).queryByRole('option', { name: 'Vargas Soto, Julia' })).not.toBeInTheDocument();
+    await waitFor(() => expect(select).toHaveValue('51'));
+    // with a tutor there is no "without tutor" option: a tutor is replaced, never removed
+    expect(within(select).queryByRole('option', { name: 'Sin tutor asignado' })).not.toBeInTheDocument();
+    const save = within(form).getByRole('button', { name: 'Guardar' });
+    expect(save).toBeDisabled();
 
     fireEvent.change(select, { target: { value: '50' } });
-    fireEvent.click(within(card).getByRole('button', { name: 'Reasignar tutor' }));
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
 
-    expect(await screen.findByText('Tutor reasignado.')).toBeInTheDocument();
-    expect(await writes()[0].json()).toEqual({ tutorUserId: 50 });
+    expect(await screen.findByText('Matrícula actualizada.')).toBeInTheDocument();
+    expect(await writes()[0].json()).toEqual({ careerId: 1, tutorUserId: 50 });
+  });
+
+  it('changing only the career keeps the tutor out of the request', async () => {
+    roles = ['ADMIN'];
+    writeResponse = () => json(200, ENROLLMENT_OLD);
+    enrollments = [{ ...ENROLLMENT_OLD, cycleStatus: 'ACTIVE', stageStatus: 'ACTIVE' }];
+    await openEnrollment('2026-I · Etapa 3');
+    const form = screen.getByRole('form', { name: 'Matrícula' });
+    await within(form).findByRole('option', { name: 'Arce Delgado, Jorge' });
+
+    const career = within(form).getByLabelText(/Carrera/);
+    fireEvent.change(career, { target: { value: '2' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
+
+    await screen.findByText('Matrícula actualizada.');
+    expect(await writes()[0].json()).toEqual({ careerId: 2, tutorUserId: null });
   });
 
   it('a closed-cycle enrollment shows the history without the selector, even for an admin', async () => {
