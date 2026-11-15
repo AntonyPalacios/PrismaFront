@@ -9,8 +9,10 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
 import FormHelperText from '@mui/material/FormHelperText';
+import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
 import { formatDate, stageDates } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
@@ -18,33 +20,41 @@ import { colors } from '../../app/theme';
 import { useGetExamTypesQuery } from '../../catalog/api/examTypesApi';
 import ConfirmDialog from '../../layout/ConfirmDialog';
 import ResponsiveSheet from '../../layout/ResponsiveSheet';
-import { useCreateExamsMutation, useDeleteExamMutation, useUpdateExamMutation } from '../api/examsApi';
+import {
+  useAddExamTypeMutation,
+  useCreateMockExamMutation,
+  useDeleteMockExamMutation,
+  useRemoveExamTypeMutation,
+  useUpdateMockExamMutation,
+} from '../api/examsApi';
 
 const base = {
   name: z.string().trim().min(1, 'El examen necesita un nombre.').max(200, 'El nombre del examen es demasiado largo.'),
   examDate: z.string().min(1, 'Ingresa la fecha del examen.'),
 };
 const createSchema = z.object({ ...base, examTypeIds: z.array(z.string()).min(1, 'Elige al menos un tipo de examen.') });
-const editSchema = z.object({ ...base, examTypeId: z.string().min(1, 'Elige el tipo de examen.') });
+const editSchema = z.object(base);
 
 const dateProps = { type: 'date', slotProps: { inputLabel: { shrink: true } } };
 
+const stageLabel = (cycle, stage) => `${cycle.name} · ${stage.name} (${stageDates(stage)})`;
+
 /**
- * "Nuevo examen" (exam = null) or an existing exam (Claude Design:
- * ExamsMobile, "Ver / editar examen"). Creating a mock exam: name, date and
- * the exam types (all checked by default), one exam per type. Editing: name,
- * date and type — the type is locked once the exam has results — and
- * "Eliminar" while it has none. Read-only for a TUTOR and in a closed cycle.
- * Bottom sheet on mobile, dialog on desktop.
+ * "Nuevo examen" (mockExam = null) or an existing mock exam (Claude Design:
+ * ExamsMobile, "Ver / editar examen"). Creating: name, date and the exam
+ * types (all checked by default). Editing: name and date, which apply to
+ * every type; add a missing type or remove one without results (never the
+ * last); "Eliminar" while no type has results. Read-only for a TUTOR and in
+ * a closed cycle. Bottom sheet on mobile, dialog on desktop.
  */
-export default function ExamForm({ cycle, stage, exam, canManage, onClose }) {
+export default function ExamForm({ cycle, stage, mockExam, canManage, onClose }) {
   const editable = canManage && cycle.status !== 'CLOSED';
   return (
     <ResponsiveSheet onClose={onClose}>
-      {exam ? (
-        <EditExam cycle={cycle} stage={stage} exam={exam} editable={editable} canManage={canManage} onClose={onClose} />
+      {mockExam ? (
+        <EditMockExam cycle={cycle} stage={stage} mockExam={mockExam} editable={editable} canManage={canManage} onClose={onClose} />
       ) : (
-        <CreateExams cycle={cycle} stage={stage} onClose={onClose} />
+        <CreateMockExam cycle={cycle} stage={stage} onClose={onClose} />
       )}
     </ResponsiveSheet>
   );
@@ -70,12 +80,10 @@ function FormFrame({ title, subtitle, onSubmit, children }) {
   );
 }
 
-const stageLabel = (cycle, stage) => `${cycle.name} · ${stage.name} (${stageDates(stage)})`;
-
-function CreateExams({ cycle, stage, onClose }) {
+function CreateMockExam({ cycle, stage, onClose }) {
   const notify = useNotify();
   const [serverError, setServerError] = useState(null);
-  const [createExams] = useCreateExamsMutation();
+  const [createMockExam] = useCreateMockExamMutation();
   const { data: types = [] } = useGetExamTypesQuery();
 
   const {
@@ -93,13 +101,13 @@ function CreateExams({ cycle, stage, onClose }) {
   const onSubmit = async (values) => {
     setServerError(null);
     try {
-      const created = await createExams({
+      await createMockExam({
         stageId: stage.id,
         name: values.name.trim(),
         examDate: values.examDate,
         examTypeIds: values.examTypeIds.map(Number),
       }).unwrap();
-      notify(created.length === 1 ? 'Examen creado.' : `${created.length} exámenes creados.`);
+      notify('Examen creado.');
       onClose();
     } catch (error) {
       setServerError(errorDetail(error)); // e.g. 409: keep what was typed
@@ -107,11 +115,7 @@ function CreateExams({ cycle, stage, onClose }) {
   };
 
   return (
-    <FormFrame
-      title="Nuevo examen"
-      subtitle={`${stageLabel(cycle, stage)}. Se crea un examen por cada tipo marcado.`}
-      onSubmit={handleSubmit(onSubmit)}
-    >
+    <FormFrame title="Nuevo examen" subtitle={`${stageLabel(cycle, stage)}. Marca los tipos de examen que se tomarán.`} onSubmit={handleSubmit(onSubmit)}>
       <TextField
         label="Nombre"
         required
@@ -174,14 +178,12 @@ function CreateExams({ cycle, stage, onClose }) {
   );
 }
 
-function EditExam({ cycle, stage, exam, editable, canManage, onClose }) {
+function EditMockExam({ cycle, stage, mockExam, editable, canManage, onClose }) {
   const notify = useNotify();
   const [serverError, setServerError] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [updateExam] = useUpdateExamMutation();
-  const [deleteExam, { isLoading: deleting }] = useDeleteExamMutation();
-  const { data: types = [] } = useGetExamTypesQuery();
-  const title = `${exam.name} · ${exam.examTypeName}`;
+  const [updateMockExam] = useUpdateMockExamMutation();
+  const [deleteMockExam, { isLoading: deleting }] = useDeleteMockExamMutation();
 
   const {
     register,
@@ -189,19 +191,14 @@ function EditExam({ cycle, stage, exam, editable, canManage, onClose }) {
     formState: { errors, isSubmitting, isDirty },
   } = useForm({
     resolver: zodResolver(editSchema),
-    values: { name: exam.name, examDate: exam.examDate, examTypeId: String(exam.examTypeId) },
+    values: { name: mockExam.name, examDate: mockExam.examDate },
     resetOptions: { keepDirtyValues: true },
   });
 
   const onSubmit = async (values) => {
     setServerError(null);
     try {
-      await updateExam({
-        id: exam.id,
-        name: values.name.trim(),
-        examDate: values.examDate,
-        examTypeId: Number(values.examTypeId),
-      }).unwrap();
+      await updateMockExam({ id: mockExam.id, name: values.name.trim(), examDate: values.examDate }).unwrap();
       notify('Examen actualizado.');
       onClose();
     } catch (error) {
@@ -211,7 +208,7 @@ function EditExam({ cycle, stage, exam, editable, canManage, onClose }) {
 
   const confirmDelete = async () => {
     try {
-      await deleteExam(exam.id).unwrap();
+      await deleteMockExam(mockExam.id).unwrap();
       notify('Examen eliminado.');
       onClose();
     } catch (error) {
@@ -225,7 +222,7 @@ function EditExam({ cycle, stage, exam, editable, canManage, onClose }) {
   else if (!editable) note = 'Este ciclo está cerrado: sus exámenes quedan como historial.';
 
   return (
-    <FormFrame title={title} subtitle={`${formatDate(exam.examDate)} · ${stageLabel(cycle, stage)}`} onSubmit={handleSubmit(onSubmit)}>
+    <FormFrame title={mockExam.name} subtitle={`${formatDate(mockExam.examDate)} · ${stageLabel(cycle, stage)}`} onSubmit={handleSubmit(onSubmit)}>
       <TextField label="Nombre" required disabled={!editable} {...register('name')} error={Boolean(errors.name)} helperText={errors.name?.message} />
       <TextField
         label="Fecha"
@@ -234,30 +231,17 @@ function EditExam({ cycle, stage, exam, editable, canManage, onClose }) {
         {...dateProps}
         {...register('examDate')}
         error={Boolean(errors.examDate)}
-        helperText={errors.examDate?.message}
+        helperText={errors.examDate?.message ?? (editable ? 'El nombre y la fecha se aplican a todos sus tipos.' : ' ')}
       />
-      <TextField
-        select
-        fullWidth
-        label="Tipo de examen"
-        disabled={!editable || exam.hasResults}
-        slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
-        {...register('examTypeId')}
-        helperText={exam.hasResults ? 'Ya tiene resultados: su tipo no se puede cambiar.' : ' '}
-      >
-        {types.map((type) => (
-          <option key={type.id} value={type.id}>
-            {type.name}
-          </option>
-        ))}
-      </TextField>
+
+      <ExamTypes mockExam={mockExam} editable={editable} onError={setServerError} />
 
       {note && <Alert severity="info">{note}</Alert>}
       {serverError && <Alert severity="error">{serverError}</Alert>}
 
       {editable ? (
         <Box sx={{ display: 'flex', gap: 1, pt: 0.5 }}>
-          {!exam.hasResults && (
+          {!mockExam.hasResults && (
             <Button
               variant="outlined"
               onClick={() => setConfirmingDelete(true)}
@@ -280,7 +264,7 @@ function EditExam({ cycle, stage, exam, editable, canManage, onClose }) {
       {confirmingDelete && (
         <ConfirmDialog
           title="¿Eliminar examen?"
-          message={`${title} (${formatDate(exam.examDate)}) dejará de aparecer en la etapa. Solo se puede eliminar porque aún no tiene resultados.`}
+          message={`${mockExam.name} (${formatDate(mockExam.examDate)}) y sus tipos de examen dejarán de aparecer en la etapa. Solo se puede eliminar porque aún no tiene resultados.`}
           confirmLabel="Eliminar"
           danger
           loading={deleting}
@@ -289,5 +273,91 @@ function EditExam({ cycle, stage, exam, editable, canManage, onClose }) {
         />
       )}
     </FormFrame>
+  );
+}
+
+/**
+ * The mock exam's exam types, each saved on its own (they are not part of
+ * the name/date form): remove one without results (never the last) or add
+ * one it is missing. No <form> here: it lives inside the mock exam's form.
+ */
+function ExamTypes({ mockExam, editable, onError }) {
+  const notify = useNotify();
+  const [adding, setAdding] = useState('');
+  const { data: types = [] } = useGetExamTypesQuery();
+  const [addExamType, { isLoading: addingType }] = useAddExamTypeMutation();
+  const [removeExamType, { isLoading: removing }] = useRemoveExamTypeMutation();
+  const missing = types.filter((type) => !mockExam.exams.some((exam) => exam.examTypeId === type.id));
+  const canRemove = editable && mockExam.exams.length > 1;
+
+  const add = async () => {
+    onError(null);
+    try {
+      await addExamType({ mockExamId: mockExam.id, examTypeId: Number(adding) }).unwrap();
+      notify('Tipo de examen agregado.');
+      setAdding('');
+    } catch (error) {
+      onError(errorDetail(error));
+    }
+  };
+
+  const remove = async (exam) => {
+    onError(null);
+    try {
+      await removeExamType({ mockExamId: mockExam.id, examId: exam.id }).unwrap();
+      notify(`Se quitó ${exam.examTypeName}.`);
+    } catch (error) {
+      onError(errorDetail(error));
+    }
+  };
+
+  return (
+    <Box component="section" aria-labelledby="mock-exam-types-title" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Typography id="mock-exam-types-title" component="h3" sx={{ fontSize: 14, fontWeight: 500 }}>
+        Tipos de examen
+      </Typography>
+      <Box component="ul" aria-label="Tipos de examen" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        {mockExam.exams.map((exam) => (
+          <Box
+            component="li"
+            key={exam.id}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderRadius: '12px', bgcolor: '#F4F6FA' }}
+          >
+            <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{exam.examTypeName}</Typography>
+            <Typography sx={{ fontSize: 12, color: exam.hasResults ? '#2F5A08' : 'text.secondary' }}>
+              {exam.hasResults ? 'Con resultados' : 'Sin resultados'}
+            </Typography>
+            {canRemove && !exam.hasResults && (
+              <IconButton size="small" aria-label={`Quitar ${exam.examTypeName}`} disabled={removing} onClick={() => remove(exam)}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
+        ))}
+      </Box>
+      {editable && missing.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <TextField
+            select
+            size="small"
+            label="Agregar tipo"
+            value={adding}
+            onChange={(e) => setAdding(e.target.value)}
+            slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
+            sx={{ flex: 1 }}
+          >
+            <option value="">Elige un tipo…</option>
+            {missing.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </TextField>
+          <Button type="button" variant="outlined" onClick={add} disabled={!adding || addingType} sx={{ height: 40 }}>
+            Agregar
+          </Button>
+        </Box>
+      )}
+    </Box>
   );
 }

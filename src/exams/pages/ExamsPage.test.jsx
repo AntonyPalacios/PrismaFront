@@ -24,9 +24,26 @@ const TYPES = [
   { id: 2, name: 'Letras' },
   { id: 3, name: 'Arquitectura' },
 ];
-const REGULAR_1_CIENCIAS = { id: 100, stageId: 11, name: 'Regular 1', examDate: '2026-03-14', examTypeId: 1, examTypeName: 'Ciencias', hasResults: true };
-const REGULAR_1_LETRAS = { id: 101, stageId: 11, name: 'Regular 1', examDate: '2026-03-14', examTypeId: 2, examTypeName: 'Letras', hasResults: false };
-const EXAMS = { 11: [REGULAR_1_CIENCIAS, REGULAR_1_LETRAS], 10: [], 20: [] };
+// newest first, as the backend sends them
+const REGULAR_1 = {
+  id: 100,
+  stageId: 11,
+  name: 'Regular 1',
+  examDate: '2026-03-14',
+  hasResults: true,
+  exams: [
+    { id: 1001, examTypeId: 1, examTypeName: 'Ciencias', hasResults: true },
+    { id: 1002, examTypeId: 2, examTypeName: 'Letras', hasResults: false },
+  ],
+};
+const MEDICION = {
+  id: 99,
+  stageId: 11,
+  name: 'Medición',
+  examDate: '2026-03-02',
+  hasResults: false,
+  exams: [{ id: 990, examTypeId: 1, examTypeName: 'Ciencias', hasResults: false }],
+};
 
 function json(status, body) {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -38,6 +55,7 @@ function json(status, body) {
 let fetchMock;
 let roles;
 let writeResponse;
+let mockExams;
 
 function route(request) {
   const url = new URL(request.url);
@@ -46,7 +64,9 @@ function route(request) {
   const stagesOf = url.pathname.match(/\/cycles\/(\d+)\/stages$/);
   if (request.method === 'GET' && stagesOf) return json(200, STAGES[stagesOf[1]] ?? []);
   if (request.method === 'GET' && url.pathname.endsWith('/exam-types')) return json(200, TYPES);
-  if (request.method === 'GET' && url.pathname.endsWith('/exams')) return json(200, EXAMS[url.searchParams.get('stageId')] ?? []);
+  if (request.method === 'GET' && url.pathname.endsWith('/mock-exams')) {
+    return json(200, mockExams[url.searchParams.get('stageId')] ?? []);
+  }
   return writeResponse(request);
 }
 
@@ -67,10 +87,19 @@ const requests = () => fetchMock.mock.calls.map(([r]) => r);
 const writes = () => requests().filter((r) => r.method !== 'GET');
 const examCard = (name) => screen.findByRole('button', { name: `Examen ${name}` });
 
+async function openNewExam() {
+  fireEvent.click(screen.getAllByRole('button', { name: /nuevo examen/i })[0]);
+  const form = await screen.findByRole('form', { name: 'Nuevo examen' });
+  // every type comes checked once the types load
+  await waitFor(() => expect(within(form).getByRole('checkbox', { name: 'Arquitectura' })).toBeChecked());
+  return form;
+}
+
 describe('Exams screen', () => {
   beforeEach(() => {
     roles = ['ADMIN'];
-    writeResponse = () => json(201, []);
+    mockExams = { 11: [REGULAR_1, MEDICION], 10: [], 20: [] };
+    writeResponse = () => json(201, REGULAR_1);
     fetchMock = vi.fn((request) => Promise.resolve(route(request)));
     vi.stubGlobal('fetch', fetchMock);
     document.cookie = 'XSRF-TOKEN=csrf-1';
@@ -78,23 +107,24 @@ describe('Exams screen', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('starts on the stage in force of the active cycle and lists its exams', async () => {
+  it('starts on the stage in force of the active cycle and lists its mock exams with their types', async () => {
     renderPage();
 
-    expect(await examCard('Regular 1 · Ciencias')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Examen Regular 1 · Letras' })).toBeInTheDocument();
+    const regular = (await examCard('Regular 1')).closest('li');
+    const types = within(within(regular).getByRole('list', { name: 'Tipos de examen' })).getAllByRole('listitem');
+    // a green check once a type has results
+    expect(types.map((li) => li.textContent)).toEqual(['Ciencias ✓', 'Letras']);
+    expect(within(regular).getByText('14 mar 2026')).toBeInTheDocument();
     expect(screen.getByLabelText('Ciclo')).toHaveValue('1');
     expect(screen.getByLabelText('Etapa')).toHaveValue('11');
     expect(within(screen.getByLabelText('Etapa')).getByRole('option', { name: 'Regular (vigente)' })).toBeInTheDocument();
-    const table = screen.getByRole('table', { name: 'Exámenes' });
-    expect(within(table).getAllByText('14 mar 2026')).toHaveLength(2);
-    expect(within(table).getByText('Cargados')).toBeInTheDocument();
-    expect(within(table).getByText('Pendientes')).toBeInTheDocument();
+    const cards = screen.getAllByRole('button', { name: /^Examen / }).map((b) => b.getAttribute('aria-label'));
+    expect(cards).toEqual(['Examen Regular 1', 'Examen Medición']);
   });
 
-  it('changing the cycle shows its stages and their exams', async () => {
+  it('changing the cycle shows its stages and their mock exams', async () => {
     renderPage();
-    await examCard('Regular 1 · Ciencias');
+    await examCard('Regular 1');
 
     fireEvent.change(screen.getByLabelText('Ciclo'), { target: { value: '2' } });
 
@@ -102,34 +132,28 @@ describe('Exams screen', () => {
     expect(await screen.findByText('Aún no hay exámenes en esta etapa.')).toBeInTheDocument();
   });
 
-  it('creates a mock exam for every checked type in one request', async () => {
-    writeResponse = () => json(201, [{ id: 1 }, { id: 2 }]);
+  it('creates a mock exam with the checked types in one request', async () => {
     renderPage();
-    await examCard('Regular 1 · Ciencias');
-    fireEvent.click(screen.getAllByRole('button', { name: /nuevo examen/i })[0]);
-    const form = await screen.findByRole('form', { name: 'Nuevo examen' });
+    await examCard('Regular 1');
+    const form = await openNewExam();
 
-    // every type comes checked
-    await waitFor(() => expect(within(form).getByRole('checkbox', { name: 'Arquitectura' })).toBeChecked());
     fireEvent.click(within(form).getByRole('checkbox', { name: 'Arquitectura' }));
     fireEvent.change(within(form).getByLabelText(/Nombre/), { target: { value: ' Regular 2 ' } });
     fireEvent.change(within(form).getByLabelText(/Fecha/), { target: { value: '2026-03-21' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Crear' }));
 
-    expect(await screen.findByText('2 exámenes creados.')).toBeInTheDocument();
+    expect(await screen.findByText('Examen creado.')).toBeInTheDocument();
     const [request] = writes();
     expect(request.method).toBe('POST');
-    expect(new URL(request.url).pathname).toMatch(/\/exams$/);
+    expect(new URL(request.url).pathname).toMatch(/\/mock-exams$/);
     expect(request.headers.get('X-XSRF-TOKEN')).toBe('csrf-1');
     expect(await request.json()).toEqual({ stageId: 11, name: 'Regular 2', examDate: '2026-03-21', examTypeIds: [1, 2] });
   });
 
   it('flags missing data and no type before calling the backend', async () => {
     renderPage();
-    await examCard('Regular 1 · Ciencias');
-    fireEvent.click(screen.getAllByRole('button', { name: /nuevo examen/i })[0]);
-    const form = await screen.findByRole('form', { name: 'Nuevo examen' });
-    await waitFor(() => expect(within(form).getByRole('checkbox', { name: 'Ciencias' })).toBeChecked());
+    await examCard('Regular 1');
+    const form = await openNewExam();
 
     ['Ciencias', 'Letras', 'Arquitectura'].forEach((name) => fireEvent.click(within(form).getByRole('checkbox', { name })));
     fireEvent.click(within(form).getByRole('button', { name: 'Crear' }));
@@ -141,76 +165,115 @@ describe('Exams screen', () => {
   });
 
   it('keeps the form open with the backend message', async () => {
-    writeResponse = () => json(409, { status: 409, detail: 'Ya existe un examen de Ciencias con ese nombre en esta etapa.' });
+    writeResponse = () => json(409, { status: 409, detail: 'Ya existe un examen con ese nombre en esta etapa.' });
     renderPage();
-    await examCard('Regular 1 · Ciencias');
-    fireEvent.click(screen.getAllByRole('button', { name: /nuevo examen/i })[0]);
-    const form = await screen.findByRole('form', { name: 'Nuevo examen' });
-    await waitFor(() => expect(within(form).getByRole('checkbox', { name: 'Ciencias' })).toBeChecked());
+    await examCard('Regular 1');
+    const form = await openNewExam();
 
     fireEvent.change(within(form).getByLabelText(/Nombre/), { target: { value: 'Regular 1' } });
     fireEvent.change(within(form).getByLabelText(/Fecha/), { target: { value: '2026-03-14' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Crear' }));
 
-    expect(await within(form).findByText('Ya existe un examen de Ciencias con ese nombre en esta etapa.')).toBeInTheDocument();
+    expect(await within(form).findByText('Ya existe un examen con ese nombre en esta etapa.')).toBeInTheDocument();
   });
 
-  it('edits an exam without results and deletes it after confirming', async () => {
-    writeResponse = (request) => (request.method === 'DELETE' ? json(204) : json(200, REGULAR_1_LETRAS));
+  it('renames a mock exam for every type and deletes one without results after confirming', async () => {
+    writeResponse = (request) => (request.method === 'DELETE' ? json(204) : json(200, MEDICION));
     renderPage();
-    fireEvent.click(await examCard('Regular 1 · Letras'));
-    const form = await screen.findByRole('form', { name: 'Regular 1 · Letras' });
+    fireEvent.click(await examCard('Medición'));
+    const form = await screen.findByRole('form', { name: 'Medición' });
 
+    expect(within(form).getByText('El nombre y la fecha se aplican a todos sus tipos.')).toBeInTheDocument();
     const save = within(form).getByRole('button', { name: 'Guardar' });
     expect(save).toBeDisabled();
-    fireEvent.change(within(form).getByLabelText(/Nombre/), { target: { value: 'Regular 2' } });
+    fireEvent.change(within(form).getByLabelText(/Nombre/), { target: { value: 'Nivelación' } });
     await waitFor(() => expect(save).toBeEnabled());
     fireEvent.click(save);
 
     expect(await screen.findByText('Examen actualizado.')).toBeInTheDocument();
-    const [put] = writes();
-    expect(put.method).toBe('PUT');
-    expect(new URL(put.url).pathname).toMatch(/\/exams\/101$/);
-    expect(await put.json()).toEqual({ name: 'Regular 2', examDate: '2026-03-14', examTypeId: 2 });
+    const [update] = writes();
+    expect(update.method).toBe('PUT');
+    expect(new URL(update.url).pathname).toMatch(/\/mock-exams\/99$/);
+    expect(await update.json()).toEqual({ name: 'Nivelación', examDate: '2026-03-02' });
 
-    fireEvent.click(await examCard('Regular 1 · Letras'));
-    const again = await screen.findByRole('form', { name: 'Regular 1 · Letras' });
+    fireEvent.click(await examCard('Medición'));
+    const again = await screen.findByRole('form', { name: 'Medición' });
     fireEvent.click(within(again).getByRole('button', { name: 'Eliminar' }));
     const dialog = await screen.findByRole('dialog', { name: '¿Eliminar examen?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Eliminar' }));
 
     expect(await screen.findByText('Examen eliminado.')).toBeInTheDocument();
-    expect(writes()[1].method).toBe('DELETE');
+    const removal = writes()[1];
+    expect(removal.method).toBe('DELETE');
+    expect(new URL(removal.url).pathname).toMatch(/\/mock-exams\/99$/);
   });
 
-  it('an exam with results keeps its type and cannot be deleted', async () => {
+  it('adds a missing type and removes one without results', async () => {
+    writeResponse = () => json(200, REGULAR_1);
     renderPage();
-    fireEvent.click(await examCard('Regular 1 · Ciencias'));
-    const form = await screen.findByRole('form', { name: 'Regular 1 · Ciencias' });
+    fireEvent.click(await examCard('Regular 1'));
+    const form = await screen.findByRole('form', { name: 'Regular 1' });
+    const types = within(form).getByRole('list', { name: 'Tipos de examen' });
 
-    expect(within(form).getByLabelText('Tipo de examen')).toBeDisabled();
-    expect(within(form).getByText('Ya tiene resultados: su tipo no se puede cambiar.')).toBeInTheDocument();
+    // a type with results can't be removed; one without can
+    expect(within(types).queryByRole('button', { name: 'Quitar Ciencias' })).not.toBeInTheDocument();
+    fireEvent.click(within(types).getByRole('button', { name: 'Quitar Letras' }));
+    expect(await screen.findByText('Se quitó Letras.')).toBeInTheDocument();
+    const [removal] = writes();
+    expect(removal.method).toBe('DELETE');
+    expect(new URL(removal.url).pathname).toMatch(/\/mock-exams\/100\/exams\/1002$/);
+
+    // only the missing types are offered
+    const add = within(form).getByLabelText('Agregar tipo');
+    await within(add).findByRole('option', { name: 'Arquitectura' });
+    expect(within(add).getAllByRole('option').map((o) => o.textContent)).toEqual(['Elige un tipo…', 'Arquitectura']);
+    fireEvent.change(add, { target: { value: '3' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Agregar' }));
+
+    expect(await screen.findByText('Tipo de examen agregado.')).toBeInTheDocument();
+    const addition = writes()[1];
+    expect(addition.method).toBe('POST');
+    expect(new URL(addition.url).pathname).toMatch(/\/mock-exams\/100\/exams$/);
+    expect(await addition.json()).toEqual({ examTypeId: 3 });
+  });
+
+  it('a mock exam with results cannot be deleted but keeps its name and date editable', async () => {
+    renderPage();
+    fireEvent.click(await examCard('Regular 1'));
+    const form = await screen.findByRole('form', { name: 'Regular 1' });
+
     expect(within(form).queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument();
     expect(within(form).getByLabelText(/Nombre/)).toBeEnabled();
+    expect(within(form).getByText('Con resultados')).toBeInTheDocument();
   });
 
-  it('a tutor reads the exams without creating or editing them', async () => {
+  it('the only type of a mock exam cannot be removed', async () => {
+    renderPage();
+    fireEvent.click(await examCard('Medición'));
+    const form = await screen.findByRole('form', { name: 'Medición' });
+
+    expect(within(form).queryByRole('button', { name: 'Quitar Ciencias' })).not.toBeInTheDocument();
+  });
+
+  it('a tutor reads the mock exams without creating or editing them', async () => {
     roles = ['TUTOR'];
     renderPage();
-    fireEvent.click(await examCard('Regular 1 · Letras'));
-    const form = await screen.findByRole('form', { name: 'Regular 1 · Letras' });
+    fireEvent.click(await examCard('Regular 1'));
+    const form = await screen.findByRole('form', { name: 'Regular 1' });
 
     expect(screen.queryByRole('button', { name: /nuevo examen/i })).not.toBeInTheDocument();
     expect(within(form).getByLabelText(/Nombre/)).toBeDisabled();
     expect(within(form).queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument();
     expect(within(form).queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument();
+    expect(within(form).queryByRole('button', { name: /^Quitar/ })).not.toBeInTheDocument();
+    expect(within(form).queryByLabelText('Agregar tipo')).not.toBeInTheDocument();
     expect(within(form).getByText('Solo el administrador y el coordinador editan los exámenes.')).toBeInTheDocument();
   });
 
-  it('a coordinator manages exams too', async () => {
+  it('a coordinator manages mock exams too', async () => {
     roles = ['COORDINADOR'];
     renderPage();
-    await examCard('Regular 1 · Ciencias');
+    await examCard('Regular 1');
 
     expect(screen.getAllByRole('button', { name: /nuevo examen/i }).length).toBeGreaterThan(0);
   });

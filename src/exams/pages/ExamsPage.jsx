@@ -19,7 +19,7 @@ import { useGetStagesQuery } from '../../academic/api/stagesApi';
 import { formatDate } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
-import { useGetExamsQuery } from '../api/examsApi';
+import { useGetMockExamsQuery } from '../api/examsApi';
 import ExamForm from '../components/ExamForm';
 import { useCanManageExams } from '../examDisplay';
 
@@ -28,10 +28,11 @@ const selectProps = { select: true, size: 'small', slotProps: { select: { native
 /**
  * "Exámenes" (Claude Design: ExamsMobile). Pick a cycle and one of its
  * stages — by default the stage in force of the active cycle — and see its
- * exams: cards on mobile, a table on desktop, newest first with the exams of
- * one mock exam together. ADMIN and COORDINADOR create a mock exam ("Nuevo
- * examen") and edit or delete an exam; a TUTOR only reads. The "Importar
- * resultados" and "Resultado manual" actions arrive with their slices.
+ * mock exams, newest first: one card each (a table on desktop) with a chip
+ * per exam type, green once that type has results. ADMIN and COORDINADOR
+ * create a mock exam ("Nuevo examen") and edit it; a TUTOR only reads. The
+ * "Importar resultados" and "Resultado manual" actions arrive with their
+ * slices.
  */
 export default function ExamsPage() {
   const canManage = useCanManageExams();
@@ -39,14 +40,16 @@ export default function ExamsPage() {
   // null = the default: the active cycle (or the most recent one) and its stage in force
   const [chosenCycleId, setChosenCycleId] = useState(null);
   const [chosenStageId, setChosenStageId] = useState(null);
-  // null = closed, {} = creating, an exam = opening it
+  // null = closed, 'new' = creating, a mock exam's id = opening it
   const [open, setOpen] = useState(null);
 
   const cycle = cycles.find((c) => c.id === chosenCycleId) ?? cycles.find((c) => c.status === 'ACTIVE') ?? cycles[0];
   const { data: stages = [] } = useGetStagesQuery(cycle?.id, { skip: !cycle });
   const stage =
     stages.find((s) => s.id === chosenStageId) ?? stages.find((s) => s.current) ?? stages[stages.length - 1];
-  const { data: exams = [], isLoading, error } = useGetExamsQuery(stage?.id, { skip: !stage });
+  const { data: mockExams = [], isLoading, error } = useGetMockExamsQuery(stage?.id, { skip: !stage });
+  // read from the list on every render: adding or removing a type refreshes it
+  const opened = mockExams.find((m) => m.id === open);
   const canCreate = canManage && stage && cycle?.status !== 'CLOSED';
 
   const chooseCycle = (id) => {
@@ -64,7 +67,7 @@ export default function ExamsPage() {
           <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>Los simulacros de cada etapa, uno por tipo de examen.</Typography>
         </Box>
         {canCreate && (
-          <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={() => setOpen({})}>
+          <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={() => setOpen('new')}>
             Nuevo examen
           </Button>
         )}
@@ -115,19 +118,19 @@ export default function ExamsPage() {
         <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>Este ciclo aún no tiene etapas.</Typography>
       )}
       {stage && !isLoading && error && <Alert severity="error">{errorDetail(error)}</Alert>}
-      {stage && !isLoading && !error && exams.length === 0 && (
+      {stage && !isLoading && !error && mockExams.length === 0 && (
         <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>Aún no hay exámenes en esta etapa.</Typography>
       )}
 
-      {stage && !isLoading && !error && exams.length > 0 && (
+      {stage && !isLoading && !error && mockExams.length > 0 && (
         <>
           {/* mobile */}
           <Box component="ul" sx={{ display: { xs: 'flex', md: 'none' }, listStyle: 'none', m: 0, p: 0, flexDirection: 'column', gap: 1.25 }}>
-            {exams.map((exam) => (
-              <Box component="li" key={exam.id}>
+            {mockExams.map((mockExam) => (
+              <Box component="li" key={mockExam.id}>
                 <ButtonBase
-                  onClick={() => setOpen(exam)}
-                  aria-label={`Examen ${exam.name} · ${exam.examTypeName}`}
+                  onClick={() => setOpen(mockExam.id)}
+                  aria-label={`Examen ${mockExam.name}`}
                   sx={{
                     width: '100%',
                     display: 'flex',
@@ -144,11 +147,11 @@ export default function ExamsPage() {
                   }}
                 >
                   <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                    <Typography sx={{ fontSize: 15, fontWeight: 500 }}>{exam.name}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: 13, color: 'text.secondary' }}>
-                      <TypeChip exam={exam} />
-                      {formatDate(exam.examDate)}
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 1 }}>
+                      <Typography sx={{ fontSize: 15, fontWeight: 500 }}>{mockExam.name}</Typography>
+                      <Typography sx={{ fontSize: 13, color: 'text.secondary', whiteSpace: 'nowrap' }}>{formatDate(mockExam.examDate)}</Typography>
                     </Box>
+                    <TypeChips mockExam={mockExam} />
                   </Box>
                   <ChevronRightIcon aria-hidden="true" sx={{ fontSize: 20, color: '#8C96A8' }} />
                 </ButtonBase>
@@ -171,31 +174,27 @@ export default function ExamsPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>Nombre</TableCell>
-                  <TableCell>Tipo de examen</TableCell>
                   <TableCell>Fecha</TableCell>
-                  <TableCell>Resultados</TableCell>
+                  <TableCell>Tipos de examen</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {exams.map((exam) => (
-                  <TableRow key={exam.id} hover onClick={() => setOpen(exam)} sx={{ cursor: 'pointer' }}>
+                {mockExams.map((mockExam) => (
+                  <TableRow key={mockExam.id} hover onClick={() => setOpen(mockExam.id)} sx={{ cursor: 'pointer' }}>
                     <TableCell>
                       <ButtonBase
                         onClick={(e) => {
                           e.stopPropagation();
-                          setOpen(exam);
+                          setOpen(mockExam.id);
                         }}
                         sx={{ fontSize: 14, fontWeight: 500 }}
                       >
-                        {exam.name}
+                        {mockExam.name}
                       </ButtonBase>
                     </TableCell>
+                    <TableCell>{formatDate(mockExam.examDate)}</TableCell>
                     <TableCell>
-                      <TypeChip exam={exam} />
-                    </TableCell>
-                    <TableCell>{formatDate(exam.examDate)}</TableCell>
-                    <TableCell sx={{ color: exam.hasResults ? 'inherit' : 'text.secondary' }}>
-                      {exam.hasResults ? 'Cargados' : 'Pendientes'}
+                      <TypeChips mockExam={mockExam} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -209,7 +208,7 @@ export default function ExamsPage() {
         <Fab
           variant="extended"
           color="secondary"
-          onClick={() => setOpen({})}
+          onClick={() => setOpen('new')}
           sx={{
             display: { md: 'none' },
             position: 'fixed',
@@ -228,17 +227,35 @@ export default function ExamsPage() {
         </Fab>
       )}
 
-      {open && cycle && stage && (
-        <ExamForm cycle={cycle} stage={stage} exam={open.id ? open : null} canManage={canManage} onClose={() => setOpen(null)} />
+      {(open === 'new' || opened) && cycle && stage && (
+        <ExamForm cycle={cycle} stage={stage} mockExam={opened ?? null} canManage={canManage} onClose={() => setOpen(null)} />
       )}
     </Box>
   );
 }
 
-function TypeChip({ exam }) {
+/** One chip per exam type: green once that type has results, blue while it waits for them. */
+function TypeChips({ mockExam }) {
   return (
-    <Box component="span" sx={{ fontSize: 12, fontWeight: 500, px: 1.25, py: 0.375, borderRadius: '12px', bgcolor: '#E1EBF7', color: colors.primary }}>
-      {exam.examTypeName}
+    <Box component="ul" aria-label="Tipos de examen" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+      {mockExam.exams.map((exam) => (
+        <Box
+          component="li"
+          key={exam.id}
+          title={exam.hasResults ? 'Con resultados' : 'Sin resultados'}
+          sx={{
+            fontSize: 12,
+            fontWeight: 500,
+            px: 1.25,
+            py: 0.375,
+            borderRadius: '12px',
+            bgcolor: exam.hasResults ? '#E8F5D6' : '#E1EBF7',
+            color: exam.hasResults ? '#2F5A08' : colors.primary,
+          }}
+        >
+          {exam.hasResults ? `${exam.examTypeName} ✓` : exam.examTypeName}
+        </Box>
+      ))}
     </Box>
   );
 }
