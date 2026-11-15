@@ -18,8 +18,8 @@ export const tutorAssignmentsApi = baseApi.injectEndpoints({
         method: 'POST',
         body: { tutorUserId },
       }),
-      // the enrollment list shows the current tutor
-      invalidatesTags: ['TutorAssignment', 'Enrollment'],
+      // the enrollment list and the students list (and file) show the current tutor
+      invalidatesTags: ['TutorAssignment', 'Enrollment', 'Student'],
     }),
   }),
 });

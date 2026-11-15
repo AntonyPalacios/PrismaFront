@@ -8,7 +8,8 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import MenuIcon from '@mui/icons-material/Menu';
 import NavContent from './NavContent';
-import { navItemFor } from './navItems';
+import { useIsOnlyTutor } from '../users/api/authApi';
+import { itemLabel, navItemFor } from './navItems';
 
 const DESKTOP_WIDTH = 264;
 const MOBILE_WIDTH = 312;
@@ -21,7 +22,9 @@ const MOBILE_WIDTH = 312;
 export default function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { pathname } = useLocation();
-  const title = navItemFor(pathname)?.label ?? 'Prisma';
+  const onlyTutor = useIsOnlyTutor();
+  const item = navItemFor(pathname);
+  const title = item ? itemLabel(item, onlyTutor) : 'Prisma';
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100dvh', bgcolor: 'background.default' }}>

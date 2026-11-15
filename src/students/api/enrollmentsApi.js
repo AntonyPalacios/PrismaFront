@@ -14,8 +14,8 @@ export const enrollmentsApi = baseApi.injectEndpoints({
     }),
     createEnrollment: build.mutation({
       query: (body) => ({ url: '/enrollments', method: 'POST', body }),
-      // a stage with enrollments can no longer be deleted
-      invalidatesTags: ['Enrollment', 'Stage'],
+      // a stage with enrollments can no longer be deleted; the student may now have a current stage
+      invalidatesTags: ['Enrollment', 'Stage', 'Student'],
     }),
     // only the career changes; null clears it
     updateEnrollment: build.mutation({
@@ -25,8 +25,8 @@ export const enrollmentsApi = baseApi.injectEndpoints({
     // withdraw from the stage (soft): the enrollment stays in the history
     withdrawEnrollment: build.mutation({
       query: (id) => ({ url: `/enrollments/${id}`, method: 'DELETE' }),
-      // withdrawing also ends the current tutor
-      invalidatesTags: ['Enrollment', 'TutorAssignment'],
+      // withdrawing also ends the current tutor and the student's current stage
+      invalidatesTags: ['Enrollment', 'TutorAssignment', 'Student'],
     }),
   }),
 });
