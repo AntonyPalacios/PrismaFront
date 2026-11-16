@@ -71,7 +71,13 @@ function route(request) {
 }
 
 function renderPage() {
-  const router = createMemoryRouter([{ path: '/exams', element: <ExamsPage /> }], { initialEntries: ['/exams'] });
+  const router = createMemoryRouter(
+    [
+      { path: '/exams', element: <ExamsPage /> },
+      { path: '/imports/:id', element: <p>Revisión de la importación</p> },
+    ],
+    { initialEntries: ['/exams'] },
+  );
   render(
     <Provider store={makeStore()}>
       <ThemeProvider theme={theme}>
@@ -81,6 +87,7 @@ function renderPage() {
       </ThemeProvider>
     </Provider>,
   );
+  return router;
 }
 
 const requests = () => fetchMock.mock.calls.map(([r]) => r);
@@ -268,6 +275,66 @@ describe('Exams screen', () => {
     expect(within(form).queryByRole('button', { name: /^Quitar/ })).not.toBeInTheDocument();
     expect(within(form).queryByLabelText('Agregar tipo')).not.toBeInTheDocument();
     expect(within(form).getByText('Solo el administrador y el coordinador editan los exámenes.')).toBeInTheDocument();
+  });
+
+  it('imports the results of a type without them: shows the exam, asks and opens the review', async () => {
+    roles = ['TUTOR'];
+    writeResponse = () => json(201, { id: 7 });
+    const router = renderPage();
+    fireEvent.click(await examCard('Regular 1'));
+    const sheet = await screen.findByRole('form', { name: 'Regular 1' });
+
+    // Ciencias already has results: only Letras can be imported
+    expect(within(sheet).queryByRole('button', { name: 'Importar resultados de Ciencias' })).not.toBeInTheDocument();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Importar resultados de Letras' }));
+
+    const form = await screen.findByRole('form', { name: 'Importar resultados' });
+    expect(within(form).getByText('Regular 1 · 14 mar 2026')).toBeInTheDocument();
+    expect(within(form).getByText('2026-I · Regular')).toBeInTheDocument();
+    expect(within(form).getByText('Letras')).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'Importar' })).toBeDisabled();
+    const file = new File(['excel'], 'GENERALES LETRAS.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    fireEvent.change(within(form).getByLabelText('Archivo de resultados'), { target: { files: [file] } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Importar' }));
+
+    const dialog = await screen.findByRole('dialog', { name: '¿Importar resultados?' });
+    expect(writes()).toHaveLength(0); // nothing is sent before confirming
+    expect(within(dialog).getByText(/GENERALES LETRAS.xlsx como los resultados de Regular 1 · Letras/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Importar' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/imports/7'));
+    const [request] = writes();
+    expect(request.method).toBe('POST');
+    expect(new URL(request.url).pathname).toMatch(/\/exams\/1002\/results\/import$/);
+    expect((await request.formData()).get('file')).toBeTruthy();
+  });
+
+  it('shows why the file was rejected and lets the user pick another one', async () => {
+    writeResponse = () =>
+      json(400, { detail: 'El archivo es de Ciencias y el examen es de Letras: sube el archivo de Letras.' });
+    renderPage();
+    fireEvent.click(await examCard('Regular 1'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Importar resultados de Letras' }));
+    const form = await screen.findByRole('form', { name: 'Importar resultados' });
+    const file = new File(['excel'], 'GENERALES CIENCIAS.xlsx');
+    fireEvent.change(within(form).getByLabelText('Archivo de resultados'), { target: { files: [file] } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Importar' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Importar' }));
+
+    expect(await within(form).findByText(/El archivo es de Ciencias/)).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'Importar' })).toBeEnabled();
+  });
+
+  it('results are only imported in the stage in force of the active cycle', async () => {
+    mockExams = { ...mockExams, 10: [{ ...MEDICION, id: 98, stageId: 10, name: 'Simulacro de enero' }] };
+    renderPage();
+    await examCard('Regular 1');
+    fireEvent.change(screen.getByLabelText('Etapa'), { target: { value: '10' } });
+    fireEvent.click(await examCard('Simulacro de enero'));
+    const sheet = await screen.findByRole('form', { name: 'Simulacro de enero' });
+
+    expect(within(sheet).getByText('Sin resultados')).toBeInTheDocument();
+    expect(within(sheet).queryByRole('button', { name: /^Importar resultados/ })).not.toBeInTheDocument();
   });
 
   it('a coordinator manages mock exams too', async () => {

@@ -20,6 +20,7 @@ import { formatDate } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
 import { useGetMockExamsQuery } from '../api/examsApi';
+import ImportResultsForm from '../../imports/components/ImportResultsForm';
 import ExamForm from '../components/ExamForm';
 import { useCanManageExams } from '../examDisplay';
 
@@ -30,9 +31,10 @@ const selectProps = { select: true, size: 'small', slotProps: { select: { native
  * stages — by default the stage in force of the active cycle — and see its
  * mock exams, newest first: one card each (a table on desktop) with a chip
  * per exam type, green once that type has results. ADMIN and COORDINADOR
- * create a mock exam ("Nuevo examen") and edit it; a TUTOR only reads. The
- * "Importar resultados" and "Resultado manual" actions arrive with their
- * slices.
+ * create a mock exam ("Nuevo examen") and edit it; a TUTOR only reads.
+ * Every role imports the results of a type from the opened mock exam, only
+ * in the stage in force of the active cycle. "Resultado manual" arrives
+ * with its slice.
  */
 export default function ExamsPage() {
   const canManage = useCanManageExams();
@@ -42,6 +44,8 @@ export default function ExamsPage() {
   const [chosenStageId, setChosenStageId] = useState(null);
   // null = closed, 'new' = creating, a mock exam's id = opening it
   const [open, setOpen] = useState(null);
+  // { mockExam, exam } whose results are being imported
+  const [importing, setImporting] = useState(null);
 
   const cycle = cycles.find((c) => c.id === chosenCycleId) ?? cycles.find((c) => c.status === 'ACTIVE') ?? cycles[0];
   const { data: stages = [] } = useGetStagesQuery(cycle?.id, { skip: !cycle });
@@ -228,7 +232,20 @@ export default function ExamsPage() {
       )}
 
       {(open === 'new' || opened) && cycle && stage && (
-        <ExamForm cycle={cycle} stage={stage} mockExam={opened ?? null} canManage={canManage} onClose={() => setOpen(null)} />
+        <ExamForm
+          cycle={cycle}
+          stage={stage}
+          mockExam={opened ?? null}
+          canManage={canManage}
+          onImport={(exam) => {
+            setImporting({ mockExam: opened, exam });
+            setOpen(null);
+          }}
+          onClose={() => setOpen(null)}
+        />
+      )}
+      {importing && cycle && stage && (
+        <ImportResultsForm cycle={cycle} stage={stage} {...importing} onClose={() => setImporting(null)} />
       )}
     </Box>
   );

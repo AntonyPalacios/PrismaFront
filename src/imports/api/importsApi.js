@@ -1,12 +1,18 @@
 import { baseApi } from '../../app/api/baseApi';
 
-// Importing students from the template through a review batch
-// (REQ-IMPORTS-02, REQ-IMPORTS-01). ADMIN and TUTOR only. A batch is
-// { id, type, status, fileName, stageId, stageLabel, uploadedAt, totalRows,
-//   newRows, matchedRows, unresolvedRows, ignoredRows, rows } and a row
+// Imports through a review batch (REQ-IMPORTS-01): students from the
+// template (REQ-IMPORTS-02, ADMIN and TUTOR) and an exam's results from the
+// academy's Excel (REQ-EXAMS-02, the three roles). A batch is
+// { id, type: 'STUDENTS' | 'EXAM_RESULTS', status, fileName, stageId,
+//   stageLabel, examId, examLabel, uploadedAt, totalRows, newRows,
+//   matchedRows, unresolvedRows, ignoredRows, skippedRows, rows } and a row
 // { id, rowNumber, status, fullName, dni, email, phone, birthDate, careerText,
-//   careerName, tutorText, tutorName, notice, student, candidates } where
-// student and candidates are { id, fullName, dni, active }.
+//   careerName, tutorText, tutorName, notice, student, candidates, enrolls,
+//   newStudent, result } where student and candidates are
+// { id, fullName, dni, active }. Results rows bring `result`
+// { attended, totalCorrect, totalWrong, totalScore, areas: [{ areaName, score }] },
+// `enrolls` (confirming enrolls the student in the stage) and `newStudent`
+// { firstName, lastNamePat, lastNameMat } once registered as new.
 // The template downloads straight from TEMPLATE_URL (same origin, with the
 // session cookie): a file is not something to keep in the cache.
 export const TEMPLATE_URL = '/api/v1/student-imports/template';
@@ -31,19 +37,29 @@ export const importsApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['ImportBatch'],
     }),
-    // { action: 'MATCH' | 'NEW' | 'IGNORE', studentId? }
+    // { examId, file } → the pending batch of that exam's results; nothing real is written yet
+    uploadExamResults: build.mutation({
+      query: ({ examId, file }) => {
+        const body = new FormData();
+        body.append('file', file, file.name);
+        return { url: `/exams/${examId}/results/import`, method: 'POST', body };
+      },
+      invalidatesTags: ['ImportBatch'],
+    }),
+    // { action: 'MATCH' | 'NEW' | 'IGNORE', studentId?, newStudent? } — a new
+    // student of a results batch brings its names split by hand
     resolveImportRow: build.mutation({
-      query: ({ batchId, rowId, action, studentId = null }) => ({
+      query: ({ batchId, rowId, action, studentId = null, newStudent = null }) => ({
         url: `/import-batches/${batchId}/rows/${rowId}`,
         method: 'PUT',
-        body: { action, studentId },
+        body: { action, studentId, ...(newStudent ?? {}) },
       }),
       invalidatesTags: ['ImportBatch'],
     }),
     confirmImportBatch: build.mutation({
       query: (id) => ({ url: `/import-batches/${id}/confirm`, method: 'POST' }),
-      // students registered, enrolled and given tutors
-      invalidatesTags: ['ImportBatch', 'Student', 'Enrollment', 'TutorAssignment'],
+      // students registered, enrolled and given tutors; an exam gets its results
+      invalidatesTags: ['ImportBatch', 'Student', 'Enrollment', 'TutorAssignment', 'Exam'],
     }),
     discardImportBatch: build.mutation({
       query: (id) => ({ url: `/import-batches/${id}/discard`, method: 'POST' }),
@@ -60,6 +76,7 @@ export const {
   useGetImportBatchesQuery,
   useGetImportBatchQuery,
   useUploadStudentsMutation,
+  useUploadExamResultsMutation,
   useResolveImportRowMutation,
   useConfirmImportBatchMutation,
   useDiscardImportBatchMutation,

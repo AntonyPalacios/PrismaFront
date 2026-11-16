@@ -15,8 +15,8 @@ export const NAV_ITEMS = [
   // a tutor (not admin) only gets their own students
   { to: '/students', label: 'Alumnos', tutorLabel: 'Mis alumnos', icon: <PeopleAltOutlinedIcon /> },
   { to: '/exams', label: 'Exámenes', icon: <AssignmentOutlinedIcon /> },
-  // only the roles that import (ADMIN and TUTOR)
-  { to: '/imports', label: 'Importaciones', icon: <FileUploadOutlinedIcon />, roles: ['ADMIN', 'TUTOR'] },
+  // the roles that import: students (ADMIN, TUTOR) or exam results (also COORDINADOR)
+  { to: '/imports', label: 'Importaciones', icon: <FileUploadOutlinedIcon />, roles: ['ADMIN', 'TUTOR', 'COORDINADOR'] },
   { to: '/cycles', label: 'Ciclos', icon: <CalendarMonthOutlinedIcon />, adminOnly: true },
   { to: '/catalog', label: 'Catálogo', icon: <MenuBookOutlinedIcon /> },
   { to: '/users', label: 'Usuarios', icon: <ManageAccountsOutlinedIcon />, adminOnly: true },
