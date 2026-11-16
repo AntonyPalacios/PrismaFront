@@ -4,6 +4,8 @@ import CyclesPage from '../academic/pages/CyclesPage';
 import CatalogPage from '../catalog/pages/CatalogPage';
 import ExamsPage from '../exams/pages/ExamsPage';
 import HomePage from '../home/HomePage';
+import ImportBatchPage from '../imports/pages/ImportBatchPage';
+import ImportsPage from '../imports/pages/ImportsPage';
 import AppLayout from '../layout/AppLayout';
 import AdminRoute from '../users/components/AdminRoute';
 import PrivateRoute from '../users/components/PrivateRoute';
@@ -27,6 +29,8 @@ export const routes = [
           { path: 'students', element: <StudentsPage /> },
           { path: 'students/:id', element: <StudentDetailPage /> },
           { path: 'exams', element: <ExamsPage /> },
+          { path: 'imports', element: <ImportsPage /> },
+          { path: 'imports/:id', element: <ImportBatchPage /> },
           { path: 'catalog', element: <CatalogPage /> },
           {
             element: <AdminRoute />,

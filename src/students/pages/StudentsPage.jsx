@@ -23,6 +23,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
 import { useGetStudentsQuery } from '../api/studentsApi';
+import ImportStudentsForm from '../../imports/components/ImportStudentsForm';
 import CreateStudentForm from '../components/CreateStudentForm';
 import { useIsAdmin, useIsOnlyTutor } from '../../users/api/authApi';
 import { useGetUsersQuery } from '../../users/api/usersApi';
@@ -57,6 +58,7 @@ export default function StudentsPage() {
   const canManage = useCanManageStudents();
   const [typed, setTyped] = useState('');
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [includeInactive, setIncludeInactive] = useState(false);
   // '' = every tutor, 'none' = without tutor, otherwise a tutor's id (ADMIN only)
   const [tutorFilter, setTutorFilter] = useState('');
@@ -96,9 +98,14 @@ export default function StudentsPage() {
           </Typography>
         </Box>
         {canManage && (
-          <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={() => setCreating(true)}>
-            Nuevo alumno
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" onClick={() => setImporting(true)} sx={{ borderRadius: '22px' }}>
+              Importar alumnos
+            </Button>
+            <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={() => setCreating(true)}>
+              Nuevo alumno
+            </Button>
+          </Box>
         )}
       </Box>
 
@@ -135,6 +142,11 @@ export default function StudentsPage() {
           />
         </Box>
         {isAdmin && <TutorFilter value={tutorFilter} onChange={setTutorFilter} />}
+        {canManage && (
+          <Button variant="outlined" size="small" onClick={() => setImporting(true)} sx={{ display: { md: 'none' }, alignSelf: 'flex-start' }}>
+            Importar alumnos
+          </Button>
+        )}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           <Typography role="status" sx={{ fontSize: 12, color: 'text.secondary' }}>
             {isLoading || isFetching ? 'Buscando…' : `${countLabel} · orden A–Z por apellido`}
@@ -258,6 +270,7 @@ export default function StudentsPage() {
         </Fab>
       )}
 
+      {importing && <ImportStudentsForm onClose={() => setImporting(false)} />}
       {creating && <CreateStudentForm onClose={() => setCreating(false)} onCreated={open} />}
     </Box>
   );
