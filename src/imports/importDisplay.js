@@ -22,9 +22,23 @@ export const ROW_STATUS = {
   IGNORED: { label: 'Ignorada', bg: '#ECEFF3', fg: '#4A5160' },
 };
 
-/** The review's filters: "Sin resolver", "Resueltas" and "Ignoradas". */
+/** Extra marks of a row that will be enrolled without a career or a tutor (assigned by hand later). */
+export const NO_CAREER = { label: 'Sin carrera', bg: '#F1E7FB', fg: '#5B2A86' };
+export const NO_TUTOR = { label: 'Sin tutor', bg: '#DDF3F1', fg: '#0B5A54' };
+
+const counts = (row) => row.status !== 'IGNORED';
+
+/**
+ * The review's filters. By progress: "Sin resolver", "Resueltas" and
+ * "Ignoradas". By what the row is: new or already registered. And, only
+ * when the batch enrolls (`needsStage`), the rows left without career or tutor.
+ */
 export const ROW_FILTERS = [
   { key: 'UNRESOLVED', label: 'Sin resolver', matches: (row) => row.status === 'UNRESOLVED' },
   { key: 'RESOLVED', label: 'Resueltas', matches: (row) => row.status !== 'UNRESOLVED' && row.status !== 'IGNORED' },
   { key: 'IGNORED', label: 'Ignoradas', matches: (row) => row.status === 'IGNORED' },
+  { key: 'NEW', label: 'Alumnos nuevos', matches: (row) => row.status === 'NEW_STUDENT' },
+  { key: 'REGISTERED', label: 'Ya registrados', matches: (row) => row.status === 'AUTO_MATCHED' || row.status === 'MANUAL_MATCHED' },
+  { key: 'NO_CAREER', label: 'Sin carrera', needsStage: true, matches: (row) => counts(row) && !row.careerName },
+  { key: 'NO_TUTOR', label: 'Sin tutor', needsStage: true, matches: (row) => counts(row) && !row.tutorName },
 ];

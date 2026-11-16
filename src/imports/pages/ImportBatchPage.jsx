@@ -14,7 +14,7 @@ import { colors } from '../../app/theme';
 import ConfirmDialog from '../../layout/ConfirmDialog';
 import { useConfirmImportBatchMutation, useDiscardImportBatchMutation, useGetImportBatchQuery } from '../api/importsApi';
 import RowResolution from '../components/RowResolution';
-import { BATCH_STATUS, ROW_FILTERS, ROW_STATUS } from '../importDisplay';
+import { BATCH_STATUS, NO_CAREER, NO_TUTOR, ROW_FILTERS, ROW_STATUS } from '../importDisplay';
 
 /**
  * Review of a students batch (Claude Design: ImportSummaryMobile and
@@ -68,6 +68,8 @@ function BatchReview({ batch }) {
   const rows = batch.rows.filter(ROW_FILTERS.find((f) => f.key === filter).matches);
   const openRow = batch.rows.find((row) => row.id === openRowId);
   const toEnroll = batch.newRows + batch.matchedRows;
+  // career and tutor only matter when the batch enrolls
+  const enrolls = Boolean(batch.stageLabel);
 
   const confirm = async () => {
     setServerError(null);
@@ -134,7 +136,7 @@ function BatchReview({ batch }) {
       </Box>
 
       <Box role="group" aria-label="Filtrar filas" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        {ROW_FILTERS.map((f) => (
+        {ROW_FILTERS.filter((f) => !f.needsStage || enrolls).map((f) => (
           <Button
             key={f.key}
             size="small"
@@ -154,7 +156,7 @@ function BatchReview({ batch }) {
         <Box component="ul" aria-label="Filas" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
           {rows.map((row) => (
             <Box component="li" key={row.id}>
-              <RowCard row={row} pending={pending} onOpen={() => setOpenRowId(row.id)} />
+              <RowCard row={row} pending={pending} enrolls={enrolls} onOpen={() => setOpenRowId(row.id)} />
             </Box>
           ))}
         </Box>
@@ -210,7 +212,8 @@ function BatchReview({ batch }) {
   );
 }
 
-function RowCard({ row, pending, onOpen }) {
+function RowCard({ row, pending, enrolls, onOpen }) {
+  const marksMissing = enrolls && row.status !== 'IGNORED';
   const status = ROW_STATUS[row.status];
   return (
     <ButtonBase
@@ -237,10 +240,12 @@ function RowCard({ row, pending, onOpen }) {
       </Box>
       <Typography sx={{ fontSize: 15, fontWeight: 500 }}>{row.fullName}</Typography>
       <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-        {row.dni ? `DNI ${row.dni}` : 'Sin DNI'} · {row.careerName ?? 'Sin carrera'} · {row.tutorName ? `Tutor: ${row.tutorName}` : 'Sin tutor'}
+        {[row.dni ? `DNI ${row.dni}` : 'Sin DNI', row.careerName, row.tutorName && `Tutor: ${row.tutorName}`].filter(Boolean).join(' · ')}
       </Typography>
       <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
         <Chip status={status} />
+        {marksMissing && !row.careerName && <Chip status={NO_CAREER} />}
+        {marksMissing && !row.tutorName && <Chip status={NO_TUTOR} />}
         {row.student && row.status !== 'NEW_STUDENT' && (
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>→ {row.student.fullName}</Typography>
         )}

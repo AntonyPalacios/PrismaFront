@@ -176,8 +176,40 @@ describe('Importing students', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resueltas · 2' }));
     const resolved = within(screen.getByRole('list', { name: 'Filas' })).getAllByRole('listitem');
     expect(within(resolved[0]).getByText('DNI 70011223 · Letras · Tutor: Valle Gómez, Silvia')).toBeInTheDocument();
-    expect(within(resolved[1]).getByText('DNI 72345678 · Sin carrera · Sin tutor')).toBeInTheDocument();
+    expect(within(resolved[0]).queryByText('Sin carrera')).not.toBeInTheDocument();
+    // a row left without career or tutor is marked at a glance
+    expect(within(resolved[1]).getByText('DNI 72345678')).toBeInTheDocument();
+    expect(within(resolved[1]).getByText('Sin carrera')).toBeInTheDocument();
+    expect(within(resolved[1]).getByText('Sin tutor')).toBeInTheDocument();
     expect(within(resolved[1]).getByText('→ Quispe Mamani, Lucía')).toBeInTheDocument();
+  });
+
+  it('filters the rows by what they are and by missing career or tutor', async () => {
+    renderAt('/imports/5');
+    await screen.findByRole('heading', { name: 'Revisión de importación' });
+    const shown = () =>
+      within(screen.getByRole('list', { name: 'Filas' }))
+        .getAllByRole('button')
+        .map((b) => b.getAttribute('aria-label'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Alumnos nuevos · 1' }));
+    expect(shown()).toEqual(['Fila 2: Díaz Soto, Valeria']);
+    fireEvent.click(screen.getByRole('button', { name: 'Ya registrados · 1' }));
+    expect(shown()).toEqual(['Fila 3: Quispe, Lucia']);
+    fireEvent.click(screen.getByRole('button', { name: 'Sin carrera · 1' }));
+    expect(shown()).toEqual(['Fila 3: Quispe, Lucia']);
+    fireEvent.click(screen.getByRole('button', { name: 'Sin tutor · 1' }));
+    expect(shown()).toEqual(['Fila 3: Quispe, Lucia']);
+  });
+
+  it('a batch that only registers does not mark missing careers or tutors', async () => {
+    batch = { ...BATCH, stageId: null, stageLabel: null };
+    renderAt('/imports/5');
+    await screen.findByRole('heading', { name: 'Revisión de importación' });
+
+    expect(screen.queryByRole('button', { name: /^Sin carrera/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Resueltas · 2' }));
+    expect(screen.queryByText('Sin tutor')).not.toBeInTheDocument();
   });
 
   it('resolves a row with a suggested student', async () => {
