@@ -42,7 +42,12 @@ function RowResolutionContent({ batchId, row, editable, onClose }) {
   const [typed, setTyped] = useState('');
   const [query, setQuery] = useState('');
   const [resolve, { isLoading }] = useResolveImportRowMutation();
-  const { data: found = [] } = useSearchImportStudentsQuery({ batchId, query }, { skip: query.length < 2 });
+  const searching = query.length >= 2;
+  const { currentData } = useSearchImportStudentsQuery({ batchId, query }, { skip: !searching });
+  // only the results of what is typed now: clearing the box clears them
+  const found = searching ? currentData ?? [] : [];
+  // a student picked from the search stays listed after the search changes
+  const [picked, setPicked] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(typed.trim()), SEARCH_DELAY_MS);
@@ -50,7 +55,7 @@ function RowResolutionContent({ batchId, row, editable, onClose }) {
   }, [typed]);
 
   // the suggested students, the one already chosen and those found, once each
-  const options = [...(row.student ? [row.student] : []), ...row.candidates, ...found].filter(
+  const options = [...(row.student ? [row.student] : []), ...row.candidates, ...(picked ? [picked] : []), ...found].filter(
     (student, index, all) => all.findIndex((s) => s.id === student.id) === index,
   );
 
@@ -89,7 +94,16 @@ function RowResolutionContent({ batchId, row, editable, onClose }) {
 
       {row.notice && <Alert severity="warning">{row.notice}</Alert>}
 
-      <RadioGroup value={choice} onChange={(e) => setChoice(e.target.value)} aria-label="Resolución" sx={{ gap: 0.75 }}>
+      <RadioGroup
+        value={choice}
+        onChange={(e) => {
+          setChoice(e.target.value);
+          const chosen = found.find((s) => `student:${s.id}` === e.target.value);
+          if (chosen) setPicked(chosen);
+        }}
+        aria-label="Resolución"
+        sx={{ gap: 0.75 }}
+      >
         {options.length > 0 && (
           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{row.candidates.length > 0 ? 'Puede ser' : 'Alumno'}</Typography>
         )}

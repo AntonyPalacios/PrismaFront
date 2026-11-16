@@ -165,7 +165,7 @@ describe('Importing students', () => {
 
     expect(await screen.findByRole('heading', { name: 'Revisión de importación' })).toBeInTheDocument();
     expect(screen.getByText('alumnos.xlsx · Matricular en 2026-I · Regular')).toBeInTheDocument();
-    expect(screen.getByText('Aún no se guardó nada. Los alumnos quedan registrados cuando confirmes la importación.')).toBeInTheDocument();
+    expect(screen.getByText(/Aún no se guardó nada.*Solo quedan "Sin resolver" las\s+filas que necesitan tu decisión/s)).toBeInTheDocument();
     expect(screen.getByText('2 de 3 filas resueltas')).toBeInTheDocument();
     // the unresolved rows come first
     const rows = within(screen.getByRole('list', { name: 'Filas' })).getAllByRole('listitem');
@@ -250,6 +250,25 @@ describe('Importing students', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));
     await waitFor(() => expect(writes()).toHaveLength(2));
     expect(await writes()[1].json()).toEqual({ action: 'NEW', studentId: null });
+  });
+
+  it('clearing the search removes its results, but keeps a student already picked from it', async () => {
+    renderAt('/imports/5');
+    fireEvent.click(await screen.findByRole('button', { name: 'Fila 4: Roja, Mateo' }));
+    const sheet = await screen.findByRole('region', { name: 'Fila 4' });
+    const box = within(sheet).getByLabelText('Buscar otro alumno');
+
+    fireEvent.change(box, { target: { value: 'quispe' } });
+    await within(sheet).findByRole('radio', { name: /Quispe Mamani, Lucía/ });
+    fireEvent.change(box, { target: { value: '' } });
+    await waitFor(() => expect(within(sheet).queryByRole('radio', { name: /Quispe Mamani, Lucía/ })).not.toBeInTheDocument());
+
+    fireEvent.change(box, { target: { value: 'quispe' } });
+    fireEvent.click(await within(sheet).findByRole('radio', { name: /Quispe Mamani, Lucía/ }));
+    fireEvent.change(box, { target: { value: '' } });
+    // wait past the search delay: the picked student is still there, and selected
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(within(sheet).getByRole('radio', { name: /Quispe Mamani, Lucía/ })).toBeChecked();
   });
 
   it('confirms after asking, once every row is resolved', async () => {

@@ -117,7 +117,11 @@ function BatchReview({ batch }) {
       </Box>
 
       {pending && (
-        <Alert severity="info">Aún no se guardó nada. Los alumnos quedan registrados cuando confirmes la importación.</Alert>
+        <Alert severity="info">
+          Aún no se guardó nada. Los alumnos quedan registrados cuando confirmes la importación. Solo quedan "Sin resolver" las
+          filas que necesitan tu decisión (un nombre parecido a un alumno ya registrado, o un aviso); las demás ya vienen
+          resueltas y puedes cambiarlas si hace falta.
+        </Alert>
       )}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
