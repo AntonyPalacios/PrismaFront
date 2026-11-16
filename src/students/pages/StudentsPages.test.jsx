@@ -158,6 +158,9 @@ function route(request) {
         .filter((s) => !withoutTutor || !s.tutorId),
     );
   }
+  if (request.method === 'GET' && url.pathname.endsWith('/score-evolution')) {
+    return json(200, url.searchParams.get('includeAllCycles') === 'true' ? [OLD_POINT, ...EVOLUTION] : evolution);
+  }
   const detail = url.pathname.match(/\/students\/(\d+)$/);
   if (request.method === 'GET' && detail) {
     return BY_ID[detail[1]]
@@ -166,6 +169,44 @@ function route(request) {
   }
   return writeResponse(request);
 }
+
+// Lucía's score evolution: two exams of the active cycle, and one of an earlier cycle
+const EVOLUTION = [
+  {
+    examId: 1001,
+    examName: 'Regular 1',
+    examTypeName: 'Letras',
+    examDate: '2026-03-14',
+    cycleName: '2026-I',
+    studentScore: 650,
+    merit: 2,
+    meritOf: 54,
+    examMax: 700,
+    examMin: 420.5,
+    areaScores: [
+      { areaId: 1, areaName: 'Lectura', score: 640.5 },
+      { areaId: 2, areaName: 'Matemática', score: 660 },
+    ],
+  },
+  {
+    examId: 1002,
+    examName: 'Regular 2',
+    examTypeName: 'Letras',
+    examDate: '2026-03-21',
+    cycleName: '2026-I',
+    studentScore: 722.76,
+    merit: 1,
+    meritOf: 50,
+    examMax: 722.76,
+    examMin: 400,
+    areaScores: [
+      { areaId: 1, areaName: 'Lectura', score: 787.5 },
+      { areaId: 2, areaName: 'Matemática', score: 819.4 },
+    ],
+  },
+];
+const OLD_POINT = { ...EVOLUTION[0], examId: 900, examName: 'Repaso 5', examDate: '2025-11-08', cycleName: '2025-II', studentScore: 500, merit: 7, meritOf: 40 };
+let evolution = EVOLUTION;
 
 function renderAt(path) {
   const router = createMemoryRouter(
@@ -880,5 +921,87 @@ describe('Students by tutor', () => {
     renderAt('/students/2');
 
     expect(await screen.findByRole('button', { name: 'Editar' })).toBeInTheDocument();
+  });
+});
+
+describe('Student progress', () => {
+  beforeEach(() => {
+    roles = ['TUTOR'];
+    enrollments = [];
+    evolution = EVOLUTION;
+    writeResponse = () => json(201, MATEO);
+    fetchMock = vi.fn((request) => Promise.resolve(route(request)));
+    vi.stubGlobal('fetch', fetchMock);
+    document.cookie = 'XSRF-TOKEN=csrf-1';
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const evolutionRequests = () => requests().filter((r) => new URL(r.url).pathname.endsWith('/score-evolution'));
+
+  it('shows the score evolution with merit and the exam range, and Lectura and Matemática apart', async () => {
+    renderAt('/students/1'); // Lucía, whose tutor is the user
+
+    const section = await screen.findByRole('region', { name: 'Progreso' });
+    const totals = await within(section).findByRole('table', { name: 'Evolución del puntaje' });
+    const rows = within(totals).getAllByRole('row').map((row) => [...row.children].map((cell) => cell.textContent));
+    expect(rows).toEqual([
+      ['Examen', 'Fecha', 'Puntaje', 'Mérito', 'Máximo del examen', 'Mínimo del examen'],
+      ['Regular 1', '14 mar 2026', '650', '2° de 54', '700', '420.5'],
+      ['Regular 2', '21 mar 2026', '722.76', '1° de 50', '722.76', '400'],
+    ]);
+    // from the first exam to the last one
+    expect(within(section).getByText('+72.76 pts')).toBeInTheDocument();
+
+    const areas = within(section).getByRole('table', { name: 'Lectura y Matemática' });
+    expect(within(areas).getAllByRole('row').map((row) => row.textContent)).toEqual([
+      'ExamenLecturaMatemática',
+      'Regular 1640.5660',
+      'Regular 2787.5819.4',
+    ]);
+    // only the active cycle unless asked
+    expect(new URL(evolutionRequests()[0].url).searchParams.get('includeAllCycles')).toBe('false');
+  });
+
+  it('adds earlier cycles when asked, saying which cycle each exam is from', async () => {
+    renderAt('/students/1');
+    const section = await screen.findByRole('region', { name: 'Progreso' });
+    await within(section).findByRole('table', { name: 'Evolución del puntaje' });
+
+    fireEvent.click(within(section).getByRole('switch', { name: 'Incluir ciclos anteriores' }));
+
+    // in both charts
+    expect((await within(section).findAllByRole('rowheader', { name: 'Repaso 5 · 2025-II' })).length).toBe(2);
+    expect(within(section).getAllByRole('rowheader', { name: 'Regular 1 · 2026-I' }).length).toBe(2);
+    expect(new URL(evolutionRequests().at(-1).url).searchParams.get('includeAllCycles')).toBe('true');
+  });
+
+  it('says so when the student has no results yet', async () => {
+    evolution = [];
+    renderAt('/students/1');
+
+    const section = await screen.findByRole('region', { name: 'Progreso' });
+    expect(await within(section).findByText('Aún no tiene resultados de exámenes en el ciclo activo.')).toBeInTheDocument();
+    expect(within(section).queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('is only for an admin or the current tutor of the student', async () => {
+    renderAt('/students/2'); // Mateo has no tutor
+    expect(await screen.findByRole('heading', { name: 'Chávez, Mateo' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Progreso' })).not.toBeInTheDocument();
+    expect(evolutionRequests()).toHaveLength(0);
+  });
+
+  it('a coordinator does not see it', async () => {
+    roles = ['COORDINADOR'];
+    renderAt('/students/1');
+    expect(await screen.findByRole('heading', { name: /Lucía/ })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Progreso' })).not.toBeInTheDocument();
+  });
+
+  it('an admin sees the progress of any student', async () => {
+    roles = ['ADMIN'];
+    renderAt('/students/2');
+    expect(await screen.findByRole('region', { name: 'Progreso' })).toBeInTheDocument();
   });
 });

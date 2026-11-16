@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
+import ProgressSection from '../../dashboards/components/ProgressSection';
 import ConfirmDialog from '../../layout/ConfirmDialog';
 import { useIsAdmin } from '../../users/api/authApi';
 import {
@@ -212,6 +213,9 @@ function StudentDetail({ student, onCancel }) {
 
       {/* ADMIN and TUTOR: a coordinator does not see enrollments */}
       {canManage && <EnrollmentsSection student={student} />}
+
+      {/* the same people who edit the student: ADMIN or their current tutor */}
+      {canEdit && <ProgressSection student={student} />}
 
       {!student.active && (
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
