@@ -112,7 +112,7 @@ function BatchReview({ batch }) {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }, gap: 1.25 }}>
         <Stat value={batch.totalRows} label="filas en el archivo" />
         <Stat value={batch.newRows} label="alumnos nuevos" />
-        <Stat value={batch.matchedRows} label="ya registrados" color="#2F5A08" />
+        <Stat value={batch.matchedRows} label="ya registrados (actualizan datos)" color="#2F5A08" />
         <Stat value={batch.unresolvedRows} label="requieren revisión" color="#7A4100" highlight={batch.unresolvedRows > 0} />
       </Box>
 
@@ -191,8 +191,11 @@ function BatchReview({ batch }) {
         <ConfirmDialog
           title="¿Confirmar importación?"
           message={
-            `Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'}` +
-            (batch.stageLabel ? ` y se matricularán ${toEnroll} en ${batch.stageLabel}, con la carrera y el tutor encontrados.` : '.') +
+            `Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'} y se actualizarán los datos de ` +
+            `${batch.matchedRows} ya ${batch.matchedRows === 1 ? 'registrado' : 'registrados'}.` +
+            (batch.stageLabel
+              ? ` Los ${toEnroll} quedarán matriculados en ${batch.stageLabel} con la carrera y el tutor encontrados; quien ya lo estaba no se matricula otra vez.`
+              : '') +
             (batch.ignoredRows > 0 ? ` Las ${batch.ignoredRows} filas ignoradas no se guardan.` : '')
           }
           confirmLabel="Confirmar"

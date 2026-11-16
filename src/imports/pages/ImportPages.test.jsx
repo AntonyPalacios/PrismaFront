@@ -194,7 +194,7 @@ describe('Importing students', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Alumnos nuevos · 1' }));
     expect(shown()).toEqual(['Fila 2: Díaz Soto, Valeria']);
-    fireEvent.click(screen.getByRole('button', { name: 'Ya registrados · 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Actualiza datos · 1' }));
     expect(shown()).toEqual(['Fila 3: Quispe, Lucia']);
     fireEvent.click(screen.getByRole('button', { name: 'Sin carrera · 1' }));
     expect(shown()).toEqual(['Fila 3: Quispe, Lucia']);
@@ -278,7 +278,7 @@ describe('Importing students', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmar importación' }));
     const dialog = await screen.findByRole('dialog', { name: '¿Confirmar importación?' });
-    expect(within(dialog).getByText(/Se registrarán 1 alumno nuevo y se matricularán 3 en 2026-I · Regular/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Se registrarán 1 alumno nuevo y se actualizarán los datos de 2 ya registrados. Los 3 quedarán matriculados en 2026-I · Regular/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmar' }));
 
     expect(await screen.findByText('Importación confirmada.')).toBeInTheDocument();
