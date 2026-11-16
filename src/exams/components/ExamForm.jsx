@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
+import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import { formatDate, stageDates } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
@@ -45,14 +46,24 @@ const stageLabel = (cycle, stage) => `${cycle.name} · ${stage.name} (${stageDat
  * types (all checked by default). Editing: name and date, which apply to
  * every type; add a missing type or remove one without results (never the
  * last); "Eliminar" while no type has results. Read-only for a TUTOR and in
- * a closed cycle. Bottom sheet on mobile, dialog on desktop.
+ * a closed cycle. Every role may "Importar resultados" of a type without
+ * results while the stage is the one in force of the active cycle
+ * (`onImport`). Bottom sheet on mobile, dialog on desktop.
  */
-export default function ExamForm({ cycle, stage, mockExam, canManage, onClose }) {
+export default function ExamForm({ cycle, stage, mockExam, canManage, onImport, onClose }) {
   const editable = canManage && cycle.status !== 'CLOSED';
   return (
     <ResponsiveSheet onClose={onClose}>
       {mockExam ? (
-        <EditMockExam cycle={cycle} stage={stage} mockExam={mockExam} editable={editable} canManage={canManage} onClose={onClose} />
+        <EditMockExam
+          cycle={cycle}
+          stage={stage}
+          mockExam={mockExam}
+          editable={editable}
+          canManage={canManage}
+          onImport={stage.current && cycle.status === 'ACTIVE' ? onImport : null}
+          onClose={onClose}
+        />
       ) : (
         <CreateMockExam cycle={cycle} stage={stage} onClose={onClose} />
       )}
@@ -178,7 +189,7 @@ function CreateMockExam({ cycle, stage, onClose }) {
   );
 }
 
-function EditMockExam({ cycle, stage, mockExam, editable, canManage, onClose }) {
+function EditMockExam({ cycle, stage, mockExam, editable, canManage, onImport, onClose }) {
   const notify = useNotify();
   const [serverError, setServerError] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -234,7 +245,7 @@ function EditMockExam({ cycle, stage, mockExam, editable, canManage, onClose }) 
         helperText={errors.examDate?.message ?? (editable ? 'El nombre y la fecha se aplican a todos sus tipos.' : ' ')}
       />
 
-      <ExamTypes mockExam={mockExam} editable={editable} onError={setServerError} />
+      <ExamTypes mockExam={mockExam} editable={editable} onImport={onImport} onError={setServerError} />
 
       {note && <Alert severity="info">{note}</Alert>}
       {serverError && <Alert severity="error">{serverError}</Alert>}
@@ -279,9 +290,11 @@ function EditMockExam({ cycle, stage, mockExam, editable, canManage, onClose }) 
 /**
  * The mock exam's exam types, each saved on its own (they are not part of
  * the name/date form): remove one without results (never the last) or add
- * one it is missing. No <form> here: it lives inside the mock exam's form.
+ * one it is missing, and import the results of one without them
+ * (`onImport`, null when not allowed). No <form> here: it lives inside the
+ * mock exam's form.
  */
-function ExamTypes({ mockExam, editable, onError }) {
+function ExamTypes({ mockExam, editable, onImport, onError }) {
   const notify = useNotify();
   const [adding, setAdding] = useState('');
   const { data: types = [] } = useGetExamTypesQuery();
@@ -321,12 +334,23 @@ function ExamTypes({ mockExam, editable, onError }) {
           <Box
             component="li"
             key={exam.id}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderRadius: '12px', bgcolor: '#F4F6FA' }}
+            sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, px: 1.5, py: 0.75, borderRadius: '12px', bgcolor: '#F4F6FA' }}
           >
             <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{exam.examTypeName}</Typography>
             <Typography sx={{ fontSize: 12, color: exam.hasResults ? '#2F5A08' : 'text.secondary' }}>
               {exam.hasResults ? 'Con resultados' : 'Sin resultados'}
             </Typography>
+            {onImport && !exam.hasResults && (
+              <Button
+                type="button"
+                size="small"
+                startIcon={<FileUploadOutlinedIcon />}
+                aria-label={`Importar resultados de ${exam.examTypeName}`}
+                onClick={() => onImport(exam)}
+              >
+                Importar resultados
+              </Button>
+            )}
             {canRemove && !exam.hasResults && (
               <IconButton size="small" aria-label={`Quitar ${exam.examTypeName}`} disabled={removing} onClick={() => remove(exam)}>
                 <CloseIcon fontSize="small" />

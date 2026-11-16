@@ -14,11 +14,25 @@ import { colors } from '../../app/theme';
 import ConfirmDialog from '../../layout/ConfirmDialog';
 import { useConfirmImportBatchMutation, useDiscardImportBatchMutation, useGetImportBatchQuery } from '../api/importsApi';
 import RowResolution from '../components/RowResolution';
-import { BATCH_STATUS, NO_CAREER, NO_TUTOR, ROW_FILTERS, ROW_STATUS } from '../importDisplay';
+import {
+  ABSENT,
+  BATCH_STATUS,
+  ENROLLS,
+  isResults,
+  newStudentName,
+  NO_CAREER,
+  NO_TUTOR,
+  RESULT_ROW_FILTERS,
+  RESULT_ROW_STATUS,
+  ROW_FILTERS,
+  ROW_STATUS,
+  scores,
+} from '../importDisplay';
 
 /**
- * Review of a students batch (Claude Design: ImportSummaryMobile and
- * ReviewQueueMobile): what the file brought, how many rows are resolved,
+ * Review of a batch (Claude Design: ImportSummaryMobile and
+ * ReviewQueueMobile), of students or of an exam's results: what the file
+ * brought, how many rows are resolved,
  * the rows by filter (a row opens its resolution) and, while pending,
  * "Confirmar lote" (only with every row resolved, asks first) and
  * "Descartar lote". Nothing is saved until the batch is confirmed.
@@ -65,11 +79,15 @@ function BatchReview({ batch }) {
   const [discardBatch, { isLoading: discarding }] = useDiscardImportBatchMutation();
   const resolved = batch.totalRows - batch.unresolvedRows;
   const status = BATCH_STATUS[batch.status];
-  const rows = batch.rows.filter(ROW_FILTERS.find((f) => f.key === filter).matches);
+  const results = isResults(batch);
+  const filters = results ? RESULT_ROW_FILTERS : ROW_FILTERS;
+  const rows = batch.rows.filter(filters.find((f) => f.key === filter).matches);
   const openRow = batch.rows.find((row) => row.id === openRowId);
   const toEnroll = batch.newRows + batch.matchedRows;
-  // career and tutor only matter when the batch enrolls
-  const enrolls = Boolean(batch.stageLabel);
+  // career and tutor only matter when a students batch enrolls
+  const enrolls = !results && Boolean(batch.stageLabel);
+  const toSave = batch.totalRows - batch.ignoredRows;
+  const enrolling = batch.rows.filter((row) => row.enrolls).length;
 
   const confirm = async () => {
     setServerError(null);
@@ -105,18 +123,35 @@ function BatchReview({ batch }) {
           <Chip status={status} />
         </Box>
         <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-          {batch.fileName} · {batch.stageLabel ? `Matricular en ${batch.stageLabel}` : 'Solo registrar (sin matrícula)'}
+          {results
+            ? `Resultados de ${batch.examLabel ?? 'un examen eliminado'} · ${batch.stageLabel} · ${batch.fileName}`
+            : `${batch.fileName} · ${batch.stageLabel ? `Matricular en ${batch.stageLabel}` : 'Solo registrar (sin matrícula)'}`}
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }, gap: 1.25 }}>
-        <Stat value={batch.totalRows} label="filas en el archivo" />
-        <Stat value={batch.newRows} label="alumnos nuevos" />
-        <Stat value={batch.matchedRows} label="ya registrados (actualizan datos)" color="#2F5A08" />
-        <Stat value={batch.unresolvedRows} label="requieren revisión" color="#7A4100" highlight={batch.unresolvedRows > 0} />
-      </Box>
+      {results ? (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }, gap: 1.25 }}>
+          <Stat value={batch.totalRows} label="alumnos en el archivo" />
+          <Stat value={batch.skippedRows} label="descartadas por ser filas vacías o basura" />
+          <Stat value={batch.matchedRows} label="calzaron con un alumno" color="#2F5A08" />
+          <Stat value={batch.unresolvedRows} label="requieren revisión" color="#7A4100" highlight={batch.unresolvedRows > 0} />
+        </Box>
+      ) : (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' }, gap: 1.25 }}>
+          <Stat value={batch.totalRows} label="filas en el archivo" />
+          <Stat value={batch.newRows} label="alumnos nuevos" />
+          <Stat value={batch.matchedRows} label="ya registrados (actualizan datos)" color="#2F5A08" />
+          <Stat value={batch.unresolvedRows} label="requieren revisión" color="#7A4100" highlight={batch.unresolvedRows > 0} />
+        </Box>
+      )}
 
-      {pending && (
+      {pending && results && (
+        <Alert severity="info">
+          Aún no se guardó nada. Los resultados quedan en firme cuando confirmes la importación. Quedan "Sin resolver" las filas
+          cuyo alumno no se reconoció o que necesitan tu decisión: elige al alumno, regístralo como nuevo o ignora la fila.
+        </Alert>
+      )}
+      {pending && !results && (
         <Alert severity="info">
           Aún no se guardó nada. Los alumnos quedan registrados cuando confirmes la importación. Solo quedan "Sin resolver" las
           filas que necesitan tu decisión (un nombre parecido a un alumno ya registrado, o un aviso); las demás ya vienen
@@ -140,7 +175,7 @@ function BatchReview({ batch }) {
       </Box>
 
       <Box role="group" aria-label="Filtrar filas" sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        {ROW_FILTERS.filter((f) => !f.needsStage || enrolls).map((f) => (
+        {filters.filter((f) => !f.needsStage || enrolls).map((f) => (
           <Button
             key={f.key}
             size="small"
@@ -160,7 +195,11 @@ function BatchReview({ batch }) {
         <Box component="ul" aria-label="Filas" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
           {rows.map((row) => (
             <Box component="li" key={row.id}>
-              <RowCard row={row} pending={pending} enrolls={enrolls} onOpen={() => setOpenRowId(row.id)} />
+              {results ? (
+                <ResultRowCard row={row} pending={pending} onOpen={() => setOpenRowId(row.id)} />
+              ) : (
+                <RowCard row={row} pending={pending} enrolls={enrolls} onOpen={() => setOpenRowId(row.id)} />
+              )}
             </Box>
           ))}
         </Box>
@@ -185,13 +224,24 @@ function BatchReview({ batch }) {
         </Box>
       )}
 
-      {openRow && <RowResolution batchId={batch.id} row={openRow} editable={pending} onClose={() => setOpenRowId(null)} />}
+      {openRow && (
+        <RowResolution batchId={batch.id} row={openRow} results={results} editable={pending} onClose={() => setOpenRowId(null)} />
+      )}
 
       {dialog === 'confirm' && (
         <ConfirmDialog
           title="¿Confirmar importación?"
           message={
-            `Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'} y se actualizarán los datos de ` +
+            results
+              ? `Se guardarán los resultados de ${toSave} ${toSave === 1 ? 'alumno' : 'alumnos'} en ${batch.examLabel}.` +
+                (batch.newRows > 0 ? ` Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'}.` : '') +
+                (enrolling > 0
+                  ? ` ${enrolling} ${enrolling === 1 ? 'alumno se matriculará' : 'alumnos se matricularán'} en ${batch.stageLabel}.`
+                  : '') +
+                ' Quien no tenga tutor recibe el que indica el Excel; un tutor ya asignado no cambia.' +
+                ignoredNote(batch.ignoredRows) +
+                ' Después, este examen ya no acepta otra carga.'
+              : `Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'} y se actualizarán los datos de ` +
             `${batch.matchedRows} ya ${batch.matchedRows === 1 ? 'registrado' : 'registrados'}.` +
             (batch.stageLabel
               ? ` Los ${toEnroll} quedarán matriculados en ${batch.stageLabel} con la carrera y el tutor encontrados; quien ya lo estaba no se matricula otra vez.`
@@ -255,6 +305,57 @@ function RowCard({ row, pending, enrolls, onOpen }) {
         {marksMissing && !row.tutorName && <Chip status={NO_TUTOR} />}
         {row.student && row.status !== 'NEW_STUDENT' && (
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>→ {row.student.fullName}</Typography>
+        )}
+      </Box>
+      {row.notice && <Typography sx={{ fontSize: 12, color: '#7A4100' }}>{row.notice}</Typography>}
+    </ButtonBase>
+  );
+}
+
+function ignoredNote(ignored) {
+  if (ignored === 0) return '';
+  return ignored === 1 ? ' La fila ignorada no se guarda.' : ` Las ${ignored} filas ignoradas no se guardan.`;
+}
+
+function ResultRowCard({ row, pending, onOpen }) {
+  const result = row.result;
+  return (
+    <ButtonBase
+      onClick={onOpen}
+      aria-label={`Fila ${row.rowNumber}: ${row.fullName}`}
+      sx={{
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: 0.75,
+        p: 1.75,
+        bgcolor: 'background.paper',
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: '16px',
+        textAlign: 'left',
+        '&:hover': { borderColor: colors.secondary },
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
+        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Fila {row.rowNumber} del Excel</Typography>
+        {pending && <Typography sx={{ fontSize: 13, fontWeight: 500, color: colors.secondary }}>Resolver ›</Typography>}
+      </Box>
+      <Typography sx={{ fontSize: 15, fontWeight: 500 }}>{row.fullName}</Typography>
+      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+        {[row.dni ? `DNI ${row.dni}` : 'Sin DNI', ...scores(result), row.tutorName && `Tutor: ${row.tutorName}`].filter(Boolean).join(' · ')}
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Chip status={RESULT_ROW_STATUS[row.status]} />
+        {row.enrolls && <Chip status={ENROLLS} />}
+        {row.status !== 'IGNORED' && !result.attended && <Chip status={ABSENT} />}
+        {row.status !== 'IGNORED' && !row.tutorName && <Chip status={NO_TUTOR} />}
+        {row.student && row.status !== 'NEW_STUDENT' && (
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>→ {row.student.fullName}</Typography>
+        )}
+        {row.status === 'NEW_STUDENT' && row.newStudent && (
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>→ {newStudentName(row.newStudent)}</Typography>
         )}
       </Box>
       {row.notice && <Typography sx={{ fontSize: 12, color: '#7A4100' }}>{row.notice}</Typography>}

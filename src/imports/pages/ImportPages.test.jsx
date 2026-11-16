@@ -50,6 +50,68 @@ const BATCH = {
   rows: [ROW_NEW, ROW_MATCHED, ROW_UNRESOLVED],
 };
 
+// an exam results batch (EXAM_RESULTS)
+const RESULT = { attended: true, totalCorrect: 24, totalWrong: 6, totalScore: 722.76, areas: [{ areaName: 'Lectura', score: 787.5 }, { areaName: 'Matemática', score: 819.4 }] };
+const RESULT_MATCHED = {
+  id: 201,
+  rowNumber: 12,
+  status: 'AUTO_MATCHED',
+  fullName: 'ROJAS MATEO',
+  dni: null,
+  notice: 'No está matriculado en la etapa: se matriculará al confirmar en Letras.',
+  student: ROJAS,
+  candidates: [],
+  enrolls: true,
+  newStudent: null,
+  tutorText: 'SILVIA',
+  tutorName: 'Valle Gómez, Silvia',
+  result: RESULT,
+};
+const RESULT_UNKNOWN = {
+  ...RESULT_MATCHED,
+  id: 202,
+  rowNumber: 13,
+  status: 'UNRESOLVED',
+  fullName: 'TORRES VEGA ANA SOFIA',
+  dni: '71112223',
+  notice: null,
+  student: null,
+  enrolls: false,
+  // the file names someone who is not a tutor
+  tutorText: 'XIMENA',
+  tutorName: null,
+};
+const RESULT_ABSENT = {
+  ...RESULT_MATCHED,
+  id: 203,
+  rowNumber: 14,
+  fullName: 'QUISPE MAMANI LUCIA',
+  dni: '72345678',
+  notice: null,
+  student: QUISPE,
+  enrolls: false,
+  result: { ...RESULT, attended: false, totalCorrect: 0, totalWrong: 0, totalScore: 80 },
+};
+let resultsBatch;
+const RESULTS_BATCH = {
+  id: 6,
+  type: 'EXAM_RESULTS',
+  status: 'PENDING_REVIEW',
+  fileName: 'GENERALES LETRAS.xlsx',
+  stageId: 11,
+  stageLabel: '2026-I · Regular',
+  examId: 1002,
+  examLabel: 'Repaso 1 · Letras',
+  uploadedAt: '2026-11-16T10:00:00-05:00',
+  totalRows: 3,
+  newRows: 0,
+  matchedRows: 2,
+  unresolvedRows: 1,
+  ignoredRows: 0,
+  skippedRows: 4,
+  rows: [RESULT_MATCHED, RESULT_UNKNOWN, RESULT_ABSENT],
+};
+
 function json(status, body) {
   return new Response(body === undefined ? null : JSON.stringify(body), {
     status,
@@ -70,6 +132,7 @@ function route(request) {
     return json(200, url.searchParams.get('query').toLowerCase().startsWith('quis') ? [QUISPE] : []);
   }
   if (request.method === 'GET' && url.pathname.endsWith('/import-batches')) return json(200, [{ ...batch, rows: [] }]);
+  if (request.method === 'GET' && url.pathname.endsWith('/import-batches/6')) return json(200, resultsBatch);
   if (request.method === 'GET' && url.pathname.endsWith('/import-batches/5')) return json(200, batch);
   return writeResponse(request);
 }
@@ -216,7 +279,7 @@ describe('Importing students', () => {
     writeResponse = () => json(200, BATCH);
     renderAt('/imports/5');
     fireEvent.click(await screen.findByRole('button', { name: 'Fila 4: Roja, Mateo' }));
-    const sheet = await screen.findByRole('region', { name: 'Fila 4' });
+    const sheet = await screen.findByRole('form', { name: 'Fila 4' });
 
     const save = within(sheet).getByRole('button', { name: 'Guardar resolución' });
     expect(save).toBeDisabled();
@@ -234,7 +297,7 @@ describe('Importing students', () => {
     writeResponse = () => json(200, BATCH);
     renderAt('/imports/5');
     fireEvent.click(await screen.findByRole('button', { name: 'Fila 4: Roja, Mateo' }));
-    let sheet = await screen.findByRole('region', { name: 'Fila 4' });
+    let sheet = await screen.findByRole('form', { name: 'Fila 4' });
 
     fireEvent.change(within(sheet).getByLabelText('Buscar otro alumno'), { target: { value: 'quispe' } });
     fireEvent.click(await within(sheet).findByRole('radio', { name: /Quispe Mamani, Lucía/ }));
@@ -245,7 +308,7 @@ describe('Importing students', () => {
     expect(new URL(search.url).searchParams.get('query')).toBe('quispe');
 
     fireEvent.click(screen.getByRole('button', { name: 'Fila 4: Roja, Mateo' }));
-    sheet = await screen.findByRole('region', { name: 'Fila 4' });
+    sheet = await screen.findByRole('form', { name: 'Fila 4' });
     fireEvent.click(within(sheet).getByRole('radio', { name: 'Es un alumno nuevo' }));
     fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));
     await waitFor(() => expect(writes()).toHaveLength(2));
@@ -255,7 +318,7 @@ describe('Importing students', () => {
   it('clearing the search removes its results, but keeps a student already picked from it', async () => {
     renderAt('/imports/5');
     fireEvent.click(await screen.findByRole('button', { name: 'Fila 4: Roja, Mateo' }));
-    const sheet = await screen.findByRole('region', { name: 'Fila 4' });
+    const sheet = await screen.findByRole('form', { name: 'Fila 4' });
     const box = within(sheet).getByLabelText('Buscar otro alumno');
 
     fireEvent.change(box, { target: { value: 'quispe' } });
@@ -316,5 +379,100 @@ describe('Importing students', () => {
     expect(within(item).getByText(/3 filas · 1 por revisar/)).toBeInTheDocument();
     fireEvent.click(item);
     await waitFor(() => expect(router.state.location.pathname).toBe('/imports/5'));
+  });
+});
+
+describe('Reviewing exam results', () => {
+  beforeEach(() => {
+    batch = { ...RESULTS_BATCH, rows: [] };
+    resultsBatch = RESULTS_BATCH;
+    writeResponse = () => json(200, RESULTS_BATCH);
+    fetchMock = vi.fn((request) => Promise.resolve(route(request)));
+    vi.stubGlobal('fetch', fetchMock);
+    document.cookie = 'XSRF-TOKEN=csrf-1';
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the exam, the counts with the skipped rows, and filters by what each row will do', async () => {
+    renderAt('/imports/6');
+
+    expect(await screen.findByText(/Resultados de Repaso 1 · Letras · 2026-I · Regular · GENERALES LETRAS.xlsx/)).toBeInTheDocument();
+    expect(screen.getByText('descartadas por ser filas vacías o basura').previousSibling).toHaveTextContent('4');
+    expect(screen.getByText('calzaron con un alumno').previousSibling).toHaveTextContent('2');
+    expect(screen.getByRole('button', { name: 'Se matricularán · 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'No asistieron · 1' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Sin carrera/ })).not.toBeInTheDocument();
+
+    // unresolved first
+    const unknown = screen.getByRole('button', { name: 'Fila 13: TORRES VEGA ANA SOFIA' });
+    expect(within(unknown).getByText('DNI 71112223 · Total 722.76 · Lectura 787.5 · Matemática 819.4')).toBeInTheDocument();
+    expect(within(unknown).getByText('Sin tutor')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sin tutor · 1' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Se matricularán · 1' }));
+    const enrolling = screen.getByRole('button', { name: 'Fila 12: ROJAS MATEO' });
+    expect(within(enrolling).getByText('Se matriculará')).toBeInTheDocument();
+    expect(within(enrolling).getByText('→ Rojas, Mateo')).toBeInTheDocument();
+    expect(within(enrolling).getByText(/· Tutor: Valle Gómez, Silvia$/)).toBeInTheDocument();
+    expect(within(enrolling).queryByText('Sin tutor')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'No asistieron · 1' }));
+    expect(within(screen.getByRole('button', { name: 'Fila 14: QUISPE MAMANI LUCIA' })).getByText('No asistió')).toBeInTheDocument();
+  });
+
+  it('registers an unknown row as a new student, with its names split by hand', async () => {
+    renderAt('/imports/6');
+    fireEvent.click(await screen.findByRole('button', { name: 'Fila 13: TORRES VEGA ANA SOFIA' }));
+    const sheet = await screen.findByRole('form', { name: 'Fila 13' });
+    expect(within(sheet).getByText('722.76')).toBeInTheDocument();
+    expect(within(sheet).getByText('Sin tutor ("XIMENA" no se encontró)')).toBeInTheDocument();
+
+    fireEvent.click(within(sheet).getByRole('radio', { name: 'Es un alumno nuevo' }));
+    // the file's cell, split as usual and out of capitals
+    expect(within(sheet).getByLabelText(/Apellido paterno/)).toHaveValue('Torres');
+    expect(within(sheet).getByLabelText(/Apellido materno/)).toHaveValue('Vega');
+    const names = within(sheet).getByLabelText(/Nombres/);
+    expect(names).toHaveValue('Ana Sofia');
+
+    fireEvent.change(names, { target: { value: ' ' } });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));
+    expect(await within(sheet).findByText('Ingresa los nombres del alumno.')).toBeInTheDocument();
+    expect(writes()).toHaveLength(0);
+
+    fireEvent.change(names, { target: { value: 'Ana Sofía' } });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));
+    await screen.findByText('Fila 13 resuelta.');
+    const [request] = writes();
+    expect(new URL(request.url).pathname).toMatch(/\/import-batches\/6\/rows\/202$/);
+    expect(await request.json()).toEqual({ action: 'NEW', studentId: null, lastNamePat: 'Torres', lastNameMat: 'Vega', firstName: 'Ana Sofía' });
+  });
+
+  it('confirms after asking, saying what is saved and who gets enrolled', async () => {
+    resultsBatch = { ...RESULTS_BATCH, unresolvedRows: 0, ignoredRows: 1, rows: [RESULT_MATCHED, { ...RESULT_UNKNOWN, status: 'IGNORED' }, RESULT_ABSENT] };
+    writeResponse = () => json(200, { ...resultsBatch, status: 'CONFIRMED' });
+    renderAt('/imports/6');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar importación' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Confirmar importación?' });
+    expect(
+      within(dialog).getByText(
+        'Se guardarán los resultados de 2 alumnos en Repaso 1 · Letras. 1 alumno se matriculará en 2026-I · Regular. ' +
+          'Quien no tenga tutor recibe el que indica el Excel; un tutor ya asignado no cambia. ' +
+          'La fila ignorada no se guarda. Después, este examen ya no acepta otra carga.',
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByText('Importación confirmada.')).toBeInTheDocument();
+    expect(new URL(writes()[0].url).pathname).toMatch(/\/import-batches\/6\/confirm$/);
+  });
+
+  it('lists results imports by their exam', async () => {
+    renderAt('/imports');
+
+    const item = await screen.findByRole('button', { name: 'Importación GENERALES LETRAS.xlsx' });
+    expect(within(item).getByText('Resultados · Repaso 1 · Letras')).toBeInTheDocument();
+    expect(within(item).getByText(/3 alumnos · 1 por revisar/)).toBeInTheDocument();
   });
 });

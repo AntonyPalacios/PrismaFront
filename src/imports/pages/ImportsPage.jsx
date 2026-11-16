@@ -8,14 +8,16 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
 import { useGetImportBatchesQuery } from '../api/importsApi';
-import { BATCH_STATUS } from '../importDisplay';
+import { BATCH_STATUS, isResults } from '../importDisplay';
 import { Chip } from './ImportBatchPage';
 
 const DATE_TIME = new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Lima' });
 
 /**
- * "Importaciones": the students imports, newest first, so a pending one can
- * be resumed (or discarded) from its review. New imports start in Alumnos.
+ * "Importaciones": the imports of students and of exam results, newest
+ * first, so a pending one can be resumed (or discarded) from its review. A
+ * COORDINADOR only gets the results ones. New imports start in Alumnos
+ * (students) or in Exámenes (results).
  */
 export default function ImportsPage() {
   const navigate = useNavigate();
@@ -28,7 +30,8 @@ export default function ImportsPage() {
           Importaciones
         </Typography>
         <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-          Los archivos subidos y su revisión. Para importar alumnos, ve a Alumnos › Importar alumnos.
+          Los archivos subidos y su revisión. Para importar alumnos, ve a Alumnos › Importar alumnos; para importar resultados,
+          abre un examen en Exámenes.
         </Typography>
       </Box>
 
@@ -65,12 +68,12 @@ export default function ImportsPage() {
               <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   <Typography noWrap sx={{ fontSize: 15, fontWeight: 500 }}>
-                    Alumnos · {batch.fileName}
+                    {isResults(batch) ? `Resultados · ${batch.examLabel ?? batch.fileName}` : `Alumnos · ${batch.fileName}`}
                   </Typography>
                   <Chip status={BATCH_STATUS[batch.status]} />
                 </Box>
                 <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-                  {DATE_TIME.format(new Date(batch.uploadedAt))} · {batch.totalRows} filas
+                  {DATE_TIME.format(new Date(batch.uploadedAt))} · {batch.totalRows} {isResults(batch) ? 'alumnos' : 'filas'}
                   {batch.status === 'PENDING_REVIEW' && batch.unresolvedRows > 0 ? ` · ${batch.unresolvedRows} por revisar` : ''}
                 </Typography>
               </Box>
