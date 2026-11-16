@@ -140,6 +140,8 @@ function RowResolutionContent({ batchId, row, results, editable, onClose }) {
               {row.result.totalCorrect} / {row.result.totalWrong}
               {row.result.attended ? '' : ' · No asistió'}
             </Box>
+            <Label>Tutor</Label>
+            <Box>{row.tutorName ?? (row.tutorText ? `Sin tutor ("${row.tutorText}" no se encontró)` : 'Sin tutor')}</Box>
           </>
         ) : (
           <>

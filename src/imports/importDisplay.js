@@ -63,6 +63,8 @@ export const RESULT_ROW_FILTERS = [
   ROW_FILTERS[2],
   { key: 'NEW', label: 'Alumnos nuevos', matches: (row) => row.status === 'NEW_STUDENT' },
   { key: 'ENROLLS', label: 'Se matricularán', matches: (row) => row.enrolls },
+  // neither a tutor in the stage nor one the file's TUTOR column names
+  { key: 'NO_TUTOR', label: 'Sin tutor', matches: (row) => counts(row) && !row.tutorName },
   { key: 'ABSENT', label: 'No asistieron', matches: (row) => counts(row) && row.result && !row.result.attended },
 ];
 

@@ -236,8 +236,9 @@ function BatchReview({ batch }) {
               ? `Se guardarán los resultados de ${toSave} ${toSave === 1 ? 'alumno' : 'alumnos'} en ${batch.examLabel}.` +
                 (batch.newRows > 0 ? ` Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'}.` : '') +
                 (enrolling > 0
-                  ? ` ${enrolling} ${enrolling === 1 ? 'alumno se matriculará' : 'alumnos se matricularán'} en ${batch.stageLabel}, sin tutor.`
+                  ? ` ${enrolling} ${enrolling === 1 ? 'alumno se matriculará' : 'alumnos se matricularán'} en ${batch.stageLabel}.`
                   : '') +
+                ' Quien no tenga tutor recibe el que indica el Excel; un tutor ya asignado no cambia.' +
                 ignoredNote(batch.ignoredRows) +
                 ' Después, este examen ya no acepta otra carga.'
               : `Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'} y se actualizarán los datos de ` +
@@ -342,11 +343,14 @@ function ResultRowCard({ row, pending, onOpen }) {
         {pending && <Typography sx={{ fontSize: 13, fontWeight: 500, color: colors.secondary }}>Resolver ›</Typography>}
       </Box>
       <Typography sx={{ fontSize: 15, fontWeight: 500 }}>{row.fullName}</Typography>
-      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{[row.dni ? `DNI ${row.dni}` : 'Sin DNI', ...scores(result)].join(' · ')}</Typography>
+      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+        {[row.dni ? `DNI ${row.dni}` : 'Sin DNI', ...scores(result), row.tutorName && `Tutor: ${row.tutorName}`].filter(Boolean).join(' · ')}
+      </Typography>
       <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
         <Chip status={RESULT_ROW_STATUS[row.status]} />
         {row.enrolls && <Chip status={ENROLLS} />}
         {row.status !== 'IGNORED' && !result.attended && <Chip status={ABSENT} />}
+        {row.status !== 'IGNORED' && !row.tutorName && <Chip status={NO_TUTOR} />}
         {row.student && row.status !== 'NEW_STUDENT' && (
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>→ {row.student.fullName}</Typography>
         )}

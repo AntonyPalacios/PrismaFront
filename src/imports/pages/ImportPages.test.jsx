@@ -58,14 +58,29 @@ const RESULT_MATCHED = {
   status: 'AUTO_MATCHED',
   fullName: 'ROJAS MATEO',
   dni: null,
-  notice: 'No está matriculado en la etapa: se matriculará al confirmar en Letras, sin tutor.',
+  notice: 'No está matriculado en la etapa: se matriculará al confirmar en Letras.',
   student: ROJAS,
   candidates: [],
   enrolls: true,
   newStudent: null,
+  tutorText: 'SILVIA',
+  tutorName: 'Valle Gómez, Silvia',
   result: RESULT,
 };
-const RESULT_UNKNOWN = { ...RESULT_MATCHED, id: 202, rowNumber: 13, status: 'UNRESOLVED', fullName: 'TORRES VEGA ANA SOFIA', dni: '71112223', notice: null, student: null, enrolls: false };
+const RESULT_UNKNOWN = {
+  ...RESULT_MATCHED,
+  id: 202,
+  rowNumber: 13,
+  status: 'UNRESOLVED',
+  fullName: 'TORRES VEGA ANA SOFIA',
+  dni: '71112223',
+  notice: null,
+  student: null,
+  enrolls: false,
+  // the file names someone who is not a tutor
+  tutorText: 'XIMENA',
+  tutorName: null,
+};
 const RESULT_ABSENT = {
   ...RESULT_MATCHED,
   id: 203,
@@ -392,11 +407,15 @@ describe('Reviewing exam results', () => {
     // unresolved first
     const unknown = screen.getByRole('button', { name: 'Fila 13: TORRES VEGA ANA SOFIA' });
     expect(within(unknown).getByText('DNI 71112223 · Total 722.76 · Lectura 787.5 · Matemática 819.4')).toBeInTheDocument();
+    expect(within(unknown).getByText('Sin tutor')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sin tutor · 1' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Se matricularán · 1' }));
     const enrolling = screen.getByRole('button', { name: 'Fila 12: ROJAS MATEO' });
     expect(within(enrolling).getByText('Se matriculará')).toBeInTheDocument();
     expect(within(enrolling).getByText('→ Rojas, Mateo')).toBeInTheDocument();
+    expect(within(enrolling).getByText(/· Tutor: Valle Gómez, Silvia$/)).toBeInTheDocument();
+    expect(within(enrolling).queryByText('Sin tutor')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'No asistieron · 1' }));
     expect(within(screen.getByRole('button', { name: 'Fila 14: QUISPE MAMANI LUCIA' })).getByText('No asistió')).toBeInTheDocument();
@@ -407,6 +426,7 @@ describe('Reviewing exam results', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Fila 13: TORRES VEGA ANA SOFIA' }));
     const sheet = await screen.findByRole('form', { name: 'Fila 13' });
     expect(within(sheet).getByText('722.76')).toBeInTheDocument();
+    expect(within(sheet).getByText('Sin tutor ("XIMENA" no se encontró)')).toBeInTheDocument();
 
     fireEvent.click(within(sheet).getByRole('radio', { name: 'Es un alumno nuevo' }));
     // the file's cell, split as usual and out of capitals
@@ -437,7 +457,8 @@ describe('Reviewing exam results', () => {
     const dialog = await screen.findByRole('dialog', { name: '¿Confirmar importación?' });
     expect(
       within(dialog).getByText(
-        'Se guardarán los resultados de 2 alumnos en Repaso 1 · Letras. 1 alumno se matriculará en 2026-I · Regular, sin tutor. ' +
+        'Se guardarán los resultados de 2 alumnos en Repaso 1 · Letras. 1 alumno se matriculará en 2026-I · Regular. ' +
+          'Quien no tenga tutor recibe el que indica el Excel; un tutor ya asignado no cambia. ' +
           'La fila ignorada no se guarda. Después, este examen ya no acepta otra carga.',
       ),
     ).toBeInTheDocument();

@@ -11,8 +11,10 @@ import { baseApi } from '../../app/api/baseApi';
 //   newStudent, result } where student and candidates are
 // { id, fullName, dni, active }. Results rows bring `result`
 // { attended, totalCorrect, totalWrong, totalScore, areas: [{ areaName, score }] },
-// `enrolls` (confirming enrolls the student in the stage) and `newStudent`
-// { firstName, lastNamePat, lastNameMat } once registered as new.
+// `enrolls` (confirming enrolls the student in the stage), `newStudent`
+// { firstName, lastNamePat, lastNameMat } once registered as new, and in
+// `tutorName` the tutor the student will have in the stage: the one they
+// already have, else the one the file's TUTOR column (`tutorText`) names.
 // The template downloads straight from TEMPLATE_URL (same origin, with the
 // session cookie): a file is not something to keep in the cache.
 export const TEMPLATE_URL = '/api/v1/student-imports/template';
