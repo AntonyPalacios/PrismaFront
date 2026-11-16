@@ -66,7 +66,7 @@ export default function NavContent({ onNavigate }) {
       </Box>
 
       <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-        {NAV_ITEMS.filter((item) => isAdmin || !item.adminOnly).map((item) => (
+        {NAV_ITEMS.filter((item) => (isAdmin || !item.adminOnly) && (!item.roles || item.roles.some((r) => me?.roles?.includes(r)))).map((item) => (
           <ListItemButton key={item.to} component={NavLink} to={item.to} end={item.to === '/'} onClick={onNavigate} sx={itemSx}>
             <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={itemLabel(item, onlyTutor)} />
