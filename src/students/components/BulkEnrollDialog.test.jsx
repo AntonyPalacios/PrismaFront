@@ -169,4 +169,38 @@ describe('Bulk enrollment', () => {
     fireEvent.click(await within(dialog).findByRole('checkbox', { name: 'Elegir a todos' }));
     expect(within(dialog).getByRole('button', { name: 'Siguiente' })).toBeDisabled();
   });
+
+  it("a tutor's group checks exactly their students, and another group follows", async () => {
+    const dialog = await openBulk('Simulacros');
+    await within(dialog).findByRole('table', { name: 'Alumnos de la etapa de origen' });
+    const filter = within(dialog).getByLabelText('Tutor');
+    // the source tutors with the students still to enroll, then those without one
+    expect([...filter.options].map((o) => o.textContent)).toEqual(['Todos', 'Valle Gómez, Silvia (1)', 'Sin tutor (1)']);
+
+    fireEvent.change(filter, { target: { value: '50' } });
+    const table = within(dialog).getByRole('table', { name: 'Alumnos de la etapa de origen' });
+    expect(within(table).getByRole('checkbox', { name: 'Elegir a Ramos, Ana' })).toBeChecked();
+    expect(within(table).queryByText('Pinto, Beto')).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Siguiente' }));
+    const previews = callsTo('/bulk-preview').length;
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Confirmar 1 matrícula' }));
+    await within(dialog).findByRole('button', { name: 'Matricular otro grupo' });
+    expect((await callsTo('/enrollments/bulk')[0].clone().json()).rows).toEqual([{ studentId: 102, careerId: 1, tutorUserId: 50 }]);
+
+    // the same source again, refreshed: the group just enrolled now shows as already enrolled
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Matricular otro grupo' }));
+    expect(await within(dialog).findByLabelText('Tutor')).toHaveValue('');
+    expect(within(dialog).getByLabelText('Etapa de origen')).toHaveValue('11');
+    await waitFor(() => expect(callsTo('/bulk-preview').length).toBeGreaterThan(previews));
+  });
+
+  it('says so when a whole group is already enrolled', async () => {
+    const dialog = await openBulk('Simulacros');
+    await within(dialog).findByRole('table', { name: 'Alumnos de la etapa de origen' });
+    // Carla (already enrolled) and Dario (deactivated) have no tutor, but Beto does not count as done
+    fireEvent.change(within(dialog).getByLabelText('Tutor'), { target: { value: 'none' } });
+    expect(within(dialog).getByRole('checkbox', { name: 'Elegir a Pinto, Beto' })).toBeChecked();
+    expect(within(dialog).queryByText('Todo este grupo ya está matriculado en el destino o fue dado de baja.')).not.toBeInTheDocument();
+  });
 });

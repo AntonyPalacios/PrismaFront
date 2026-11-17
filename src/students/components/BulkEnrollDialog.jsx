@@ -28,6 +28,9 @@ const pill = { height: 44, px: 2.5, borderRadius: '22px', fontSize: 14 };
 
 const userName = (u) => `${[u.lastNamePat, u.lastNameMat].filter(Boolean).join(' ')}, ${u.firstName}`;
 const toId = (value) => (value === '' ? null : Number(value));
+// the tutor filter: '' = everyone, 'none' = without a tutor, else a tutor's id
+const NO_TUTOR_FILTER = 'none';
+const tutorKey = (row) => (row.tutorUserId == null ? NO_TUTOR_FILTER : String(row.tutorUserId));
 
 /**
  * The stage a group usually comes from: in the target's own cycle, the last
@@ -44,9 +47,11 @@ function defaultSourceId(stages, target, sameCycle) {
  * "Matricular en lote" (REQ-STUDENTS-05, Claude Design: BulkEnrollDesktop),
  * ADMIN only: moves a group into the stage it was opened from. 1) pick the
  * source stage and who moves (everyone but those already enrolled or
- * deactivated starts checked); 2) career and tutor per student, preloaded
- * from the source stage, both optional; 3) how many were enrolled. The
- * batch is all or nothing: a rejected row saves nobody.
+ * deactivated starts checked); the "Tutor" filter narrows it to one tutor's
+ * group and checks exactly those; 2) career and tutor per student, preloaded
+ * from the source stage, both optional; 3) how many were enrolled, and
+ * "Matricular otro grupo" to go on with the next tutor from the same source.
+ * The batch is all or nothing: a rejected row saves nobody.
  */
 export default function BulkEnrollDialog({ cycle, stage, onClose }) {
   const [step, setStep] = useState(0);
@@ -55,6 +60,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
   // only what the admin changed: who was unchecked, and career/tutor per student
   const [unchecked, setUnchecked] = useState(() => new Set());
   const [edits, setEdits] = useState({});
+  const [tutorFilter, setTutorFilter] = useState('');
   const [applyTutor, setApplyTutor] = useState('');
   const [result, setResult] = useState(null);
 
@@ -75,8 +81,20 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
   } = useGetBulkEnrollmentPreviewQuery({ sourceStageId: sourceId, targetStageId: stage.id }, { skip: !sourceId });
   const [bulkEnroll, { isLoading: saving, error: saveError, reset }] = useBulkEnrollMutation();
 
-  const eligible = (rows ?? []).filter((r) => !r.skipReason);
+  // what the filter shows; only those can be chosen
+  const visible = (rows ?? []).filter((r) => tutorFilter === '' || tutorKey(r) === tutorFilter);
+  const eligible = visible.filter((r) => !r.skipReason);
   const chosen = eligible.filter((r) => !unchecked.has(r.studentId));
+  // each source tutor with how many of their students are still to enroll
+  const filterOptions = [...new Set((rows ?? []).map(tutorKey))]
+    .filter((key) => key !== NO_TUTOR_FILTER)
+    .map((key) => {
+      const user = users.find((u) => String(u.id) === key);
+      return { key, label: user ? userName(user) : 'Tutor' };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, 'es', { sensitivity: 'base' }));
+  if ((rows ?? []).some((r) => tutorKey(r) === NO_TUTOR_FILTER)) filterOptions.push({ key: NO_TUTOR_FILTER, label: 'Sin tutor' });
+  const pendingOf = (key) => (rows ?? []).filter((r) => !r.skipReason && tutorKey(r) === key).length;
   const valueOf = (row) => ({
     careerId: row.careerId == null ? '' : String(row.careerId),
     tutorId: row.tutorUserId == null ? '' : String(row.tutorUserId),
@@ -86,8 +104,24 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
   // a new source stage starts over
   const pickSource = (id) => {
     setChosenSourceId(id);
+    setTutorFilter('');
     setUnchecked(new Set());
     setEdits({});
+  };
+  // a tutor's group: exactly their students end up checked
+  const pickTutor = (key) => {
+    setTutorFilter(key);
+    setUnchecked(new Set());
+  };
+  // back to step 1 with the same source: the group just enrolled now shows as already enrolled
+  const nextGroup = () => {
+    reset();
+    setResult(null);
+    setTutorFilter('');
+    setUnchecked(new Set());
+    setEdits({});
+    setApplyTutor('');
+    setStep(0);
   };
   const toggle = (studentId) =>
     setUnchecked((current) => {
@@ -155,7 +189,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
         >
           {step === 0 && (
             <>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, maxWidth: 560 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 1.5, maxWidth: 840 }}>
                 <TextField
                   {...selectProps}
                   label="Ciclo de origen"
@@ -179,6 +213,14 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                     </option>
                   ))}
                 </TextField>
+                <TextField {...selectProps} label="Tutor" value={tutorFilter} onChange={(e) => pickTutor(e.target.value)} disabled={!rows}>
+                  <option value="">Todos</option>
+                  {filterOptions.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {`${option.label} (${pendingOf(option.key)})`}
+                    </option>
+                  ))}
+                </TextField>
               </Box>
               {previewError && <Alert severity="error">{errorDetail(previewError)}</Alert>}
               {isFetching && !rows && (
@@ -191,7 +233,14 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                   Esta etapa no tiene alumnos matriculados.
                 </Typography>
               )}
-              {rows && rows.length > 0 && (
+              {rows && rows.length > 0 && eligible.length === 0 && (
+                <Alert severity="info">
+                  {tutorFilter === ''
+                    ? 'Todos los alumnos de esta etapa ya están matriculados en el destino o fueron dados de baja.'
+                    : 'Todo este grupo ya está matriculado en el destino o fue dado de baja.'}
+                </Alert>
+              )}
+              {visible.length > 0 && (
                 <TableBox label="Alumnos de la etapa de origen">
                   <thead>
                     <tr>
@@ -211,7 +260,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row) => (
+                    {visible.map((row) => (
                       <tr key={row.studentId}>
                         <Box component="td" sx={{ ...td, py: 0 }}>
                           <Checkbox
@@ -382,9 +431,14 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
             </>
           )}
           {step === 2 && (
-            <Button variant="contained" color="secondary" onClick={onClose} sx={pill}>
-              Cerrar
-            </Button>
+            <>
+              <Button variant="outlined" onClick={nextGroup} sx={{ ...pill, borderColor: '#C5CCD8', color: colors.primary }}>
+                Matricular otro grupo
+              </Button>
+              <Button variant="contained" color="secondary" onClick={onClose} sx={pill}>
+                Cerrar
+              </Button>
+            </>
           )}
         </Box>
       </Box>
