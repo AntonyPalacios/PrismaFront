@@ -27,6 +27,23 @@ export const enrollmentsApi = baseApi.injectEndpoints({
       // a new tutor changes the history and the student's current tutor (list and file)
       invalidatesTags: ['Enrollment', 'TutorAssignment', 'Student'],
     }),
+    // mass enrollment (REQ-STUDENTS-05), ADMIN only: the students enrolled in the
+    // source stage, by name, as [{ studentId, fullName, careerId, tutorUserId,
+    // skipReason }] (skipReason ALREADY_ENROLLED | INACTIVE_STUDENT | null).
+    // A POST that only reads, so it is a query
+    getBulkEnrollmentPreview: build.query({
+      query: ({ sourceStageId, targetStageId }) => ({
+        url: '/enrollments/bulk-preview',
+        method: 'POST',
+        body: { sourceStageId, targetStageId },
+      }),
+      providesTags: ['Enrollment', 'TutorAssignment', 'Student'],
+    }),
+    // { targetStageId, rows: [{ studentId, careerId, tutorUserId }] } -> { created, skipped }; all or nothing
+    bulkEnroll: build.mutation({
+      query: (body) => ({ url: '/enrollments/bulk', method: 'POST', body }),
+      invalidatesTags: ['Enrollment', 'TutorAssignment', 'Stage', 'Student'],
+    }),
     // withdraw from the stage (soft): the enrollment stays in the history
     withdrawEnrollment: build.mutation({
       query: (id) => ({ url: `/enrollments/${id}`, method: 'DELETE' }),
@@ -41,4 +58,6 @@ export const {
   useCreateEnrollmentMutation,
   useUpdateEnrollmentMutation,
   useWithdrawEnrollmentMutation,
+  useGetBulkEnrollmentPreviewQuery,
+  useBulkEnrollMutation,
 } = enrollmentsApi;
