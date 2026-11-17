@@ -12,6 +12,7 @@ import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
 import ProgressSection from '../../dashboards/components/ProgressSection';
+import LogbookSection from '../../logbook/components/LogbookSection';
 import ConfirmDialog from '../../layout/ConfirmDialog';
 import { useIsAdmin } from '../../users/api/authApi';
 import {
@@ -34,8 +35,8 @@ const actionSx = { height: 44, px: 2.25, borderColor: '#C5CCD8', bgcolor: 'backg
  * read-only until "Editar". An ADMIN retires (confirmed) or reactivates the
  * student; an inactive student is read-only until reactivated, but every
  * role can still open their file. ADMIN and TUTOR also see "Matrículas".
- * The other sections of the prototype (Apoderados, Progreso, Metas) arrive
- * with their own slices.
+ * ADMIN and the current tutor see "Progreso" and "Bitácora". The other
+ * sections of the prototype (Apoderados, Metas) arrive with their own slices.
  */
 export default function StudentDetailPage() {
   const { id } = useParams();
@@ -216,6 +217,9 @@ function StudentDetail({ student, onCancel }) {
 
       {/* the same people who edit the student: ADMIN or their current tutor */}
       {canEdit && <ProgressSection student={student} />}
+
+      {/* ADMIN and the current tutor read it; only the current tutor writes */}
+      {canEdit && <LogbookSection student={student} />}
 
       {!student.active && (
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
