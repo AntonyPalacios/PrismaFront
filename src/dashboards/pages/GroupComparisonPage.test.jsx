@@ -55,6 +55,27 @@ const EXAMS = [
   },
 ];
 
+// Ruth's group did not sit Regular 3; the academy is always last
+const cellOf = (examId, students, reading, math) => ({
+  examId,
+  students,
+  areas: [
+    { areaId: 1, areaName: 'Lectura', correctAvg: reading[0], wrongAvg: reading[1] },
+    { areaId: 2, areaName: 'Matemática', correctAvg: math[0], wrongAvg: math[1] },
+  ],
+});
+const COMPARISON = {
+  exams: [
+    { examId: 2, examName: 'Regular 2', examDate: '2026-03-21' },
+    { examId: 3, examName: 'Regular 3', examDate: '2026-03-28' },
+  ],
+  tutors: [
+    { tutorId: 51, tutorName: 'Salas, Ruth', cells: [cellOf(2, 1, [8, 0], [9, 1])] },
+    { tutorId: 50, tutorName: 'Valle Gómez, Silvia', cells: [cellOf(2, 2, [8, 3], [4, 2]), cellOf(3, 2, [6, 0], [3, 0])] },
+  ],
+  academy: [cellOf(2, 4, [7, 2.5], [4.75, 1.75]), cellOf(3, 2, [6, 0], [3, 0])],
+};
+
 function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
@@ -62,6 +83,7 @@ function json(status, body) {
 let fetchMock;
 let roles;
 let exams;
+let comparison;
 
 function route(request) {
   const url = new URL(request.url);
@@ -69,6 +91,7 @@ function route(request) {
   if (url.pathname.endsWith('/exam-types')) return json(200, TYPES);
   if (url.pathname.endsWith('/users')) return json(200, USERS);
   if (url.pathname.endsWith('/group-comparison')) return json(200, exams);
+  if (url.pathname.endsWith('/tutor-comparison')) return json(200, comparison);
   return json(404, { detail: 'No encontrado.' });
 }
 
@@ -110,18 +133,18 @@ describe('Charla de notas', () => {
       ['Buenas', 'Malas', 'Buenas', 'Malas'],
       ['Lectura'],
       // against the previous exam: more correct and fewer wrong answers
-      ['Promedio', '15', '7', '19.5 ▲', '5 ▼'],
+      ['Promedio', '15', '7', '20 ▲', '5 ▼'],
       ['Mínimo', '10', '5', '12', '2'],
       ['Máximo', '20', '10', '26', '8'],
       ['Matemática'],
-      ['Promedio', '11', '10.33', '9 ▼', '12 ▲'],
+      ['Promedio', '11', '10', '9 ▼', '12 ▲'],
       // a zero is a value: it shows as 0
       ['Mínimo', '5', '10', '0', '2'],
       ['Máximo', '18', '11', '24', '14'],
       ['Promedio de buenas por curso'],
-      ['Lectura', '15', '', '19.5 ▲', ''],
+      ['Lectura', '15', '', '20 ▲', ''],
       // the same average: no arrow
-      ['Álgebra', '6.67', '', '6.67', ''],
+      ['Álgebra', '7', '', '7', ''],
       // not evaluated in Regular 2: no figure, never a zero
       ['Estadística', '2', '', '—', ''],
     ]);
@@ -173,5 +196,50 @@ describe('Charla de notas', () => {
 
     expect(await screen.findByText('La charla de notas es solo para administradores y tutores.')).toBeInTheDocument();
     expect(groupRequests()).toHaveLength(0);
+  });
+
+  describe('by tutor', () => {
+    beforeEach(() => {
+      comparison = COMPARISON;
+    });
+
+    const tutorRequests = () => fetchMock.mock.calls.map(([r]) => new URL(r.url)).filter((u) => u.pathname.endsWith('/tutor-comparison'));
+    const rowsOf = (table) => within(table).getAllByRole('row').map((row) => [...row.children].map((cell) => cell.textContent));
+
+    it('an admin compares every tutor in the last exams, with the academy last', async () => {
+      roles = ['ADMIN'];
+      renderPage();
+      fireEvent.click(await screen.findByRole('tab', { name: 'Por tutor' }));
+
+      const table = await screen.findByRole('table', { name: 'Comparativa de tutores' });
+      expect(rowsOf(table).slice(2)).toEqual([
+        // Ruth's group did not sit Regular 3: no figures, never 0
+        ['Salas, Ruth', '1', '80 malas', '91 malas', '—', '—', '—'],
+        ['Valle Gómez, Silvia', '2', '83 malas', '42 malas', '2', '60 malas', '30 malas'],
+        ['Toda la academia', '4', '73 malas', '52 malas', '2', '60 malas', '30 malas'],
+      ]);
+      // the tutor picker belongs to the group view only
+      expect(screen.queryByLabelText('Tutor')).not.toBeInTheDocument();
+      expect(tutorRequests().at(-1).searchParams.get('examTypeId')).toBe('1');
+
+      fireEvent.change(screen.getByLabelText('Tipo de examen'), { target: { value: '2' } });
+      await waitFor(() => expect(tutorRequests().at(-1).searchParams.get('examTypeId')).toBe('2'));
+    });
+
+    it('says so when the exam type has no results yet', async () => {
+      roles = ['ADMIN'];
+      comparison = { exams: [], tutors: [], academy: [] };
+      renderPage();
+      fireEvent.click(await screen.findByRole('tab', { name: 'Por tutor' }));
+      expect(await screen.findByText('Aún no hay resultados de este tipo de examen en el ciclo activo.')).toBeInTheDocument();
+    });
+
+    it('a tutor never gets the tab', async () => {
+      roles = ['TUTOR'];
+      renderPage();
+      await screen.findByRole('heading', { name: 'Charla de notas' });
+      expect(screen.queryByRole('tab', { name: 'Por tutor' })).not.toBeInTheDocument();
+      expect(tutorRequests()).toHaveLength(0);
+    });
   });
 });
