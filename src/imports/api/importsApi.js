@@ -5,7 +5,8 @@ import { baseApi } from '../../app/api/baseApi';
 // academy's Excel (REQ-EXAMS-02, the three roles). A batch is
 // { id, type: 'STUDENTS' | 'EXAM_RESULTS', status, fileName, stageId,
 //   stageLabel, examId, examLabel, uploadedAt, totalRows, newRows,
-//   matchedRows, unresolvedRows, ignoredRows, skippedRows, rows } and a row
+//   matchedRows, unresolvedRows, ignoredRows, skippedRows, replacesResults,
+//   rows } and a row
 // { id, rowNumber, status, fullName, dni, email, phone, birthDate, careerText,
 //   careerName, tutorText, tutorName, notice, student, candidates, enrolls,
 //   newStudent, result } where student and candidates are
@@ -40,11 +41,13 @@ export const importsApi = baseApi.injectEndpoints({
       invalidatesTags: ['ImportBatch'],
     }),
     // { examId, file } → the pending batch of that exam's results; nothing real is written yet
+    // `reload` (ADMIN only): load over an exam that already has results; confirming
+    // that batch (`replacesResults`) replaces them
     uploadExamResults: build.mutation({
-      query: ({ examId, file }) => {
+      query: ({ examId, file, reload = false }) => {
         const body = new FormData();
         body.append('file', file, file.name);
-        return { url: `/exams/${examId}/results/import`, method: 'POST', body };
+        return { url: `/exams/${examId}/results/import`, method: 'POST', body, params: reload ? { reload: true } : undefined };
       },
       invalidatesTags: ['ImportBatch'],
     }),

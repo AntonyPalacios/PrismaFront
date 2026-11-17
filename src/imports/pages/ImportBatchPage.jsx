@@ -145,6 +145,12 @@ function BatchReview({ batch }) {
         </Box>
       )}
 
+      {pending && batch.replacesResults && (
+        <Alert severity="warning">
+          Es una recarga: {batch.examLabel} ya tiene resultados. Al confirmar, se reemplazan por los de este archivo y quien no
+          venga en él se queda sin resultado en este examen. Solo un administrador puede confirmarla.
+        </Alert>
+      )}
       {pending && results && (
         <Alert severity="info">
           Aún no se guardó nada. Los resultados quedan en firme cuando confirmes la importación. Quedan "Sin resolver" las filas
@@ -230,17 +236,18 @@ function BatchReview({ batch }) {
 
       {dialog === 'confirm' && (
         <ConfirmDialog
-          title="¿Confirmar importación?"
+          title={batch.replacesResults ? '¿Confirmar recarga?' : '¿Confirmar importación?'}
           message={
             results
-              ? `Se guardarán los resultados de ${toSave} ${toSave === 1 ? 'alumno' : 'alumnos'} en ${batch.examLabel}.` +
+              ? (batch.replacesResults ? `Se reemplazarán los resultados actuales de ${batch.examLabel}. ` : '') +
+                `Se guardarán los resultados de ${toSave} ${toSave === 1 ? 'alumno' : 'alumnos'} en ${batch.examLabel}.` +
                 (batch.newRows > 0 ? ` Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'}.` : '') +
                 (enrolling > 0
                   ? ` ${enrolling} ${enrolling === 1 ? 'alumno se matriculará' : 'alumnos se matricularán'} en ${batch.stageLabel}.`
                   : '') +
                 ' Quien no tenga tutor recibe el que indica el Excel; un tutor ya asignado no cambia.' +
                 ignoredNote(batch.ignoredRows) +
-                ' Después, este examen ya no acepta otra carga.'
+                (batch.replacesResults ? '' : ' Después, este examen ya no acepta otra carga.')
               : `Se registrarán ${batch.newRows} ${batch.newRows === 1 ? 'alumno nuevo' : 'alumnos nuevos'} y se actualizarán los datos de ` +
             `${batch.matchedRows} ya ${batch.matchedRows === 1 ? 'registrado' : 'registrados'}.` +
             (batch.stageLabel

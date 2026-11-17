@@ -468,6 +468,36 @@ describe('Reviewing exam results', () => {
     expect(new URL(writes()[0].url).pathname).toMatch(/\/import-batches\/6\/confirm$/);
   });
 
+  it('a reload warns that it replaces the current results, in the review and when confirming', async () => {
+    resultsBatch = {
+      ...RESULTS_BATCH,
+      replacesResults: true,
+      unresolvedRows: 0,
+      ignoredRows: 1,
+      rows: [RESULT_MATCHED, { ...RESULT_UNKNOWN, status: 'IGNORED' }, RESULT_ABSENT],
+    };
+    writeResponse = () => json(200, { ...resultsBatch, status: 'CONFIRMED' });
+    renderAt('/imports/6');
+
+    expect(await screen.findByText(/Es una recarga: Repaso 1 · Letras ya tiene resultados/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar importación' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Confirmar recarga?' });
+    expect(within(dialog).getByText(/^Se reemplazarán los resultados actuales de Repaso 1 · Letras\. Se guardarán los resultados de 2 alumnos/)).toBeInTheDocument();
+    // it can be reloaded again: no "ya no acepta otra carga"
+    expect(within(dialog).queryByText(/ya no acepta otra carga/)).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByText('Importación confirmada.')).toBeInTheDocument();
+  });
+
+  it('lists a reload as such', async () => {
+    batch = { ...RESULTS_BATCH, replacesResults: true, rows: [] };
+    renderAt('/imports');
+
+    const item = await screen.findByRole('button', { name: 'Importación GENERALES LETRAS.xlsx' });
+    expect(within(item).getByText('Recarga de resultados · Repaso 1 · Letras')).toBeInTheDocument();
+  });
+
   it('lists results imports by their exam', async () => {
     renderAt('/imports');
 
