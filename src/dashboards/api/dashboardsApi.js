@@ -31,6 +31,14 @@ export const dashboardsApi = baseApi.injectEndpoints({
       query: (studentId) => `/dashboards/students/${studentId}/math-radar`,
       providesTags: ['Exam'],
     }),
+    // REQ-DASHBOARDS-06, ADMIN only: the last 3 exams of the type in the active cycle,
+    // { exams: [{ examId, examName, examDate }], tutors: [{ tutorId, tutorName, cells }],
+    //   academy: cells }, a cell being { examId, students, areas: [{ areaId, areaName,
+    //   correctAvg, wrongAvg }] } (a tutor has no cell for an exam their group did not sit)
+    getTutorComparison: build.query({
+      query: (examTypeId) => ({ url: '/dashboards/tutor-comparison', params: { examTypeId } }),
+      providesTags: ['Exam', 'TutorAssignment', 'Enrollment'],
+    }),
     // "Charla de notas": { examTypeId, tutorId? } → by exam date, only the active cycle:
     // [{ examId, examName, examDate, students, areas: [{ areaId, areaName, correctAvg,
     //    correctMin, correctMax, wrongAvg, wrongMin, wrongMax }], courses: [{ courseId,
@@ -53,4 +61,5 @@ export const {
   useGetAreaDistributionQuery,
   useGetMathRadarQuery,
   useGetGroupComparisonQuery,
+  useGetTutorComparisonQuery,
 } = dashboardsApi;

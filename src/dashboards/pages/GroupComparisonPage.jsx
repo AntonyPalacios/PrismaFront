@@ -2,6 +2,8 @@ import { useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { formatShortDate } from '../../academic/cycleDisplay';
@@ -11,6 +13,7 @@ import { useGetMeQuery, useIsAdmin } from '../../users/api/authApi';
 import { useGetUsersQuery } from '../../users/api/usersApi';
 import { userFullName } from '../../users/userDisplay';
 import { useGetGroupComparisonQuery } from '../api/dashboardsApi';
+import TutorComparison from '../components/TutorComparison';
 
 const selectProps = { select: true, size: 'small', slotProps: { select: { native: true }, inputLabel: { shrink: true } } };
 const UP = { color: '#2F5A08', fontWeight: 500 };
@@ -37,7 +40,9 @@ function trend(exams, index, read, moreIsBetter) {
  * the active cycle — per area, the average, lowest and highest count of
  * correct and of wrong answers; per course, the average of correct ones. A
  * TUTOR always sees their own students; an ADMIN the whole academy, or the
- * group of the tutor they pick. Only ADMIN and TUTOR.
+ * group of the tutor they pick. Only ADMIN and TUTOR. An ADMIN also has the
+ * "Por tutor" tab (REQ-DASHBOARDS-06): every tutor's group side by side in
+ * the last 3 exams, against the academy.
  */
 export default function GroupComparisonPage() {
   const { data: me } = useGetMeQuery();
@@ -46,10 +51,13 @@ export default function GroupComparisonPage() {
   const { data: types = [] } = useGetExamTypesQuery(undefined, { skip: !allowed });
   const [chosenTypeId, setChosenTypeId] = useState(null);
   const [tutorId, setTutorId] = useState('');
+  // 'group' (the charla de notas) or 'tutors' (an admin's comparison)
+  const [view, setView] = useState('group');
+  const byTutor = isAdmin && view === 'tutors';
   const examTypeId = chosenTypeId ?? types[0]?.id;
   const { currentData: exams, isFetching, error } = useGetGroupComparisonQuery(
     { examTypeId, tutorId: isAdmin && tutorId ? Number(tutorId) : undefined },
-    { skip: !allowed || !examTypeId },
+    { skip: !allowed || !examTypeId || byTutor },
   );
 
   if (me && !allowed) {
@@ -68,6 +76,13 @@ export default function GroupComparisonPage() {
             : '¿Tu grupo está mejorando? Promedio, mínimo y máximo por área de tus alumnos en cada examen del ciclo activo.'}
         </Typography>
       </Box>
+
+      {isAdmin && (
+        <Tabs value={view} onChange={(_, value) => setView(value)} aria-label="Vista de la charla de notas" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tab value="group" label="Por grupo" />
+          <Tab value="tutors" label="Por tutor" />
+        </Tabs>
+      )}
 
       <Box
         sx={{
@@ -88,23 +103,24 @@ export default function GroupComparisonPage() {
             </option>
           ))}
         </TextField>
-        {isAdmin && <TutorSelect value={tutorId} onChange={setTutorId} />}
+        {isAdmin && !byTutor && <TutorSelect value={tutorId} onChange={setTutorId} />}
       </Box>
 
-      {isFetching && !exams && (
+      {byTutor && <TutorComparison examTypeId={examTypeId} />}
+      {!byTutor && isFetching && !exams && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
           <CircularProgress size={32} aria-label="Cargando charla de notas" />
         </Box>
       )}
-      {error && <Alert severity="error">{errorDetail(error)}</Alert>}
-      {exams && exams.length === 0 && (
+      {!byTutor && error && <Alert severity="error">{errorDetail(error)}</Alert>}
+      {!byTutor && exams && exams.length === 0 && (
         <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
           {isAdmin && !tutorId
             ? 'Aún no hay resultados de este tipo de examen en el ciclo activo.'
             : 'El grupo aún no tiene resultados de este tipo de examen en el ciclo activo.'}
         </Typography>
       )}
-      {exams && exams.length > 0 && (
+      {!byTutor && exams && exams.length > 0 && (
         <>
           <GroupTable exams={exams} />
           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
