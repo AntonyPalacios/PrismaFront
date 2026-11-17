@@ -21,6 +21,7 @@ import { colors } from '../../app/theme';
 import { useGetExamTypesQuery } from '../../catalog/api/examTypesApi';
 import ConfirmDialog from '../../layout/ConfirmDialog';
 import ResponsiveSheet from '../../layout/ResponsiveSheet';
+import { useIsAdmin } from '../../users/api/authApi';
 import {
   useAddExamTypeMutation,
   useCreateMockExamMutation,
@@ -47,8 +48,8 @@ const stageLabel = (cycle, stage) => `${cycle.name} · ${stage.name} (${stageDat
  * every type; add a missing type or remove one without results (never the
  * last); "Eliminar" while no type has results. Read-only for a TUTOR and in
  * a closed cycle. Every role may "Importar resultados" of a type without
- * results while the stage is the one in force of the active cycle
- * (`onImport`). Bottom sheet on mobile, dialog on desktop.
+ * results while the stage is the one in force of the active cycle, and an
+ * ADMIN may "Recargar resultados" of a type that has them (`onImport`). Bottom sheet on mobile, dialog on desktop.
  */
 export default function ExamForm({ cycle, stage, mockExam, canManage, onImport, onClose }) {
   const editable = canManage && cycle.status !== 'CLOSED';
@@ -290,12 +291,15 @@ function EditMockExam({ cycle, stage, mockExam, editable, canManage, onImport, o
 /**
  * The mock exam's exam types, each saved on its own (they are not part of
  * the name/date form): remove one without results (never the last) or add
- * one it is missing, and import the results of one without them
- * (`onImport`, null when not allowed). No <form> here: it lives inside the
+ * one it is missing, and import the results of one without them or, an
+ * admin, reload those of one that has them (`onImport(exam, reload)`, null
+ * when not allowed). No <form> here: it lives inside the
  * mock exam's form.
  */
 function ExamTypes({ mockExam, editable, onImport, onError }) {
   const notify = useNotify();
+  // the forced reload of a type that already has results is only the admin's
+  const isAdmin = useIsAdmin();
   const [adding, setAdding] = useState('');
   const { data: types = [] } = useGetExamTypesQuery();
   const [addExamType, { isLoading: addingType }] = useAddExamTypeMutation();
@@ -349,6 +353,18 @@ function ExamTypes({ mockExam, editable, onImport, onError }) {
                 onClick={() => onImport(exam)}
               >
                 Importar resultados
+              </Button>
+            )}
+            {onImport && exam.hasResults && isAdmin && (
+              <Button
+                type="button"
+                size="small"
+                color="warning"
+                startIcon={<FileUploadOutlinedIcon />}
+                aria-label={`Recargar resultados de ${exam.examTypeName}`}
+                onClick={() => onImport(exam, true)}
+              >
+                Recargar resultados
               </Button>
             )}
             {canRemove && !exam.hasResults && (

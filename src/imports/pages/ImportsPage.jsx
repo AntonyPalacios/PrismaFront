@@ -68,7 +68,9 @@ export default function ImportsPage() {
               <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   <Typography noWrap sx={{ fontSize: 15, fontWeight: 500 }}>
-                    {isResults(batch) ? `Resultados · ${batch.examLabel ?? batch.fileName}` : `Alumnos · ${batch.fileName}`}
+                    {isResults(batch)
+                      ? `${batch.replacesResults ? 'Recarga de resultados' : 'Resultados'} · ${batch.examLabel ?? batch.fileName}`
+                      : `Alumnos · ${batch.fileName}`}
                   </Typography>
                   <Chip status={BATCH_STATUS[batch.status]} />
                 </Box>

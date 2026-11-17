@@ -325,6 +325,50 @@ describe('Exams screen', () => {
     expect(within(form).getByRole('button', { name: 'Importar' })).toBeEnabled();
   });
 
+  it('an admin reloads the results of a type that already has them, after a warning', async () => {
+    writeResponse = () => json(201, { id: 8 });
+    const router = renderPage();
+    fireEvent.click(await examCard('Regular 1'));
+    const sheet = await screen.findByRole('form', { name: 'Regular 1' });
+
+    // Ciencias has results: it is reloaded; Letras, without them, is imported
+    expect(within(sheet).queryByRole('button', { name: 'Recargar resultados de Letras' })).not.toBeInTheDocument();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Recargar resultados de Ciencias' }));
+
+    const form = await screen.findByRole('form', { name: 'Recargar resultados' });
+    expect(within(form).getByText(/los resultados actuales se reemplazan por los de este archivo/)).toBeInTheDocument();
+    const file = new File(['excel'], 'GENERALES CIENCIAS.xlsx');
+    fireEvent.change(within(form).getByLabelText('Archivo de resultados'), { target: { files: [file] } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Recargar' }));
+    const dialog = await screen.findByRole('dialog', { name: '¿Recargar resultados?' });
+    expect(within(dialog).getByText(/al confirmarla se reemplazan/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Recargar' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/imports/8'));
+    const url = new URL(writes()[0].url);
+    expect(url.pathname).toMatch(/\/exams\/1001\/results\/import$/);
+    expect(url.searchParams.get('reload')).toBe('true');
+  });
+
+  it('only an admin gets the reload; a plain import never asks for it', async () => {
+    roles = ['COORDINADOR'];
+    writeResponse = () => json(201, { id: 7 });
+    renderPage();
+    fireEvent.click(await examCard('Regular 1'));
+    const sheet = await screen.findByRole('form', { name: 'Regular 1' });
+
+    expect(within(sheet).queryByRole('button', { name: /^Recargar resultados/ })).not.toBeInTheDocument();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Importar resultados de Letras' }));
+    const form = await screen.findByRole('form', { name: 'Importar resultados' });
+    expect(within(form).queryByText(/se reemplazan/)).not.toBeInTheDocument();
+    fireEvent.change(within(form).getByLabelText('Archivo de resultados'), { target: { files: [new File(['x'], 'a.xlsx')] } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Importar' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Importar' }));
+
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect(new URL(writes()[0].url).searchParams.has('reload')).toBe(false);
+  });
+
   it('results are only imported in the stage in force of the active cycle', async () => {
     mockExams = { ...mockExams, 10: [{ ...MEDICION, id: 98, stageId: 10, name: 'Simulacro de enero' }] };
     renderPage();

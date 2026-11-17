@@ -14,17 +14,21 @@ import { useUploadExamResultsMutation } from '../api/importsApi';
  * "Importar resultados" (Claude Design: ImportSummaryMobile) of one exam
  * type of a mock exam: the exam it is for, read-only, and the academy's
  * Excel. Asks before uploading; uploading creates a pending batch and opens
- * its review, where the counts are shown. Nothing is saved yet.
+ * its review, where the counts are shown. Nothing is saved yet. With
+ * `reload` (an ADMIN, on an exam that already has results) it warns that
+ * confirming the batch replaces the current results.
  */
-export default function ImportResultsForm({ cycle, stage, mockExam, exam, onClose }) {
+export default function ImportResultsForm({ cycle, stage, mockExam, exam, reload = false, onClose }) {
   return (
     <ResponsiveSheet onClose={onClose}>
-      <ImportResultsFormContent cycle={cycle} stage={stage} mockExam={mockExam} exam={exam} onClose={onClose} />
+      <ImportResultsFormContent cycle={cycle} stage={stage} mockExam={mockExam} exam={exam} reload={reload} onClose={onClose} />
     </ResponsiveSheet>
   );
 }
 
-function ImportResultsFormContent({ cycle, stage, mockExam, exam, onClose }) {
+function ImportResultsFormContent({ cycle, stage, mockExam, exam, reload, onClose }) {
+  const title = reload ? 'Recargar resultados' : 'Importar resultados';
+  const action = reload ? 'Recargar' : 'Importar';
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [asking, setAsking] = useState(false);
@@ -34,7 +38,7 @@ function ImportResultsFormContent({ cycle, stage, mockExam, exam, onClose }) {
   const submit = async () => {
     setServerError(null);
     try {
-      const batch = await upload({ examId: exam.id, file }).unwrap();
+      const batch = await upload({ examId: exam.id, file, reload }).unwrap();
       onClose();
       navigate(`/imports/${batch.id}`);
     } catch (error) {
@@ -51,12 +55,12 @@ function ImportResultsFormContent({ cycle, stage, mockExam, exam, onClose }) {
         event.preventDefault();
         setAsking(true);
       }}
-      aria-label="Importar resultados"
+      aria-label={title}
       sx={{ display: 'flex', flexDirection: 'column', gap: 1.75, p: { xs: '12px 20px 24px', md: 3 }, overflowY: 'auto' }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Typography component="h2" sx={{ fontSize: 18, fontWeight: 500 }}>
-          Importar resultados
+          {title}
         </Typography>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
           Sube el Excel de resultados de la academia (hoja EVA). Antes de guardar nada podrás revisar cada fila.
@@ -89,6 +93,13 @@ function ImportResultsFormContent({ cycle, stage, mockExam, exam, onClose }) {
         </Box>
       </Box>
 
+      {reload && (
+        <Alert severity="warning">
+          Este examen ya tiene resultados. Al confirmar la importación, los resultados actuales se reemplazan por los de este
+          archivo: quien no venga en él se queda sin resultado en este examen.
+        </Alert>
+      )}
+
       <Button variant="outlined" component="label" sx={{ height: 48, justifyContent: 'flex-start' }}>
         {file ? file.name : 'Elegir archivo (.xlsx)'}
         <input
@@ -110,18 +121,20 @@ function ImportResultsFormContent({ cycle, stage, mockExam, exam, onClose }) {
           Cancelar
         </Button>
         <Button type="submit" variant="contained" color="secondary" disabled={!file || isLoading} sx={{ flex: 1, height: 48 }}>
-          Importar
+          {action}
         </Button>
       </Box>
 
       {asking && (
         <ConfirmDialog
-          title="¿Importar resultados?"
+          title={`¿${title}?`}
           message={
             `Se leerá ${file.name} como los resultados de ${mockExam.name} · ${exam.examTypeName}. ` +
-            'Quedarán en una importación por revisar: nada se guarda hasta que la confirmes, y una vez confirmada el examen ya no acepta otra carga.'
+            (reload
+              ? 'Quedarán en una importación por revisar: los resultados actuales no cambian hasta que la confirmes; al confirmarla se reemplazan.'
+              : 'Quedarán en una importación por revisar: nada se guarda hasta que la confirmes, y una vez confirmada el examen ya no acepta otra carga.')
           }
-          confirmLabel="Importar"
+          confirmLabel={action}
           loading={isLoading}
           onConfirm={submit}
           onCancel={() => setAsking(false)}

@@ -33,7 +33,8 @@ const selectProps = { select: true, size: 'small', slotProps: { select: { native
  * per exam type, green once that type has results. ADMIN and COORDINADOR
  * create a mock exam ("Nuevo examen") and edit it; a TUTOR only reads.
  * Every role imports the results of a type from the opened mock exam, only
- * in the stage in force of the active cycle. "Resultado manual" arrives
+ * in the stage in force of the active cycle; an ADMIN can also reload the
+ * results of a type that already has them. "Resultado manual" arrives
  * with its slice.
  */
 export default function ExamsPage() {
@@ -44,7 +45,7 @@ export default function ExamsPage() {
   const [chosenStageId, setChosenStageId] = useState(null);
   // null = closed, 'new' = creating, a mock exam's id = opening it
   const [open, setOpen] = useState(null);
-  // { mockExam, exam } whose results are being imported
+  // { mockExam, exam, reload } whose results are being imported (reload: over the ones it has)
   const [importing, setImporting] = useState(null);
 
   const cycle = cycles.find((c) => c.id === chosenCycleId) ?? cycles.find((c) => c.status === 'ACTIVE') ?? cycles[0];
@@ -237,8 +238,8 @@ export default function ExamsPage() {
           stage={stage}
           mockExam={opened ?? null}
           canManage={canManage}
-          onImport={(exam) => {
-            setImporting({ mockExam: opened, exam });
+          onImport={(exam, reload = false) => {
+            setImporting({ mockExam: opened, exam, reload });
             setOpen(null);
           }}
           onClose={() => setOpen(null)}
