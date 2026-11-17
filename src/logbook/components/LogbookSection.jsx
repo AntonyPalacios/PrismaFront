@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormHelperText from '@mui/material/FormHelperText';
+import FormLabel from '@mui/material/FormLabel';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
@@ -17,11 +23,18 @@ import { useGetMeQuery } from '../../users/api/authApi';
 import { useCreateLogEntryMutation, useGetLogbookPageQuery } from '../api/logbookApi';
 
 const PAGE_SIZE = 20;
+// the academy's sheet: reason and agreements; observations are optional for good
 const FIELDS = [
   ['reason', 'Motivo de la sesión'],
-  ['agreements', 'Acuerdos'],
-  ['observations', 'Observaciones'],
+  ['agreements', 'Compromisos / recomendaciones'],
+  ['observations', 'Observaciones (opcional)'],
 ];
+const WARNED_FIELDS = ['reason', 'agreements'];
+const MEETING_WITH = {
+  STUDENT: 'Alumno(a)',
+  PARENT: 'Padre de familia o apoderado',
+  BOTH: 'Ambos',
+};
 
 // what the backend checks too: a session date that is not in the future, and at least one text
 const entrySchema = z
@@ -30,12 +43,13 @@ const entrySchema = z
       .string()
       .min(1, 'Elige la fecha de la sesión')
       .refine((date) => date <= todayIso(), 'La fecha de la sesión no puede ser futura'),
+    meetingWith: z.enum(['STUDENT', 'PARENT', 'BOTH'], { message: 'Elige con quién fue la reunión' }),
     reason: z.string().max(5000, 'Máximo 5000 caracteres'),
     agreements: z.string().max(5000, 'Máximo 5000 caracteres'),
     observations: z.string().max(5000, 'Máximo 5000 caracteres'),
   })
   .refine((v) => [v.reason, v.agreements, v.observations].some((text) => text.trim() !== ''), {
-    message: 'Escribe al menos el motivo, los acuerdos o las observaciones.',
+    message: 'Escribe al menos el motivo, los compromisos o las observaciones.',
     path: ['reason'],
   });
 
@@ -48,8 +62,9 @@ function useIsCurrentTutor(student) {
 /**
  * "Bitácora" of a student (REQ-LOGBOOK-01/02): shown to ADMIN and the
  * student's current tutor (the page decides). The current tutor adds an
- * entry per session; every save asks first, because an entry can never be
- * edited or deleted afterwards. The history spans every stage and tutor,
+ * entry per session: its date, who they met (the student, the parent or
+ * guardian, or both) and the texts of the academy's sheet; every save asks
+ * first, because an entry can never be edited or deleted afterwards. The history spans every stage and tutor,
  * newest session first, 20 at a time.
  */
 export default function LogbookSection({ student }) {
@@ -135,6 +150,12 @@ function Entry({ entry }) {
         <Typography sx={{ fontSize: 14, fontWeight: 500 }}>{formatDate(entry.sessionDate)}</Typography>
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{entry.authorName}</Typography>
       </Box>
+      <Typography sx={{ fontSize: 13 }}>
+        <Box component="span" sx={{ color: 'text.secondary' }}>
+          Reunión con:{' '}
+        </Box>
+        {MEETING_WITH[entry.meetingWith] ?? entry.meetingWith}
+      </Typography>
       {FIELDS.map(([field, label]) => (
         <Box key={field}>
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{label}</Typography>
@@ -155,11 +176,12 @@ function EntryForm({ student, onDone }) {
   const [createLogEntry, { isLoading }] = useCreateLogEntryMutation();
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(entrySchema),
-    defaultValues: { sessionDate: todayIso(), reason: '', agreements: '', observations: '' },
+    defaultValues: { sessionDate: todayIso(), meetingWith: '', reason: '', agreements: '', observations: '' },
   });
 
   const save = async () => {
@@ -175,7 +197,9 @@ function EntryForm({ student, onDone }) {
     }
   };
 
-  const empty = pending ? FIELDS.filter(([field]) => pending[field].trim() === '').map(([, label]) => label.toLowerCase()) : [];
+  const empty = pending
+    ? FIELDS.filter(([field]) => WARNED_FIELDS.includes(field) && pending[field].trim() === '').map(([, label]) => label.toLowerCase())
+    : [];
 
   return (
     <Box
@@ -195,6 +219,23 @@ function EntryForm({ student, onDone }) {
         error={Boolean(errors.sessionDate)}
         helperText={errors.sessionDate?.message}
         sx={{ maxWidth: 220 }}
+      />
+      <Controller
+        name="meetingWith"
+        control={control}
+        render={({ field }) => (
+          <FormControl error={Boolean(errors.meetingWith)} required>
+            <FormLabel id="meeting-with-label" sx={{ fontSize: 14 }}>
+              ¿Con quién fue la reunión?
+            </FormLabel>
+            <RadioGroup row aria-labelledby="meeting-with-label" {...field}>
+              {Object.entries(MEETING_WITH).map(([value, label]) => (
+                <FormControlLabel key={value} value={value} control={<Radio size="small" />} label={label} />
+              ))}
+            </RadioGroup>
+            {errors.meetingWith && <FormHelperText>{errors.meetingWith.message}</FormHelperText>}
+          </FormControl>
+        )}
       />
       {FIELDS.map(([field, label]) => (
         <TextField

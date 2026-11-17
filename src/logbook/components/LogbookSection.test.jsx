@@ -15,6 +15,7 @@ const entry = (id, sessionDate, reason, authorName = 'Valle Gómez, Silvia') => 
   authorUserId: 9,
   authorName,
   sessionDate,
+  meetingWith: 'PARENT',
   createdAt: `${sessionDate}T10:00:00-05:00`,
   reason,
   agreements: 'Repasar',
@@ -75,6 +76,7 @@ describe('Logbook section', () => {
     expect(within(first).getByText('Bajó en Álgebra')).toBeInTheDocument();
     expect(within(first).getByText('Valle Gómez, Silvia')).toBeInTheDocument();
     expect(within(first).getByText('—')).toBeInTheDocument(); // empty observations
+    expect(within(first).getByText('Padre de familia o apoderado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /editar|borrar|eliminar/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver más' }));
@@ -88,12 +90,15 @@ describe('Logbook section', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Nueva entrada' }));
     const form = screen.getByRole('form', { name: 'Nueva entrada de bitácora' });
     expect(within(form).getByLabelText(/Fecha de la sesión/)).toHaveValue(todayIso());
+    fireEvent.click(within(form).getByLabelText('Ambos'));
     fireEvent.change(within(form).getByLabelText('Motivo de la sesión'), { target: { value: 'Seguimiento' } });
-    fireEvent.change(within(form).getByLabelText('Acuerdos'), { target: { value: 'Mantener el ritmo' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
 
     const dialog = await screen.findByRole('dialog', { name: '¿Guardar la entrada?' });
-    expect(within(dialog).getByText(/Quedaron vacíos: observaciones\. Después de guardarla no podrás editarla ni borrarla\./)).toBeInTheDocument();
+    // observations are optional: only the reason and the agreements are warned about
+    expect(
+      within(dialog).getByText(/Quedaron vacíos: compromisos \/ recomendaciones\. Después de guardarla no podrás editarla ni borrarla\./),
+    ).toBeInTheDocument();
     expect(writes()).toHaveLength(0); // nothing is sent before confirming
     fireEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }));
 
@@ -102,8 +107,9 @@ describe('Logbook section', () => {
     expect(new URL(request.url).pathname).toMatch(/\/students\/5\/logbook-entries$/);
     expect(await request.json()).toEqual({
       sessionDate: todayIso(),
+      meetingWith: 'BOTH',
       reason: 'Seguimiento',
-      agreements: 'Mantener el ritmo',
+      agreements: '',
       observations: '',
       confirm: true,
     });
@@ -115,10 +121,13 @@ describe('Logbook section', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Nueva entrada' }));
     const form = screen.getByRole('form', { name: 'Nueva entrada de bitácora' });
     fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
-    expect(await within(form).findByText('Escribe al menos el motivo, los acuerdos o las observaciones.')).toBeInTheDocument();
+    expect(await within(form).findByText('Elige con quién fue la reunión')).toBeInTheDocument();
+    fireEvent.click(within(form).getByLabelText('Alumno(a)'));
+    fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
+    expect(await within(form).findByText('Escribe al menos el motivo, los compromisos o las observaciones.')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-    for (const label of ['Motivo de la sesión', 'Acuerdos', 'Observaciones']) {
+    for (const label of ['Motivo de la sesión', 'Compromisos / recomendaciones']) {
       fireEvent.change(within(form).getByLabelText(label), { target: { value: 'algo' } });
     }
     fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
@@ -131,6 +140,7 @@ describe('Logbook section', () => {
     renderSection();
     fireEvent.click(await screen.findByRole('button', { name: 'Nueva entrada' }));
     const form = screen.getByRole('form', { name: 'Nueva entrada de bitácora' });
+    fireEvent.click(within(form).getByLabelText('Alumno(a)'));
     fireEvent.change(within(form).getByLabelText('Motivo de la sesión'), { target: { value: 'Seguimiento' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
     fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Guardar' }));
