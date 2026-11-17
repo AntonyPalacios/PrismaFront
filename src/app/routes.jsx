@@ -2,6 +2,7 @@ import { Navigate } from 'react-router';
 import CycleDetailPage from '../academic/pages/CycleDetailPage';
 import CyclesPage from '../academic/pages/CyclesPage';
 import CatalogPage from '../catalog/pages/CatalogPage';
+import GroupComparisonPage from '../dashboards/pages/GroupComparisonPage';
 import ExamsPage from '../exams/pages/ExamsPage';
 import HomePage from '../home/HomePage';
 import ImportBatchPage from '../imports/pages/ImportBatchPage';
@@ -29,6 +30,7 @@ export const routes = [
           { path: 'students', element: <StudentsPage /> },
           { path: 'students/:id', element: <StudentDetailPage /> },
           { path: 'exams', element: <ExamsPage /> },
+          { path: 'group-comparison', element: <GroupComparisonPage /> },
           { path: 'imports', element: <ImportsPage /> },
           { path: 'imports/:id', element: <ImportBatchPage /> },
           { path: 'catalog', element: <CatalogPage /> },

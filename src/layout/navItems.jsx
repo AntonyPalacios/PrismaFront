@@ -2,6 +2,7 @@ import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
@@ -17,6 +18,8 @@ export const NAV_ITEMS = [
   { to: '/exams', label: 'Exámenes', icon: <AssignmentOutlinedIcon /> },
   // the roles that import: students (ADMIN, TUTOR) or exam results (also COORDINADOR)
   { to: '/imports', label: 'Importaciones', icon: <FileUploadOutlinedIcon />, roles: ['ADMIN', 'TUTOR', 'COORDINADOR'] },
+  // the group's figures per exam: a tutor's own students, or any group for an admin
+  { to: '/group-comparison', label: 'Charla de notas', icon: <InsightsOutlinedIcon />, roles: ['ADMIN', 'TUTOR'] },
   { to: '/cycles', label: 'Ciclos', icon: <CalendarMonthOutlinedIcon />, adminOnly: true },
   { to: '/catalog', label: 'Catálogo', icon: <MenuBookOutlinedIcon /> },
   { to: '/users', label: 'Usuarios', icon: <ManageAccountsOutlinedIcon />, adminOnly: true },
