@@ -24,7 +24,25 @@ export const dashboardsApi = baseApi.injectEndpoints({
     // counts, not ratios: { areas: [{ areaId, areaName, points: [{ examId, examName,
     //   examDate, cycleName, correct, wrong }] }], totals: [same points] }
     getAreaDistribution: build.query(studentChart('area-distribution')),
+    // "Charla de notas": { examTypeId, tutorId? } → by exam date, only the active cycle:
+    // [{ examId, examName, examDate, students, areas: [{ areaId, areaName, correctAvg,
+    //    correctMin, correctMax, wrongAvg, wrongMin, wrongMax }], courses: [{ courseId,
+    //    courseName, correctAvg }] }]. A tutor always gets their own students; tutorId is
+    // only for an admin (the whole academy without it).
+    getGroupComparison: build.query({
+      query: ({ examTypeId, tutorId }) => ({
+        url: '/dashboards/group-comparison',
+        params: tutorId ? { examTypeId, tutorId } : { examTypeId },
+      }),
+      // results (imports) and regrouping students between tutors change it
+      providesTags: ['Exam', 'TutorAssignment', 'Enrollment'],
+    }),
   }),
 });
 
-export const { useGetScoreEvolutionQuery, useGetCourseEffectivenessQuery, useGetAreaDistributionQuery } = dashboardsApi;
+export const {
+  useGetScoreEvolutionQuery,
+  useGetCourseEffectivenessQuery,
+  useGetAreaDistributionQuery,
+  useGetGroupComparisonQuery,
+} = dashboardsApi;
