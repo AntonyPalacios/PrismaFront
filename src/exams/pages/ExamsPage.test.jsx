@@ -20,7 +20,7 @@ const STAGES = {
   2: [{ id: 20, cycleId: 2, name: 'Nivelación', startDate: '2026-07-01', endDate: '2026-08-31', status: 'PLANNED', current: false }],
 };
 const TYPES = [
-  { id: 1, name: 'Ciencias' },
+  { id: 1, name: 'Ciencias', courseIds: [1, 2] },
   { id: 2, name: 'Letras' },
   { id: 3, name: 'Arquitectura' },
 ];
@@ -45,6 +45,37 @@ const MEDICION = {
   exams: [{ id: 990, examTypeId: 1, examTypeName: 'Ciencias', hasResults: false }],
 };
 
+// two courses are enough to exercise the manual result form
+const COURSES = [
+  { id: 2, areaId: 2, name: 'Álgebra' },
+  { id: 1, areaId: 1, name: 'Lectura' },
+  { id: 6, areaId: 2, name: 'Estadística' },
+];
+const AREAS = [
+  { id: 2, name: 'Matemática' },
+  { id: 1, name: 'Lectura' },
+];
+const ENROLLMENTS = [
+  { enrollmentId: 501, studentId: 1, fullName: 'Paredes, Diego', dni: '70111222', hasResult: true },
+  { enrollmentId: 502, studentId: 2, fullName: 'Quispe, Lucía', dni: null, hasResult: false },
+];
+const DIEGO_RESULT = {
+  examId: 1001,
+  enrollmentId: 501,
+  courseResults: [
+    { courseId: 1, courseName: 'Lectura', correct: 20, wrong: 5, blank: 3 },
+    { courseId: 2, courseName: 'Álgebra', correct: 6, wrong: 1, blank: 1 },
+  ],
+  areaScores: [
+    { areaId: 1, areaName: 'Lectura', score: 640.5 },
+    { areaId: 2, areaName: 'Matemática', score: 600 },
+  ],
+  totalScore: 586.4,
+  attended: true,
+  updatedByName: 'Valle Gómez, Silvia',
+  updatedAt: '2026-11-17T10:30:00-05:00',
+};
+
 function json(status, body) {
   return new Response(body === undefined ? null : JSON.stringify(body), {
     status,
@@ -66,6 +97,13 @@ function route(request) {
   if (request.method === 'GET' && url.pathname.endsWith('/exam-types')) return json(200, TYPES);
   if (request.method === 'GET' && url.pathname.endsWith('/mock-exams')) {
     return json(200, mockExams[url.searchParams.get('stageId')] ?? []);
+  }
+  if (request.method === 'GET' && url.pathname.endsWith('/areas')) return json(200, AREAS);
+  if (request.method === 'GET' && url.pathname.endsWith('/courses')) return json(200, COURSES);
+  if (request.method === 'GET' && url.pathname.endsWith('/exams/1001/enrollments')) return json(200, ENROLLMENTS);
+  const resultOf = url.pathname.match(/\/exams\/1001\/results\/(\d+)$/);
+  if (request.method === 'GET' && resultOf) {
+    return resultOf[1] === '501' ? json(200, DIEGO_RESULT) : json(404, { detail: 'Este alumno todavía no tiene resultado en este examen.' });
   }
   return writeResponse(request);
 }
@@ -387,5 +425,98 @@ describe('Exams screen', () => {
     await examCard('Regular 1');
 
     expect(screen.getAllByRole('button', { name: /nuevo examen/i }).length).toBeGreaterThan(0);
+  });
+
+  describe('manual result', () => {
+    async function openManual() {
+      fireEvent.click(await examCard('Regular 1'));
+      const sheet = await screen.findByRole('form', { name: 'Regular 1' });
+      // only a type with results: Letras has none
+      expect(within(sheet).queryByRole('button', { name: 'Resultado manual de Letras' })).not.toBeInTheDocument();
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Resultado manual de Ciencias' }));
+      return screen.findByRole('region', { name: 'Resultado manual' });
+    }
+
+    async function pick(section, text, option) {
+      const input = within(section).getByLabelText('Alumno');
+      fireEvent.change(input, { target: { value: text } });
+      fireEvent.click(await screen.findByRole('option', { name: option }));
+    }
+
+    it('a tutor creates the missing result of a student: empty form, every value typed, one request', async () => {
+      roles = ['TUTOR'];
+      writeResponse = () => json(200, { ...DIEGO_RESULT, enrollmentId: 502 });
+      renderPage();
+      const section = await openManual();
+      expect(within(section).getByText('Regular 1 · Ciencias · 14 mar 2026 · 2026-I · Regular')).toBeInTheDocument();
+
+      await pick(section, 'quis', /Quispe, Lucía/);
+      const form = await within(section).findByRole('form', { name: 'Resultado de Quispe, Lucía' });
+      expect(within(form).getByText(/aún no tiene resultado/)).toBeInTheDocument();
+      // the exam type's courses in catalog order; Estadística is not Ciencias'
+      expect(within(form).getAllByRole('listitem').map((li) => li.getAttribute('aria-label'))).toEqual(['Lectura', 'Álgebra']);
+
+      const type = (label, value) => fireEvent.change(within(form).getByLabelText(label), { target: { value } });
+      type('Buenas de Lectura', '20');
+      type('Malas de Lectura', '5');
+      type('En blanco de Lectura', '3');
+      type('Buenas de Álgebra', '0');
+      type('Malas de Álgebra', '1');
+      type('En blanco de Álgebra', '7');
+      type('Puntaje de Lectura', '640,5');
+      type('Puntaje de Matemática', '600');
+      type('Puntaje total', '586.4');
+      fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
+
+      expect(await screen.findByText('Resultado guardado.')).toBeInTheDocument();
+      const [request] = writes();
+      expect(request.method).toBe('PUT');
+      expect(new URL(request.url).pathname).toMatch(/\/exams\/1001\/results\/502$/);
+      expect(await request.json()).toEqual({
+        courseResults: [
+          { courseId: 1, correct: 20, wrong: 5, blank: 3 },
+          { courseId: 2, correct: 0, wrong: 1, blank: 7 },
+        ],
+        areaScores: [
+          { areaId: 1, score: 640.5 },
+          { areaId: 2, score: 600 },
+        ],
+        totalScore: 586.4,
+      });
+      expect(screen.queryByRole('region', { name: 'Resultado manual' })).not.toBeInTheDocument();
+    });
+
+    it('an existing result comes preloaded with who changed it; the backend message keeps the values', async () => {
+      writeResponse = () => json(403, { detail: 'Solo puedes registrar resultados de tus alumnos asignados.' });
+      renderPage();
+      const section = await openManual();
+      await pick(section, '7011', /Paredes, Diego/);
+      const form = await within(section).findByRole('form', { name: 'Resultado de Paredes, Diego' });
+
+      expect(within(form).getByText(/Última modificación: Valle Gómez, Silvia/)).toBeInTheDocument();
+      expect(within(form).getByLabelText('Buenas de Lectura')).toHaveValue('20');
+      expect(within(form).getByLabelText('Puntaje de Lectura')).toHaveValue('640.5');
+      expect(within(form).getByLabelText('Puntaje total')).toHaveValue('586.4');
+      // attended is never typed
+      expect(within(form).queryByLabelText(/asisti/i)).not.toBeInTheDocument();
+
+      fireEvent.change(within(form).getByLabelText('Malas de Álgebra'), { target: { value: '2' } });
+      fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
+      expect(await within(form).findByText('Solo puedes registrar resultados de tus alumnos asignados.')).toBeInTheDocument();
+      expect(within(form).getByLabelText('Malas de Álgebra')).toHaveValue('2');
+    });
+
+    it('flags empty and negative values before calling the backend', async () => {
+      renderPage();
+      const section = await openManual();
+      await pick(section, 'quis', /Quispe, Lucía/);
+      const form = await within(section).findByRole('form', { name: 'Resultado de Quispe, Lucía' });
+      fireEvent.change(within(form).getByLabelText('Buenas de Lectura'), { target: { value: '-1' } });
+      fireEvent.click(within(form).getByRole('button', { name: 'Guardar' }));
+
+      expect((await within(form).findAllByText('Entero de 0 a más')).length).toBeGreaterThan(1);
+      expect(within(form).getAllByText('Número de 0 a más, hasta 2 decimales').length).toBe(3);
+      expect(writes()).toHaveLength(0);
+    });
   });
 });

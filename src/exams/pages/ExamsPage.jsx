@@ -22,6 +22,7 @@ import { colors } from '../../app/theme';
 import { useGetMockExamsQuery } from '../api/examsApi';
 import ImportResultsForm from '../../imports/components/ImportResultsForm';
 import ExamForm from '../components/ExamForm';
+import ManualResultForm from '../components/ManualResultForm';
 import { useCanManageExams } from '../examDisplay';
 
 const selectProps = { select: true, size: 'small', slotProps: { select: { native: true }, inputLabel: { shrink: true } } };
@@ -34,8 +35,8 @@ const selectProps = { select: true, size: 'small', slotProps: { select: { native
  * create a mock exam ("Nuevo examen") and edit it; a TUTOR only reads.
  * Every role imports the results of a type from the opened mock exam, only
  * in the stage in force of the active cycle; an ADMIN can also reload the
- * results of a type that already has them. "Resultado manual" arrives
- * with its slice.
+ * results of a type that already has them. Outside a closed cycle every
+ * role types one student's "Resultado manual" in a type with results.
  */
 export default function ExamsPage() {
   const canManage = useCanManageExams();
@@ -47,6 +48,8 @@ export default function ExamsPage() {
   const [open, setOpen] = useState(null);
   // { mockExam, exam, reload } whose results are being imported (reload: over the ones it has)
   const [importing, setImporting] = useState(null);
+  // { mockExam, exam } whose result of one student is being typed
+  const [manual, setManual] = useState(null);
 
   const cycle = cycles.find((c) => c.id === chosenCycleId) ?? cycles.find((c) => c.status === 'ACTIVE') ?? cycles[0];
   const { data: stages = [] } = useGetStagesQuery(cycle?.id, { skip: !cycle });
@@ -242,12 +245,17 @@ export default function ExamsPage() {
             setImporting({ mockExam: opened, exam, reload });
             setOpen(null);
           }}
+          onManual={(exam) => {
+            setManual({ mockExam: opened, exam });
+            setOpen(null);
+          }}
           onClose={() => setOpen(null)}
         />
       )}
       {importing && cycle && stage && (
         <ImportResultsForm cycle={cycle} stage={stage} {...importing} onClose={() => setImporting(null)} />
       )}
+      {manual && cycle && stage && <ManualResultForm cycle={cycle} stage={stage} {...manual} onClose={() => setManual(null)} />}
     </Box>
   );
 }

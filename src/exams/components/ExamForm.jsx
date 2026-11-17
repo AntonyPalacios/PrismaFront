@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import { formatDate, stageDates } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
@@ -49,9 +50,11 @@ const stageLabel = (cycle, stage) => `${cycle.name} · ${stage.name} (${stageDat
  * last); "Eliminar" while no type has results. Read-only for a TUTOR and in
  * a closed cycle. Every role may "Importar resultados" of a type without
  * results while the stage is the one in force of the active cycle, and an
- * ADMIN may "Recargar resultados" of a type that has them (`onImport`). Bottom sheet on mobile, dialog on desktop.
+ * ADMIN may "Recargar resultados" of a type that has them (`onImport`). Every
+ * role may type a student's "Resultado manual" in a type with results while
+ * the cycle is not closed (`onManual`). Bottom sheet on mobile, dialog on desktop.
  */
-export default function ExamForm({ cycle, stage, mockExam, canManage, onImport, onClose }) {
+export default function ExamForm({ cycle, stage, mockExam, canManage, onImport, onManual, onClose }) {
   const editable = canManage && cycle.status !== 'CLOSED';
   return (
     <ResponsiveSheet onClose={onClose}>
@@ -63,6 +66,7 @@ export default function ExamForm({ cycle, stage, mockExam, canManage, onImport, 
           editable={editable}
           canManage={canManage}
           onImport={stage.current && cycle.status === 'ACTIVE' ? onImport : null}
+          onManual={cycle.status !== 'CLOSED' ? onManual : null}
           onClose={onClose}
         />
       ) : (
@@ -190,7 +194,7 @@ function CreateMockExam({ cycle, stage, onClose }) {
   );
 }
 
-function EditMockExam({ cycle, stage, mockExam, editable, canManage, onImport, onClose }) {
+function EditMockExam({ cycle, stage, mockExam, editable, canManage, onImport, onManual, onClose }) {
   const notify = useNotify();
   const [serverError, setServerError] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -246,7 +250,7 @@ function EditMockExam({ cycle, stage, mockExam, editable, canManage, onImport, o
         helperText={errors.examDate?.message ?? (editable ? 'El nombre y la fecha se aplican a todos sus tipos.' : ' ')}
       />
 
-      <ExamTypes mockExam={mockExam} editable={editable} onImport={onImport} onError={setServerError} />
+      <ExamTypes mockExam={mockExam} editable={editable} onImport={onImport} onManual={onManual} onError={setServerError} />
 
       {note && <Alert severity="info">{note}</Alert>}
       {serverError && <Alert severity="error">{serverError}</Alert>}
@@ -293,10 +297,11 @@ function EditMockExam({ cycle, stage, mockExam, editable, canManage, onImport, o
  * the name/date form): remove one without results (never the last) or add
  * one it is missing, and import the results of one without them or, an
  * admin, reload those of one that has them (`onImport(exam, reload)`, null
- * when not allowed). No <form> here: it lives inside the
+ * when not allowed), and type one student's result in a type with results
+ * (`onManual(exam)`, null in a closed cycle). No <form> here: it lives inside the
  * mock exam's form.
  */
-function ExamTypes({ mockExam, editable, onImport, onError }) {
+function ExamTypes({ mockExam, editable, onImport, onManual, onError }) {
   const notify = useNotify();
   // the forced reload of a type that already has results is only the admin's
   const isAdmin = useIsAdmin();
@@ -353,6 +358,17 @@ function ExamTypes({ mockExam, editable, onImport, onError }) {
                 onClick={() => onImport(exam)}
               >
                 Importar resultados
+              </Button>
+            )}
+            {onManual && exam.hasResults && (
+              <Button
+                type="button"
+                size="small"
+                startIcon={<EditOutlinedIcon />}
+                aria-label={`Resultado manual de ${exam.examTypeName}`}
+                onClick={() => onManual(exam)}
+              >
+                Resultado manual
               </Button>
             )}
             {onImport && exam.hasResults && isAdmin && (

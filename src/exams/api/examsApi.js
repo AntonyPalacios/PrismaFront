@@ -36,6 +36,24 @@ export const examsApi = baseApi.injectEndpoints({
       query: ({ mockExamId, examId }) => ({ url: `/mock-exams/${mockExamId}/exams/${examId}`, method: 'DELETE' }),
       invalidatesTags: ['Exam'],
     }),
+    // REQ-EXAMS-04: the students enrolled in the exam's stage, to type one's result
+    // [{ enrollmentId, studentId, fullName, dni, hasResult }] ("Apellidos, Nombres" order;
+    // a tutor only gets their own)
+    getExamEnrollments: build.query({
+      query: (examId) => `/exams/${examId}/enrollments`,
+      providesTags: ['Exam'],
+    }),
+    // { courseResults: [{ courseId, courseName, correct, wrong, blank }], areaScores: [{ areaId, areaName, score }],
+    //   totalScore, attended, updatedByName, updatedAt }; 404 while the student has none
+    getExamResult: build.query({
+      query: ({ examId, enrollmentId }) => `/exams/${examId}/results/${enrollmentId}`,
+      providesTags: ['Exam'],
+    }),
+    // creates or overwrites (the same action); progress and charla de notas read results too
+    saveExamResult: build.mutation({
+      query: ({ examId, enrollmentId, ...body }) => ({ url: `/exams/${examId}/results/${enrollmentId}`, method: 'PUT', body }),
+      invalidatesTags: ['Exam'],
+    }),
   }),
 });
 
@@ -46,4 +64,7 @@ export const {
   useDeleteMockExamMutation,
   useAddExamTypeMutation,
   useRemoveExamTypeMutation,
+  useGetExamEnrollmentsQuery,
+  useGetExamResultQuery,
+  useSaveExamResultMutation,
 } = examsApi;
