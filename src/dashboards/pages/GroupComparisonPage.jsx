@@ -19,18 +19,20 @@ const selectProps = { select: true, size: 'small', slotProps: { select: { native
 const UP = { color: '#2F5A08', fontWeight: 500 };
 const DOWN = { color: '#8E0F14', fontWeight: 500 };
 
-/** "15.5", "7": averages as the Historial shows them, without trailing zeros. */
-const figure = (value) => (value == null ? '—' : String(Number(value)));
+/** Averages as whole numbers, rounded to the nearest one (7.5 → 8). */
+const whole = (value) => (value == null ? null : Math.round(Number(value)));
+const figure = (value) => (value == null ? '—' : String(whole(value)));
 
 /**
  * How an average moved against the previous exam: ▲ or ▼, green when it is
  * good news (more correct answers, fewer wrong ones) and red otherwise.
+ * Compares the rounded figures, so two equal numbers on screen never differ.
  */
 function trend(exams, index, read, moreIsBetter) {
-  const now = read(exams[index]);
-  const before = index > 0 ? read(exams[index - 1]) : null;
-  if (now == null || before == null || Number(now) === Number(before)) return { text: figure(now), sx: null };
-  const rose = Number(now) > Number(before);
+  const now = whole(read(exams[index]));
+  const before = index > 0 ? whole(read(exams[index - 1])) : null;
+  if (now == null || before == null || now === before) return { text: figure(now), sx: null };
+  const rose = now > before;
   return { text: `${figure(now)} ${rose ? '▲' : '▼'}`, sx: rose === moreIsBetter ? UP : DOWN };
 }
 

@@ -133,18 +133,18 @@ describe('Charla de notas', () => {
       ['Buenas', 'Malas', 'Buenas', 'Malas'],
       ['Lectura'],
       // against the previous exam: more correct and fewer wrong answers
-      ['Promedio', '15', '7', '19.5 ▲', '5 ▼'],
+      ['Promedio', '15', '7', '20 ▲', '5 ▼'],
       ['Mínimo', '10', '5', '12', '2'],
       ['Máximo', '20', '10', '26', '8'],
       ['Matemática'],
-      ['Promedio', '11', '10.33', '9 ▼', '12 ▲'],
+      ['Promedio', '11', '10', '9 ▼', '12 ▲'],
       // a zero is a value: it shows as 0
       ['Mínimo', '5', '10', '0', '2'],
       ['Máximo', '18', '11', '24', '14'],
       ['Promedio de buenas por curso'],
-      ['Lectura', '15', '', '19.5 ▲', ''],
+      ['Lectura', '15', '', '20 ▲', ''],
       // the same average: no arrow
-      ['Álgebra', '6.67', '', '6.67', ''],
+      ['Álgebra', '7', '', '7', ''],
       // not evaluated in Regular 2: no figure, never a zero
       ['Estadística', '2', '', '—', ''],
     ]);
@@ -216,7 +216,7 @@ describe('Charla de notas', () => {
         // Ruth's group did not sit Regular 3: no figures, never 0
         ['Salas, Ruth', '1', '80 malas', '91 malas', '—', '—', '—'],
         ['Valle Gómez, Silvia', '2', '83 malas', '42 malas', '2', '60 malas', '30 malas'],
-        ['Toda la academia', '4', '72.5 malas', '4.751.75 malas', '2', '60 malas', '30 malas'],
+        ['Toda la academia', '4', '73 malas', '52 malas', '2', '60 malas', '30 malas'],
       ]);
       // the tutor picker belongs to the group view only
       expect(screen.queryByLabelText('Tutor')).not.toBeInTheDocument();

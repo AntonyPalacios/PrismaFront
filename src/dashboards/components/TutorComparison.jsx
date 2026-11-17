@@ -9,8 +9,9 @@ import { useGetTutorComparisonQuery } from '../api/dashboardsApi';
 const ABOVE = { color: '#2F5A08', fontWeight: 500 };
 const BELOW = { color: '#8E0F14', fontWeight: 500 };
 
-/** "15.5", "7": averages without trailing zeros. */
-const figure = (value) => (value == null ? '—' : String(Number(value)));
+/** Averages as whole numbers, rounded to the nearest one (7.5 → 8). */
+const whole = (value) => (value == null ? null : Math.round(Number(value)));
+const figure = (value) => (value == null ? '—' : String(whole(value)));
 
 const cell = { px: 1.5, py: 1.25, whiteSpace: 'nowrap', fontSize: 14, textAlign: 'right', borderBottom: '1px solid #EEF1F5' };
 const head = { ...cell, fontSize: 12, fontWeight: 500, color: 'text.secondary', borderBottom: '1px solid #E3E7EE' };
@@ -103,8 +104,9 @@ export default function TutorComparison({ examTypeId }) {
                       const value = mine?.areas.find((a) => a.areaId === area.areaId);
                       const academyValue = reference?.areas.find((a) => a.areaId === area.areaId);
                       let sx = null;
-                      if (!row.academy && value && academyValue && Number(value.correctAvg) !== Number(academyValue.correctAvg)) {
-                        sx = Number(value.correctAvg) > Number(academyValue.correctAvg) ? ABOVE : BELOW;
+                      // the rounded figures: a tutor showing the academy's number is not above or below it
+                      if (!row.academy && value && academyValue && whole(value.correctAvg) !== whole(academyValue.correctAvg)) {
+                        sx = whole(value.correctAvg) > whole(academyValue.correctAvg) ? ABOVE : BELOW;
                       }
                       return (
                         <Box component="td" key={`${exam.examId}-${area.areaId}`} sx={{ ...cell, ...sx }}>
