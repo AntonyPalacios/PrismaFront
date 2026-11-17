@@ -22,6 +22,7 @@ import {
   useUpdateStudentMutation,
 } from '../api/studentsApi';
 import EnrollmentsSection from '../components/EnrollmentsSection';
+import ParentsSection from '../components/ParentsSection';
 import StudentFields from '../components/StudentFields';
 import { studentSchema, toStudentBody, toStudentForm } from '../components/studentSchema';
 import { studentFullName, useCanEditStudent, useCanManageStudents } from '../studentDisplay';
@@ -214,6 +215,9 @@ function StudentDetail({ student, onCancel }) {
 
       {/* ADMIN and TUTOR: a coordinator does not see enrollments */}
       {canManage && <EnrollmentsSection student={student} />}
+
+      {/* ADMIN and TUTOR see who to contact; the admin or the current tutor change it */}
+      {canManage && <ParentsSection student={student} canChange={canEdit && student.active} />}
 
       {/* the same people who edit the student: ADMIN or their current tutor */}
       {canEdit && <ProgressSection student={student} />}
