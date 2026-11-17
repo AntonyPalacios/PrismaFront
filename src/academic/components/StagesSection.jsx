@@ -11,6 +11,7 @@ import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
 import ConfirmDialog from '../../layout/ConfirmDialog';
+import BulkEnrollDialog from '../../students/components/BulkEnrollDialog';
 import { useChangeStageStatusMutation, useDeleteStageMutation, useGetStagesQuery } from '../api/stagesApi';
 import { STAGE_STATUS, formatShortDate, stageDates, todayIso } from '../cycleDisplay';
 import CycleStatusChip from './CycleStatusChip';
@@ -23,8 +24,9 @@ import StageForm from './StageForm';
  * that moves the stage forward: "Activar etapa" (planned) or "Cerrar etapa"
  * (active). In a closed cycle (and for a closed stage) nothing can be
  * edited: the only action left is "Eliminar".
- * The enrollment count and "Matricular en lote" of the prototype arrive
- * with the students slices.
+ * A stage that can still be edited also offers "Matricular en lote"
+ * (REQ-STUDENTS-05): the screen is only for an ADMIN. The enrollment count
+ * of the prototype is still pending.
  */
 export default function StagesSection({ cycle }) {
   const notify = useNotify();
@@ -34,6 +36,7 @@ export default function StagesSection({ cycle }) {
   // null = closed, {} = creating, a stage = editing it
   const [editing, setEditing] = useState(null);
   const [deletingStage, setDeletingStage] = useState(null);
+  const [bulkStage, setBulkStage] = useState(null);
   // null, or { kind, stage } with kind: 'activate' | 'close' | 'noEndDate' | 'endDateInFuture'
   const [statusDialog, setStatusDialog] = useState(null);
   const cycleClosed = cycle.status === 'CLOSED';
@@ -154,6 +157,7 @@ export default function StagesSection({ cycle }) {
                     editable && stage.status === 'PLANNED' ? () => setStatusDialog({ kind: 'activate', stage }) : undefined
                   }
                   onClose={editable && stage.status === 'ACTIVE' ? () => askToClose(stage) : undefined}
+                  onBulkEnroll={editable ? () => setBulkStage(stage) : undefined}
                 />
               </Box>
             );
@@ -196,6 +200,8 @@ export default function StagesSection({ cycle }) {
         />
       )}
 
+      {bulkStage && <BulkEnrollDialog cycle={cycle} stage={bulkStage} onClose={() => setBulkStage(null)} />}
+
       {statusDialog && (
         <ConfirmDialog {...statusDialogProps(statusDialog)} loading={changingStatus} onCancel={() => setStatusDialog(null)} />
       )}
@@ -218,7 +224,7 @@ export default function StagesSection({ cycle }) {
   );
 }
 
-function StageCard({ stage, onEdit, onDelete, onActivate, onClose }) {
+function StageCard({ stage, onEdit, onDelete, onActivate, onClose, onBulkEnroll }) {
   const cardSx = {
     bgcolor: 'background.paper',
     border: 1,
@@ -267,21 +273,33 @@ function StageCard({ stage, onEdit, onDelete, onActivate, onClose }) {
       <ButtonBase
         onClick={onEdit}
         aria-label={`Editar ${stage.name}`}
-        sx={{ width: '100%', display: 'flex', textAlign: 'left', px: 2, pt: 1.75, pb: action ? 1.25 : 1.75 }}
+        sx={{ width: '100%', display: 'flex', textAlign: 'left', px: 2, pt: 1.75, pb: action || onBulkEnroll ? 1.25 : 1.75 }}
       >
         {content}
       </ButtonBase>
-      {action && (
-        <Box sx={{ px: 2, pb: 1.75 }}>
-          {/* same place and shape as the prototype's in-card action */}
-          <Button
-            fullWidth
-            onClick={action.onClick}
-            aria-label={`${action.label}: ${stage.name}`}
-            sx={{ height: 40, fontSize: 14, ...action.sx }}
-          >
-            {action.label}
-          </Button>
+      {(action || onBulkEnroll) && (
+        <Box sx={{ px: 2, pb: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {/* same place and shape as the prototype's in-card actions */}
+          {onBulkEnroll && (
+            <Button
+              fullWidth
+              onClick={onBulkEnroll}
+              aria-label={`Matricular en lote: ${stage.name}`}
+              sx={{ height: 40, fontSize: 14, bgcolor: colors.selected, color: colors.primary }}
+            >
+              Matricular en lote
+            </Button>
+          )}
+          {action && (
+            <Button
+              fullWidth
+              onClick={action.onClick}
+              aria-label={`${action.label}: ${stage.name}`}
+              sx={{ height: 40, fontSize: 14, ...action.sx }}
+            >
+              {action.label}
+            </Button>
+          )}
         </Box>
       )}
     </Box>
