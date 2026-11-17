@@ -3,6 +3,7 @@ import CycleDetailPage from '../academic/pages/CycleDetailPage';
 import CyclesPage from '../academic/pages/CyclesPage';
 import CatalogPage from '../catalog/pages/CatalogPage';
 import GroupComparisonPage from '../dashboards/pages/GroupComparisonPage';
+import GoalsPage from '../goals/pages/GoalsPage';
 import ExamsPage from '../exams/pages/ExamsPage';
 import HomePage from '../home/HomePage';
 import ImportBatchPage from '../imports/pages/ImportBatchPage';
@@ -31,6 +32,7 @@ export const routes = [
           { path: 'students/:id', element: <StudentDetailPage /> },
           { path: 'exams', element: <ExamsPage /> },
           { path: 'group-comparison', element: <GroupComparisonPage /> },
+          { path: 'goals', element: <GoalsPage /> },
           { path: 'imports', element: <ImportsPage /> },
           { path: 'imports/:id', element: <ImportBatchPage /> },
           { path: 'catalog', element: <CatalogPage /> },
