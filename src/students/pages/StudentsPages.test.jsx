@@ -51,6 +51,30 @@ const VALERIA = {
 };
 const BY_ID = { 1: LUCIA, 2: MATEO, 3: VALERIA };
 
+const MATH_RADAR = {
+  current: {
+    examId: 2,
+    examName: 'Regular 2',
+    examTypeName: 'Letras',
+    examDate: '2026-03-21',
+    axes: [
+      { courseId: 2, courseName: 'Números y Operaciones', correct: 7, total: 8, percent: 87.5 },
+      { courseId: 3, courseName: 'Álgebra', correct: 17, total: 18, percent: 94.44 },
+    ],
+  },
+  previous: {
+    examId: 1,
+    examName: 'Regular 1',
+    examTypeName: 'Letras',
+    examDate: '2026-03-14',
+    axes: [
+      { courseId: 2, courseName: 'Números y Operaciones', correct: 5, total: 8, percent: 62.5 },
+      { courseId: 3, courseName: 'Álgebra', correct: 10, total: 18, percent: 55.56 },
+      { courseId: 6, courseName: 'Estadística', correct: 3, total: 7, percent: 42.86 },
+    ],
+  },
+};
+
 function json(status, body) {
   return new Response(body === undefined ? null : JSON.stringify(body), {
     status,
@@ -159,6 +183,9 @@ function route(request) {
     );
   }
   if (request.method === 'GET' && url.pathname.endsWith('/course-effectiveness')) return json(200, evolution.length ? COURSES : []);
+  if (request.method === 'GET' && url.pathname.endsWith('/math-radar')) {
+    return json(200, evolution.length ? MATH_RADAR : { current: null, previous: null });
+  }
   if (request.method === 'GET' && url.pathname.endsWith('/area-distribution')) {
     return json(200, evolution.length ? AREAS : { areas: [], totals: [] });
   }
@@ -1041,6 +1068,26 @@ describe('Student progress', () => {
       ['Regular 1', '38', '17'],
       ['Regular 2', '50', '4'],
     ]);
+  });
+
+  it('shows the Mathematics balance of the latest exam, overlaying the previous one on request', async () => {
+    renderAt('/students/1');
+    const section = await screen.findByRole('region', { name: 'Progreso' });
+    const radar = await within(section).findByRole('table', { name: 'Balance en Matemática' });
+    // the previous exam is in the table for screen readers; only the chart waits for the switch
+    expect(rowsOf(radar)).toEqual([
+      ['Curso', 'Regular 2 · 21 mar 2026', 'Regular 1 · 14 mar 2026'],
+      ['Números y Operaciones', '7 de 8 · 87.5 %', '5 de 8 · 62.5 %'],
+      ['Álgebra', '17 de 18 · 94.44 %', '10 de 18 · 55.56 %'],
+      // not evaluated in Regular 2: empty, never 0
+      ['Estadística', '—', '3 de 7 · 42.86 %'],
+    ]);
+    const compare = within(section).getByRole('switch', { name: 'Comparar con el anterior' });
+    expect(compare).not.toBeChecked();
+    fireEvent.click(compare);
+    expect(compare).toBeChecked();
+    // the switch never asks again: both exams come in one request
+    expect(requests().filter((r) => new URL(r.url).pathname.endsWith('/math-radar'))).toHaveLength(1);
   });
 
   it('says so when the student has no results yet', async () => {
