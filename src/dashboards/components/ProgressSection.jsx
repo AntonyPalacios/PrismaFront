@@ -5,11 +5,13 @@ import CircularProgress from '@mui/material/CircularProgress';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatDate } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
 import { useGetScoreEvolutionQuery } from '../api/dashboardsApi';
+import { examLabel } from '../examLabel';
+import ChartCard from './ChartCard';
+import { AreaDistribution, CourseEffectiveness } from './EffectivenessCharts';
 
 // the prototype's lines: the student solid, the exam's range dashed
 const STUDENT = { key: 'studentScore', label: 'Alumno', color: colors.primary, width: 3 };
@@ -20,25 +22,24 @@ const AREA_LINES = [
   { color: '#3F7A0C', width: 2.5, dash: '6 3' },
 ];
 
-const visuallyHidden = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' };
-
 /** "3° de 54": the student's position among everyone who sat the exam. */
 const meritLabel = (point) => `${point.merit}° de ${point.meritOf}`;
 
 /**
  * "Progreso" of a student (Claude Design: StudentChartsMobile,
- * REQ-DASHBOARDS-01): the total score exam after exam against the highest
- * and lowest of each exam, with the merit in the tooltip, and apart the
- * Lectura and Matemática scores. Only the active cycle unless "Incluir
- * ciclos anteriores". Each chart has a table for screen readers.
+ * REQ-DASHBOARDS-01 to 03): the total score exam after exam against the
+ * highest and lowest of each exam, with the merit in the tooltip; apart,
+ * the Lectura and Matemática scores; then the correct, wrong and blank
+ * answers per course, and the correct and wrong ones per area and in total.
+ * Only the active cycle unless "Incluir ciclos anteriores", which applies
+ * to every chart. Each chart has a table for screen readers.
  */
 export default function ProgressSection({ student }) {
   const [includeAllCycles, setIncludeAllCycles] = useState(false);
   const { currentData, isFetching, error } = useGetScoreEvolutionQuery({ studentId: student.id, includeAllCycles });
   const points = (currentData ?? []).map((point) => ({
     ...point,
-    // names repeat every cycle: with several cycles the label says which
-    label: includeAllCycles ? `${point.examName} · ${point.cycleName}` : point.examName,
+    label: examLabel(point, includeAllCycles),
     ...Object.fromEntries(point.areaScores.map((area) => [`area${area.areaId}`, area.score])),
   }));
   const areas = points[0]?.areaScores ?? [];
@@ -76,7 +77,7 @@ export default function ProgressSection({ student }) {
 
       {points.length > 0 && (
         <>
-          <Chart
+          <ChartCard
             id="score-evolution"
             title="Evolución del puntaje"
             aside={gained === null ? null : `${gained >= 0 ? '+' : '−'}${Math.abs(gained).toFixed(2).replace(/\.?0+$/, '')} pts`}
@@ -107,9 +108,9 @@ export default function ProgressSection({ student }) {
                 </tr>
               ))}
             </tbody>
-          </Chart>
+          </ChartCard>
 
-          <Chart
+          <ChartCard
             id="area-scores"
             title="Lectura y Matemática"
             points={points}
@@ -135,59 +136,12 @@ export default function ProgressSection({ student }) {
                 </tr>
               ))}
             </tbody>
-          </Chart>
+          </ChartCard>
+
+          <CourseEffectiveness studentId={student.id} includeAllCycles={includeAllCycles} />
+          <AreaDistribution studentId={student.id} includeAllCycles={includeAllCycles} />
         </>
       )}
-    </Box>
-  );
-}
-
-/** A line chart with its legend; `children` is the same data as table rows, for screen readers. */
-function Chart({ id, title, aside, asideColor, points, lines, tooltip, children }) {
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
-        <Typography id={`${id}-title`} component="h3" sx={{ fontSize: 16, fontWeight: 500 }}>
-          {title}
-        </Typography>
-        {aside && <Typography sx={{ fontSize: 13, fontWeight: 500, color: asideColor }}>{aside}</Typography>}
-      </Box>
-      <Box aria-hidden="true" sx={{ width: '100%', height: { xs: 200, md: 260 } }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 12, bottom: 0, left: -12 }}>
-            <CartesianGrid stroke="#E3E7EE" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#5A6170' }} tickLine={false} axisLine={{ stroke: '#E3E7EE' }} interval="preserveStartEnd" />
-            <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#5A6170' }} tickLine={false} axisLine={false} />
-            <Tooltip content={tooltip} />
-            {lines.map((line) => (
-              <Line
-                key={line.key}
-                type="linear"
-                dataKey={line.key}
-                name={line.label}
-                stroke={line.color}
-                strokeWidth={line.width}
-                strokeDasharray={line.dash}
-                dot={line.dash ? false : { r: 4, fill: line.color }}
-                isAnimationActive={false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </Box>
-      <Box component="ul" aria-hidden="true" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', gap: 1.75, flexWrap: 'wrap' }}>
-        {lines.map((line) => (
-          <Box component="li" key={line.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 12, color: '#3A4150' }}>
-            <svg width="18" height="4">
-              <line x1="0" y1="2" x2="18" y2="2" stroke={line.color} strokeWidth={line.width} strokeDasharray={line.dash} />
-            </svg>
-            {line.label}
-          </Box>
-        ))}
-      </Box>
-      <Box component="table" aria-labelledby={`${id}-title`} sx={visuallyHidden}>
-        {children}
-      </Box>
     </Box>
   );
 }

@@ -158,6 +158,10 @@ function route(request) {
         .filter((s) => !withoutTutor || !s.tutorId),
     );
   }
+  if (request.method === 'GET' && url.pathname.endsWith('/course-effectiveness')) return json(200, evolution.length ? COURSES : []);
+  if (request.method === 'GET' && url.pathname.endsWith('/area-distribution')) {
+    return json(200, evolution.length ? AREAS : { areas: [], totals: [] });
+  }
   if (request.method === 'GET' && url.pathname.endsWith('/score-evolution')) {
     return json(200, url.searchParams.get('includeAllCycles') === 'true' ? [OLD_POINT, ...EVOLUTION] : evolution);
   }
@@ -207,6 +211,20 @@ const EVOLUTION = [
 ];
 const OLD_POINT = { ...EVOLUTION[0], examId: 900, examName: 'Repaso 5', examDate: '2025-11-08', cycleName: '2025-II', studentScore: 500, merit: 7, meritOf: 40 };
 let evolution = EVOLUTION;
+const exam = (point, counts) => ({ examId: point.examId, examName: point.examName, examDate: point.examDate, cycleName: point.cycleName, ...counts });
+// Estadística was only evaluated in Regular 1
+const COURSES = [
+  { courseId: 1, courseName: 'Lectura', points: [exam(EVOLUTION[0], { correct: 20, wrong: 6, blank: 2 }), exam(EVOLUTION[1], { correct: 26, wrong: 2, blank: 0 })] },
+  { courseId: 3, courseName: 'Álgebra', points: [exam(EVOLUTION[0], { correct: 10, wrong: 6, blank: 2 }), exam(EVOLUTION[1], { correct: 17, wrong: 1, blank: 0 })] },
+  { courseId: 6, courseName: 'Estadística', points: [exam(EVOLUTION[0], { correct: 3, wrong: 3, blank: 1 })] },
+];
+const AREAS = {
+  areas: [
+    { areaId: 1, areaName: 'Lectura', points: [exam(EVOLUTION[0], { correct: 20, wrong: 6 }), exam(EVOLUTION[1], { correct: 26, wrong: 2 })] },
+    { areaId: 2, areaName: 'Matemática', points: [exam(EVOLUTION[0], { correct: 18, wrong: 11 }), exam(EVOLUTION[1], { correct: 24, wrong: 2 })] },
+  ],
+  totals: [exam(EVOLUTION[0], { correct: 38, wrong: 17 }), exam(EVOLUTION[1], { correct: 50, wrong: 4 })],
+};
 
 function renderAt(path) {
   const router = createMemoryRouter(
@@ -970,10 +988,59 @@ describe('Student progress', () => {
 
     fireEvent.click(within(section).getByRole('switch', { name: 'Incluir ciclos anteriores' }));
 
-    // in both charts
-    expect((await within(section).findAllByRole('rowheader', { name: 'Repaso 5 · 2025-II' })).length).toBe(2);
-    expect(within(section).getAllByRole('rowheader', { name: 'Regular 1 · 2026-I' }).length).toBe(2);
+    // the charts reload with the earlier cycle's exam first
+    expect(await within(section).findAllByRole('rowheader', { name: 'Repaso 5 · 2025-II' })).not.toHaveLength(0);
+    const totals = within(section).getByRole('table', { name: 'Evolución del puntaje' });
+    expect(within(totals).getByRole('rowheader', { name: 'Regular 1 · 2026-I' })).toBeInTheDocument();
     expect(new URL(evolutionRequests().at(-1).url).searchParams.get('includeAllCycles')).toBe('true');
+    // the switch is for every chart of the section
+    for (const name of ['course-effectiveness', 'area-distribution']) {
+      await waitFor(() => {
+        const last = requests().filter((r) => new URL(r.url).pathname.endsWith(`/${name}`)).at(-1);
+        expect(new URL(last.url).searchParams.get('includeAllCycles')).toBe('true');
+      });
+    }
+  });
+
+  const rowsOf = (table) => within(table).getAllByRole('row').map((row) => [...row.children].map((cell) => cell.textContent));
+
+  it('shows correct, wrong and blank answers of the chosen course, only in the exams that evaluated it', async () => {
+    renderAt('/students/1');
+    const section = await screen.findByRole('region', { name: 'Progreso' });
+
+    const table = await within(section).findByRole('table', { name: 'Efectividad por curso' });
+    const courses = within(section).getByRole('group', { name: 'Curso' });
+    expect(within(courses).getAllByRole('button').map((b) => b.textContent)).toEqual(['Lectura', 'Álgebra', 'Estadística']);
+    // the first course by default
+    expect(within(courses).getByRole('button', { name: 'Lectura' })).toHaveAttribute('aria-pressed', 'true');
+    expect(rowsOf(table)).toEqual([
+      ['Examen', 'Correctas', 'Malas', 'Blanco'],
+      ['Regular 1', '20', '6', '2'],
+      ['Regular 2', '26', '2', '0'],
+    ]);
+
+    fireEvent.click(within(courses).getByRole('button', { name: 'Estadística' }));
+    // not evaluated in Regular 2: that exam is simply not there
+    expect(rowsOf(within(section).getByRole('table', { name: 'Efectividad por curso' }))).toEqual([
+      ['Examen', 'Correctas', 'Malas', 'Blanco'],
+      ['Regular 1', '3', '3', '1'],
+    ]);
+  });
+
+  it('shows correct and wrong answers per area and in total', async () => {
+    renderAt('/students/1');
+    const section = await screen.findByRole('region', { name: 'Progreso' });
+
+    expect(rowsOf(await within(section).findByRole('table', { name: 'Buenas y malas por área' }))).toEqual([
+      ['Examen', 'Lectura · buenas', 'Lectura · malas', 'Matemática · buenas', 'Matemática · malas'],
+      ['Regular 1', '20', '6', '18', '11'],
+      ['Regular 2', '26', '2', '24', '2'],
+    ]);
+    expect(rowsOf(within(section).getByRole('table', { name: 'Buenas y malas totales' }))).toEqual([
+      ['Examen', 'Buenas', 'Malas'],
+      ['Regular 1', '38', '17'],
+      ['Regular 2', '50', '4'],
+    ]);
   });
 
   it('says so when the student has no results yet', async () => {
