@@ -11,6 +11,7 @@ import { colors } from '../../app/theme';
 import { useGetScoreEvolutionQuery } from '../api/dashboardsApi';
 import { examLabel } from '../examLabel';
 import ChartCard from './ChartCard';
+import MathRadar from './MathRadar';
 import { AreaDistribution, CourseEffectiveness } from './EffectivenessCharts';
 
 // the prototype's lines: the student solid, the exam's range dashed
@@ -32,7 +33,8 @@ const meritLabel = (point) => `${point.merit}° de ${point.meritOf}`;
  * the Lectura and Matemática scores; then the correct, wrong and blank
  * answers per course, and the correct and wrong ones per area and in total.
  * Only the active cycle unless "Incluir ciclos anteriores", which applies
- * to every chart. Each chart has a table for screen readers.
+ * to every chart but the Mathematics balance (REQ-DASHBOARDS-04), always a
+ * picture of the latest exam of the active cycle. Each chart has a table for screen readers.
  */
 export default function ProgressSection({ student }) {
   const [includeAllCycles, setIncludeAllCycles] = useState(false);
@@ -140,6 +142,7 @@ export default function ProgressSection({ student }) {
 
           <CourseEffectiveness studentId={student.id} includeAllCycles={includeAllCycles} />
           <AreaDistribution studentId={student.id} includeAllCycles={includeAllCycles} />
+          <MathRadar studentId={student.id} />
         </>
       )}
     </Box>

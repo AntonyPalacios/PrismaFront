@@ -24,6 +24,13 @@ export const dashboardsApi = baseApi.injectEndpoints({
     // counts, not ratios: { areas: [{ areaId, areaName, points: [{ examId, examName,
     //   examDate, cycleName, correct, wrong }] }], totals: [same points] }
     getAreaDistribution: build.query(studentChart('area-distribution')),
+    // REQ-DASHBOARDS-04, always the active cycle: { current, previous }, each null or
+    // { examId, examName, examTypeName, examDate, axes: [{ courseId, courseName, correct,
+    //   total, percent }] } — one axis per Mathematics course evaluated in that exam
+    getMathRadar: build.query({
+      query: (studentId) => `/dashboards/students/${studentId}/math-radar`,
+      providesTags: ['Exam'],
+    }),
     // "Charla de notas": { examTypeId, tutorId? } → by exam date, only the active cycle:
     // [{ examId, examName, examDate, students, areas: [{ areaId, areaName, correctAvg,
     //    correctMin, correctMax, wrongAvg, wrongMin, wrongMax }], courses: [{ courseId,
@@ -44,5 +51,6 @@ export const {
   useGetScoreEvolutionQuery,
   useGetCourseEffectivenessQuery,
   useGetAreaDistributionQuery,
+  useGetMathRadarQuery,
   useGetGroupComparisonQuery,
 } = dashboardsApi;
