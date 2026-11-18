@@ -693,7 +693,7 @@ describe('Enrollments in the student file', () => {
   const card = (s, name) => within(s).getByRole('button', { name: `Matrícula ${name}` }).closest('li');
 
   it('shows the history with career and status, newest stage first', async () => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     const s = await section();
 
     await within(s).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' });
@@ -710,7 +710,7 @@ describe('Enrollments in the student file', () => {
 
   it('a coordinator does not see enrollments', async () => {
     roles = ['COORDINADOR'];
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
 
     expect(await screen.findByRole('heading', { name: 'Campos Herrera, Lucía' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Matrículas' })).not.toBeInTheDocument();
@@ -718,7 +718,7 @@ describe('Enrollments in the student file', () => {
   });
 
   it('an inactive student shows the history but cannot be enrolled', async () => {
-    renderAt('/students/3');
+    renderAt('/students/3?tab=enrollment');
     const s = await section();
 
     expect(await within(s).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' })).toBeInTheDocument();
@@ -726,7 +726,7 @@ describe('Enrollments in the student file', () => {
   });
 
   it('enrolls in a stage of an open cycle the student is not in yet, with an optional career', async () => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     fireEvent.click(within(await section()).getByRole('button', { name: '+ Nueva matrícula' }));
     const form = await screen.findByRole('form', { name: 'Nueva matrícula' });
 
@@ -760,7 +760,7 @@ describe('Enrollments in the student file', () => {
   });
 
   it('changing the cycle offers its stages', async () => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     fireEvent.click(within(await section()).getByRole('button', { name: '+ Nueva matrícula' }));
     const form = await screen.findByRole('form', { name: 'Nueva matrícula' });
     const cycle = within(form).getByLabelText('Ciclo');
@@ -779,7 +779,7 @@ describe('Enrollments in the student file', () => {
 
   it('keeps the form open with the backend message', async () => {
     writeResponse = () => json(409, { status: 409, detail: 'No se puede matricular en una etapa de un ciclo cerrado.' });
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     fireEvent.click(within(await section()).getByRole('button', { name: '+ Nueva matrícula' }));
     const form = await screen.findByRole('form', { name: 'Nueva matrícula' });
     const stage = within(form).getByLabelText(/Etapa/);
@@ -793,7 +793,7 @@ describe('Enrollments in the student file', () => {
 
   it('saves the career of an active enrollment', async () => {
     writeResponse = () => json(200, { ...ENROLLMENT_CURRENT, careerId: 1, careerName: 'Ciencias' });
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     const s = await section();
     fireEvent.click(await within(s).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' }));
     const form = await screen.findByRole('form', { name: 'Matrícula' });
@@ -817,7 +817,7 @@ describe('Enrollments in the student file', () => {
 
   it('withdraws from the stage after confirming', async () => {
     writeResponse = () => json(204);
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     fireEvent.click(await within(await section()).findByRole('button', { name: 'Matrícula 2026-II · Etapa 2' }));
     const form = await screen.findByRole('form', { name: 'Matrícula' });
 
@@ -836,7 +836,7 @@ describe('Enrollments in the student file', () => {
     ['2026-II · Etapa 1', 'El alumno se retiró de esta etapa: la matrícula queda como historial.', 'Letras'],
     ['2026-I · Etapa 3', 'Esta matrícula es de un ciclo cerrado: queda como historial.', 'Ciencias'],
   ])('opens %s read-only', async (name, note, careerName) => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     fireEvent.click(await within(await section()).findByRole('button', { name: `Matrícula ${name}` }));
     const form = await screen.findByRole('form', { name: 'Matrícula' });
 
@@ -861,7 +861,7 @@ describe('Tutor of an enrollment', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   async function openEnrollment(name) {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=enrollment');
     const s = await screen.findByRole('region', { name: 'Matrículas' });
     fireEvent.click(await within(s).findByRole('button', { name: `Matrícula ${name}` }));
     const form = await screen.findByRole('form', { name: 'Matrícula' });
@@ -1091,7 +1091,7 @@ describe('Student progress', () => {
   const evolutionRequests = () => requests().filter((r) => new URL(r.url).pathname.endsWith('/score-evolution'));
 
   it('shows the score evolution with merit and the exam range, and Lectura and Matemática apart', async () => {
-    renderAt('/students/1'); // Lucía, whose tutor is the user
+    renderAt('/students/1?tab=progress'); // Lucía, whose tutor is the user
 
     const section = await screen.findByRole('region', { name: 'Progreso' });
     const totals = await within(section).findByRole('table', { name: 'Evolución del puntaje' });
@@ -1115,7 +1115,7 @@ describe('Student progress', () => {
   });
 
   it('adds earlier cycles when asked, saying which cycle each exam is from', async () => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=progress');
     const section = await screen.findByRole('region', { name: 'Progreso' });
     await within(section).findByRole('table', { name: 'Evolución del puntaje' });
 
@@ -1138,7 +1138,7 @@ describe('Student progress', () => {
   const rowsOf = (table) => within(table).getAllByRole('row').map((row) => [...row.children].map((cell) => cell.textContent));
 
   it('shows correct, wrong and blank answers of the chosen course, only in the exams that evaluated it', async () => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=progress');
     const section = await screen.findByRole('region', { name: 'Progreso' });
 
     const table = await within(section).findByRole('table', { name: 'Efectividad por curso' });
@@ -1161,7 +1161,7 @@ describe('Student progress', () => {
   });
 
   it('shows correct and wrong answers per area and in total', async () => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=progress');
     const section = await screen.findByRole('region', { name: 'Progreso' });
 
     expect(rowsOf(await within(section).findByRole('table', { name: 'Buenas y malas por área' }))).toEqual([
@@ -1177,7 +1177,7 @@ describe('Student progress', () => {
   });
 
   it('shows the Mathematics balance of the latest exam, overlaying the previous one on request', async () => {
-    renderAt('/students/1');
+    renderAt('/students/1?tab=progress');
     const section = await screen.findByRole('region', { name: 'Progreso' });
     const radar = await within(section).findByRole('table', { name: 'Balance en Matemática' });
     // the previous exam is in the table for screen readers; only the chart waits for the switch
@@ -1198,7 +1198,7 @@ describe('Student progress', () => {
 
   it('says so when the student has no results yet', async () => {
     evolution = [];
-    renderAt('/students/1');
+    renderAt('/students/1?tab=progress');
 
     const section = await screen.findByRole('region', { name: 'Progreso' });
     expect(await within(section).findByText('Aún no tiene resultados de exámenes en el ciclo activo.')).toBeInTheDocument();
@@ -1206,7 +1206,7 @@ describe('Student progress', () => {
   });
 
   it('is only for an admin or the current tutor of the student', async () => {
-    renderAt('/students/2'); // Mateo has no tutor
+    renderAt('/students/2?tab=progress'); // Mateo has no tutor
     expect(await screen.findByRole('heading', { name: 'Chávez, Mateo' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Progreso' })).not.toBeInTheDocument();
     expect(evolutionRequests()).toHaveLength(0);
@@ -1214,14 +1214,83 @@ describe('Student progress', () => {
 
   it('a coordinator does not see it', async () => {
     roles = ['COORDINADOR'];
-    renderAt('/students/1');
+    renderAt('/students/1?tab=progress');
     expect(await screen.findByRole('heading', { name: /Lucía/ })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Progreso' })).not.toBeInTheDocument();
   });
 
   it('an admin sees the progress of any student', async () => {
     roles = ['ADMIN'];
-    renderAt('/students/2');
+    renderAt('/students/2?tab=progress');
     expect(await screen.findByRole('region', { name: 'Progreso' })).toBeInTheDocument();
   });
 });
+
+describe('Student file tabs', () => {
+  beforeEach(() => {
+    roles = ['ADMIN'];
+    enrollments = [ENROLLMENT_CURRENT];
+    evolution = EVOLUTION;
+    manyStudents = null;
+    writeResponse = () => json(200, LUCIA);
+    fetchMock = vi.fn((request) => Promise.resolve(route(request)));
+    vi.stubGlobal('fetch', fetchMock);
+    document.cookie = 'XSRF-TOKEN=csrf-1';
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const tabNames = () => within(screen.getByRole('tablist', { name: 'Secciones de la ficha' })).getAllByRole('tab').map((t) => t.textContent);
+  const fetched = (suffix) => requests().filter((r) => new URL(r.url).pathname.endsWith(suffix));
+
+  it('an admin gets four tabs; each one loads when opened and stays in the URL', async () => {
+    const router = renderAt('/students/1');
+    await screen.findByRole('heading', { name: 'Campos Herrera, Lucía' });
+    expect(tabNames()).toEqual(['Datos', 'Matrícula', 'Progreso', 'Bitácora']);
+    // Datos brings the guardians; nothing of the other tabs was asked for
+    expect(await screen.findByRole('region', { name: 'Apoderados' })).toBeInTheDocument();
+    expect(fetched('/score-evolution')).toHaveLength(0);
+    expect(fetched('/enrollments')).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Progreso' }));
+    expect(await screen.findByRole('region', { name: 'Progreso' })).toBeInTheDocument();
+    expect(router.state.location.search).toBe('?tab=progress');
+    expect(screen.queryByRole('region', { name: 'Apoderados' })).not.toBeInTheDocument();
+  });
+
+  it('opens the tab the URL names', async () => {
+    renderAt('/students/1?tab=logbook');
+    expect(await screen.findByRole('region', { name: 'Bitácora' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Bitácora' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('another tutor gets Datos and Matrícula; a coordinator only Datos, without tabs', async () => {
+    roles = ['TUTOR'];
+    renderAt('/students/2?tab=progress'); // Mateo is not theirs: progress is not offered
+    await screen.findByRole('heading', { name: 'Chávez, Mateo' });
+    expect(tabNames()).toEqual(['Datos', 'Matrícula']);
+    expect(screen.getByRole('tab', { name: 'Datos' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('a coordinator only gets the data, without a tab bar', async () => {
+    roles = ['COORDINADOR'];
+    renderAt('/students/1');
+    await screen.findByRole('heading', { name: 'Campos Herrera, Lucía' });
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Apoderados' })).not.toBeInTheDocument();
+  });
+
+  it('what is being edited survives switching tabs', async () => {
+    renderAt('/students/1?tab=enrollment');
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+    // Editar brings Datos up
+    const name = await screen.findByLabelText(/Nombres/);
+    fireEvent.change(name, { target: { value: 'Lucía Fernanda' } });
+    fireEvent.click(screen.getByRole('tab', { name: 'Matrícula' }));
+    await screen.findByRole('region', { name: 'Matrículas' });
+    fireEvent.click(screen.getByRole('tab', { name: 'Datos' }));
+    expect(screen.getByLabelText(/Nombres/)).toHaveValue('Lucía Fernanda');
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument();
+  });
+});
+
