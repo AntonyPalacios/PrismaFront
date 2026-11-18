@@ -203,4 +203,33 @@ describe('Bulk enrollment', () => {
     expect(within(dialog).getByRole('checkbox', { name: 'Elegir a Pinto, Beto' })).toBeChecked();
     expect(within(dialog).queryByText('Todo este grupo ya está matriculado en el destino o fue dado de baja.')).not.toBeInTheDocument();
   });
+
+  it('pages long groups in both steps, keeping what was unchecked', async () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({
+      studentId: 200 + i,
+      fullName: `Prueba, Alumno ${String(i + 1).padStart(2, '0')}`,
+      careerId: 1,
+      tutorUserId: 50,
+      skipReason: null,
+    }));
+    fetchMock.mockImplementation((request) =>
+      Promise.resolve(new URL(request.url).pathname.endsWith('/bulk-preview') ? json(200, many) : route(request)),
+    );
+    const dialog = await openBulk('Simulacros');
+    await within(dialog).findByRole('table', { name: 'Alumnos de la etapa de origen' });
+    const boxes = () => within(dialog).getAllByRole('checkbox', { name: /^Elegir a Prueba/ });
+    expect(boxes()).toHaveLength(25);
+    expect(within(dialog).getByText('1–25 de 30')).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Página siguiente' }));
+    expect(boxes()).toHaveLength(5);
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Elegir a Prueba, Alumno 30' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Página anterior' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Siguiente' }));
+
+    // step 2 starts on its first page, with the 29 still checked
+    await within(dialog).findByRole('table', { name: 'Carrera y tutor por alumno' });
+    expect(within(dialog).getByText('1–25 de 29')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Confirmar 29 matrículas' })).toBeInTheDocument();
+  });
 });
