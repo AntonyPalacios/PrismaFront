@@ -16,7 +16,9 @@ import { useUploadExamResultsMutation } from '../api/importsApi';
  * Excel. Asks before uploading; uploading creates a pending batch and opens
  * its review, where the counts are shown. Nothing is saved yet. With
  * `reload` (an ADMIN, on an exam that already has results) it warns that
- * confirming the batch replaces the current results.
+ * confirming the batch replaces the current results. An exam with an
+ * import in review stops the upload: go to it, or discard it and upload
+ * this file instead (agreements of 2026-11-18).
  */
 export default function ImportResultsForm({ cycle, stage, mockExam, exam, reload = false, onClose }) {
   return (
@@ -33,16 +35,22 @@ function ImportResultsFormContent({ cycle, stage, mockExam, exam, reload, onClos
   const [file, setFile] = useState(null);
   const [asking, setAsking] = useState(false);
   const [serverError, setServerError] = useState(null);
+  // the import in review that stopped the upload: { pendingBatchId, pendingFileName, pendingUploadedAt, pendingUploadedBy }
+  const [pending, setPending] = useState(null);
   const [upload, { isLoading }] = useUploadExamResultsMutation();
 
-  const submit = async () => {
+  const submit = async (replacePending = false) => {
     setServerError(null);
     try {
-      const batch = await upload({ examId: exam.id, file, reload }).unwrap();
+      const batch = await upload({ examId: exam.id, file, reload, replacePending }).unwrap();
       onClose();
       navigate(`/imports/${batch.id}`);
     } catch (error) {
       setAsking(false);
+      if (error?.data?.pendingBatchId) {
+        setPending(error.data);
+        return;
+      }
       setServerError(errorDetail(error)); // e.g. another exam type's file: choose the right one
     }
   };
@@ -116,6 +124,33 @@ function ImportResultsFormContent({ cycle, stage, mockExam, exam, reload, onClos
 
       {serverError && <Alert severity="error">{serverError}</Alert>}
 
+      {pending && (
+        <Alert severity="warning" role="alert" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span>
+              {`Este examen ya tiene una importación en revisión: ${pending.pendingFileName}, subida el ${formatDate(
+                pending.pendingUploadedAt.slice(0, 10),
+              )}${pending.pendingUploadedBy ? ` por ${pending.pendingUploadedBy}` : ''}. Continúala o descártala para subir este archivo.`}
+            </span>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  onClose();
+                  navigate(`/imports/${pending.pendingBatchId}`);
+                }}
+              >
+                Ir a la importación
+              </Button>
+              <Button size="small" variant="contained" color="warning" disabled={isLoading} onClick={() => submit(true)}>
+                Descartar la anterior y subir esta
+              </Button>
+            </Box>
+          </Box>
+        </Alert>
+      )}
+
       <Box sx={{ display: 'flex', gap: 1, pt: 0.5 }}>
         <Button variant="outlined" onClick={onClose} disabled={isLoading} sx={{ flex: 1, height: 48 }}>
           Cancelar
@@ -136,7 +171,7 @@ function ImportResultsFormContent({ cycle, stage, mockExam, exam, reload, onClos
           }
           confirmLabel={action}
           loading={isLoading}
-          onConfirm={submit}
+          onConfirm={() => submit(false)}
           onCancel={() => setAsking(false)}
         />
       )}

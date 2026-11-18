@@ -85,11 +85,14 @@ function RowResolutionContent({ batchId, row, results, editable, onClose }) {
     (student, index, all) => all.findIndex((s) => s.id === student.id) === index,
   );
 
+  // the student matched already has a result in another type of the mock exam: choosing them replaces it
+  const replacing = (id) => Boolean(row.otherExamTypeName) && row.student?.id === id;
+
   const send = async (newStudent) => {
     setServerError(null);
     const [action, id] = choice === 'new' ? ['NEW'] : choice === 'ignore' ? ['IGNORE'] : ['MATCH', Number(choice.split(':')[1])];
     try {
-      await resolve({ batchId, rowId: row.id, action, studentId: id ?? null, newStudent }).unwrap();
+      await resolve({ batchId, rowId: row.id, action, studentId: id ?? null, newStudent, replaceOther: action === 'MATCH' && replacing(id) }).unwrap();
       notify(`Fila ${row.rowNumber} resuelta.`);
       onClose();
     } catch (error) {
@@ -181,6 +184,11 @@ function RowResolutionContent({ batchId, row, results, editable, onClose }) {
                   {student.dni ? `DNI ${student.dni}` : 'Sin DNI'}
                   {student.active ? '' : ' · Dado de baja'}
                 </Typography>
+                {replacing(student.id) && (
+                  <Typography component="span" sx={{ fontSize: 12, color: '#7A4100' }}>
+                    {`Elegirlo reemplaza su resultado de ${row.otherExamTypeName} de este simulacro`}
+                  </Typography>
+                )}
               </Box>
             }
           />

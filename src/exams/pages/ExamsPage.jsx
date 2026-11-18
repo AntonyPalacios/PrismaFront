@@ -260,7 +260,7 @@ export default function ExamsPage() {
   );
 }
 
-/** One chip per exam type: green once that type has results, blue while it waits for them. */
+/** One chip per exam type: green once that type has results, orange with an import in review, blue while it waits. */
 function TypeChips({ mockExam }) {
   return (
     <Box component="ul" aria-label="Tipos de examen" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
@@ -268,18 +268,18 @@ function TypeChips({ mockExam }) {
         <Box
           component="li"
           key={exam.id}
-          title={exam.hasResults ? 'Con resultados' : 'Sin resultados'}
+          title={exam.hasResults ? 'Con resultados' : exam.pendingImportBatchId ? 'Importación en revisión' : 'Sin resultados'}
           sx={{
             fontSize: 12,
             fontWeight: 500,
             px: 1.25,
             py: 0.375,
             borderRadius: '12px',
-            bgcolor: exam.hasResults ? '#E8F5D6' : '#E1EBF7',
-            color: exam.hasResults ? '#2F5A08' : colors.primary,
+            bgcolor: exam.hasResults ? '#E8F5D6' : exam.pendingImportBatchId ? '#FFF0DD' : '#E1EBF7',
+            color: exam.hasResults ? '#2F5A08' : exam.pendingImportBatchId ? '#7A4100' : colors.primary,
           }}
         >
-          {exam.hasResults ? `${exam.examTypeName} ✓` : exam.examTypeName}
+          {exam.hasResults ? `${exam.examTypeName} ✓` : exam.pendingImportBatchId ? `${exam.examTypeName} · en revisión` : exam.examTypeName}
         </Box>
       ))}
     </Box>
