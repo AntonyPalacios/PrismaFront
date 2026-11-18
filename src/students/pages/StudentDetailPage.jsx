@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink, useParams } from 'react-router';
+import { Link as RouterLink, useLocation, useParams } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -70,9 +70,12 @@ export default function StudentDetailPage() {
   );
 }
 
+/** Back to the list with the filters it had when the student was opened (they travel in the URL). */
 function BackLink() {
+  const { state } = useLocation();
+  const listSearch = typeof state?.listSearch === 'string' && state.listSearch.startsWith('?') ? state.listSearch : '';
   return (
-    <Link component={RouterLink} to="/students" underline="none" sx={{ fontSize: 13, alignSelf: 'flex-start', py: 0.5 }}>
+    <Link component={RouterLink} to={`/students${listSearch}`} underline="none" sx={{ fontSize: 13, alignSelf: 'flex-start', py: 0.5 }}>
       ‹ Alumnos
     </Link>
   );

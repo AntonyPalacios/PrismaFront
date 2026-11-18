@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
@@ -75,16 +75,32 @@ function useCareerGroups() {
 export default function StudentsPage() {
   const navigate = useNavigate();
   const canManage = useCanManageStudents();
-  const [typed, setTyped] = useState('');
+  const location = useLocation();
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [includeInactive, setIncludeInactive] = useState(false);
+  // the filters live in the URL (?q=&tutor=&career=&inactive=1&page=&size=): coming
+  // back from a student's file, reloading or sharing the link keeps them
+  const [params, setParams] = useSearchParams();
+  const typed = params.get('q') ?? '';
+  const includeInactive = params.get('inactive') === '1';
   // '' = every tutor, 'none' = without tutor, otherwise a tutor's id (ADMIN only)
-  const [tutorFilter, setTutorFilter] = useState('');
+  const tutorFilter = params.get('tutor') ?? '';
   // '' = every career, 'none' = without one, otherwise an exam type's id (its careers)
-  const [careerFilter, setCareerFilter] = useState('');
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const careerFilter = params.get('career') ?? '';
+  const page = Math.max(0, (Number(params.get('page')) || 1) - 1);
+  const pageSize = PAGE_SIZES.includes(Number(params.get('size'))) ? Number(params.get('size')) : PAGE_SIZES[0];
+  // replace, not push: "back" leaves the list instead of undoing every keystroke
+  const setParam = (key, value, { keepPage = false } = {}) =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value === '' || value == null || value === false) next.delete(key);
+        else next.set(key, value === true ? '1' : String(value));
+        if (!keepPage) next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
   const isAdmin = useIsAdmin();
   const onlyTutor = useIsOnlyTutor();
   const showTutor = !onlyTutor;
@@ -94,7 +110,8 @@ export default function StudentsPage() {
     tutorId: tutorFilter && tutorFilter !== 'none' ? Number(tutorFilter) : null,
     withoutTutor: tutorFilter === 'none',
   });
-  const open = (student) => navigate(`/students/${student.id}`);
+  // the file's "‹ Alumnos" comes back to this same list
+  const open = (student) => navigate(`/students/${student.id}`, { state: { listSearch: location.search } });
   const careerGroups = useCareerGroups();
   const students = useMemo(() => {
     const wanted = normalize(search);
@@ -110,10 +127,7 @@ export default function StudentsPage() {
   const shownPage = Math.min(page, lastPage);
   const pageOfStudents = students.slice(shownPage * pageSize, (shownPage + 1) * pageSize);
   // every filter starts over on the first page
-  const filtering = (setter) => (value) => {
-    setter(value);
-    setPage(0);
-  };
+  const filtering = (key) => (value) => setParam(key, value);
 
   const inactiveCount = students.filter((student) => !student.active).length;
   const count = `${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'}`;
@@ -176,15 +190,15 @@ export default function StudentsPage() {
           <InputBase
             type="search"
             value={typed}
-            onChange={(e) => filtering(setTyped)(e.target.value)}
+            onChange={(e) => filtering('q')(e.target.value)}
             placeholder="Buscar por apellido, nombre o DNI"
             inputProps={{ 'aria-label': 'Buscar alumno' }}
             sx={{ flex: 1, minWidth: 0, fontSize: 15 }}
           />
         </Box>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
-          {isAdmin && <TutorFilter value={tutorFilter} onChange={filtering(setTutorFilter)} />}
-          <CareerFilter value={careerFilter} groups={careerGroups} onChange={filtering(setCareerFilter)} />
+          {isAdmin && <TutorFilter value={tutorFilter} onChange={filtering('tutor')} />}
+          <CareerFilter value={careerFilter} groups={careerGroups} onChange={filtering('career')} />
         </Box>
         {canManage && (
           <Button variant="outlined" size="small" onClick={() => setImporting(true)} sx={{ display: { md: 'none' }, alignSelf: 'flex-start' }}>
@@ -197,7 +211,7 @@ export default function StudentsPage() {
           </Typography>
           <FormControlLabel
             labelPlacement="start"
-            control={<Switch size="small" checked={includeInactive} onChange={(e) => filtering(setIncludeInactive)(e.target.checked)} />}
+            control={<Switch size="small" checked={includeInactive} onChange={(e) => filtering('inactive')(e.target.checked)} />}
             label="Mostrar inactivos"
             slotProps={{ typography: { sx: { fontSize: 13 } } }}
             sx={{ mr: 0 }}
@@ -296,12 +310,11 @@ export default function StudentsPage() {
               component="div"
               count={students.length}
               page={shownPage}
-              onPageChange={(_, next) => setPage(next)}
+              onPageChange={(_, next) => setParam('page', next + 1, { keepPage: true })}
               rowsPerPage={pageSize}
               rowsPerPageOptions={PAGE_SIZES}
               onRowsPerPageChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setPage(0);
+                setParam('size', Number(e.target.value) === PAGE_SIZES[0] ? '' : e.target.value);
               }}
               labelRowsPerPage="Por página"
               labelDisplayedRows={({ from, to, count: total }) => `${from}–${to} de ${total}`}

@@ -399,6 +399,29 @@ describe('Students screens', () => {
     expect(screen.getByText('Ningún alumno coincide con la búsqueda.')).toBeInTheDocument();
   });
 
+  it("keeps the filters when coming back from a student's file", async () => {
+    const router = renderAt('/students');
+    await screen.findByRole('button', { name: 'Ver Chávez, Mateo' });
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar alumno' }), { target: { value: 'campos' } });
+    fireEvent.change(screen.getByLabelText('Filtrar por carrera'), { target: { value: '1' } });
+    expect(router.state.location.search).toBe('?q=campos&career=1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver Campos Herrera, Lucía' }));
+    fireEvent.click(await screen.findByRole('link', { name: '‹ Alumnos' }));
+
+    expect(await screen.findByRole('button', { name: 'Ver Campos Herrera, Lucía' })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Buscar alumno' })).toHaveValue('campos');
+    expect(screen.getByLabelText('Filtrar por carrera')).toHaveValue('1');
+    expect(screen.queryByRole('button', { name: 'Ver Chávez, Mateo' })).not.toBeInTheDocument();
+  });
+
+  it('a link with filters opens the list already filtered', async () => {
+    renderAt('/students?q=chavez&career=none');
+    expect(await screen.findByRole('button', { name: 'Ver Chávez, Mateo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver Campos Herrera, Lucía' })).not.toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Buscar alumno' })).toHaveValue('chavez');
+  });
+
   it('pages a long list by 25, and a search goes back to the first page', async () => {
     manyStudents = Array.from({ length: 30 }, (_, i) => ({
       ...MATEO,
