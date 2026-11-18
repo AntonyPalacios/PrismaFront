@@ -506,6 +506,35 @@ describe('Reviewing exam results', () => {
     expect(within(item).getByText(/3 alumnos · 1 por revisar/)).toBeInTheDocument();
   });
 
+  it('choosing by hand a student with a better result in another type asks which one stays', async () => {
+    const candidate = { ...RESULT_UNKNOWN, fullName: 'QUISPE MAMANI LUCI', dni: null, candidates: [QUISPE] };
+    resultsBatch = { ...RESULTS_BATCH, rows: [candidate] };
+    let calls = 0;
+    writeResponse = () => {
+      calls += 1;
+      return calls === 1
+        ? json(409, {
+            detail: 'Ya tiene un mejor resultado en Ciencias de este simulacro (650): ¿con cuál se queda?',
+            requiresConfirmation: true,
+            otherExamTypeName: 'Ciencias',
+            otherResult: '650',
+            thisResult: '722.76',
+          })
+        : json(200, RESULTS_BATCH);
+    };
+    renderAt('/imports/6');
+    fireEvent.click(await screen.findByRole('button', { name: 'Fila 13: QUISPE MAMANI LUCI' }));
+    const sheet = await screen.findByRole('form', { name: 'Fila 13' });
+    fireEvent.click(within(sheet).getByRole('radio', { name: /Quispe Mamani, Lucía/ }));
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));
+
+    const alert = await within(sheet).findByRole('alert');
+    expect(alert).toHaveTextContent('ya tiene resultado en Ciencias de este simulacro (650), mejor que el de esta fila (722.76)');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Quedarse con este resultado' }));
+    await waitFor(() => expect(writes()).toHaveLength(2));
+    expect(await writes()[1].clone().json()).toEqual({ action: 'MATCH', studentId: 7, replaceOther: true });
+  });
+
   it('a student with a result in another type of the mock exam is chosen only by replacing it', async () => {
     const crossed = {
       ...RESULT_ABSENT,

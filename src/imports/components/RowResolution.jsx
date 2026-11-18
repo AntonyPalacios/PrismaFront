@@ -88,16 +88,29 @@ function RowResolutionContent({ batchId, row, results, editable, onClose }) {
   // the student matched already has a result in another type of the mock exam: choosing them replaces it
   const replacing = (id) => Boolean(row.otherExamTypeName) && row.student?.id === id;
 
-  const send = async (newStudent) => {
+  // the student chosen has a better result in another type of the mock exam: { otherExamTypeName, otherResult, thisResult, studentId }
+  const [crossed, setCrossed] = useState(null);
+
+  const resolveAs = async (request) => {
     setServerError(null);
-    const [action, id] = choice === 'new' ? ['NEW'] : choice === 'ignore' ? ['IGNORE'] : ['MATCH', Number(choice.split(':')[1])];
     try {
-      await resolve({ batchId, rowId: row.id, action, studentId: id ?? null, newStudent, replaceOther: action === 'MATCH' && replacing(id) }).unwrap();
+      await resolve({ batchId, rowId: row.id, ...request }).unwrap();
       notify(`Fila ${row.rowNumber} resuelta.`);
       onClose();
     } catch (error) {
+      // the backend asks which result stays (one exam type per mock exam)
+      if (error?.data?.requiresConfirmation && error.data.otherExamTypeName) {
+        setCrossed({ ...error.data, studentId: request.studentId });
+        return;
+      }
       setServerError(errorDetail(error));
     }
+  };
+
+  const send = (newStudent) => {
+    setCrossed(null);
+    const [action, id] = choice === 'new' ? ['NEW'] : choice === 'ignore' ? ['IGNORE'] : ['MATCH', Number(choice.split(':')[1])];
+    return resolveAs({ action, studentId: id ?? null, newStudent, replaceOther: action === 'MATCH' && replacing(id) });
   };
 
   const save = (event) => {
@@ -239,6 +252,30 @@ function RowResolutionContent({ batchId, row, results, editable, onClose }) {
       </RadioGroup>
 
       {serverError && <Alert severity="error">{serverError}</Alert>}
+
+      {crossed && (
+        <Alert severity="warning" role="alert" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span>
+              {`Este alumno ya tiene resultado en ${crossed.otherExamTypeName} de este simulacro (${crossed.otherResult}), ` +
+                `mejor que el de esta fila (${crossed.thisResult}). Un alumno rinde un solo tipo por simulacro: ¿con cuál se queda?`}
+            </span>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Button size="small" variant="contained" disabled={isLoading} onClick={() => resolveAs({ action: 'IGNORE' })}>
+                {`Quedarse con ${crossed.otherExamTypeName}`}
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={isLoading}
+                onClick={() => resolveAs({ action: 'MATCH', studentId: crossed.studentId, replaceOther: true })}
+              >
+                Quedarse con este resultado
+              </Button>
+            </Box>
+          </Box>
+        </Alert>
+      )}
 
       <Box sx={{ display: 'flex', gap: 1, pt: 0.5 }}>
         <Button variant="outlined" onClick={onClose} disabled={isLoading} sx={{ flex: 1, height: 48 }}>
