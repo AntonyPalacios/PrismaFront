@@ -24,6 +24,7 @@ import {
   useUpdateStudentMutation,
 } from '../api/studentsApi';
 import EnrollmentsSection from '../components/EnrollmentsSection';
+import MergeStudentsDialog from '../components/MergeStudentsDialog';
 import ParentsSection from '../components/ParentsSection';
 import StudentFields from '../components/StudentFields';
 import { studentSchema, toStudentBody, toStudentForm } from '../components/studentSchema';
@@ -125,6 +126,7 @@ function StudentDetail({ student, onCancel }) {
   const [serverError, setServerError] = useState(null);
   const isAdmin = useIsAdmin();
   const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
+  const [merging, setMerging] = useState(false);
   const [updateStudent] = useUpdateStudentMutation();
   const [deactivateStudent, { isLoading: deactivating }] = useDeactivateStudentMutation();
   const [reactivateStudent, { isLoading: reactivating }] = useReactivateStudentMutation();
@@ -214,6 +216,12 @@ function StudentDetail({ student, onCancel }) {
             </Button>
           )
         )}
+        {/* a duplicate record of the same student: ADMIN only */}
+        {isAdmin && (
+          <Button variant="outlined" onClick={() => setMerging(true)} disabled={editing} sx={{ ...actionSx, color: colors.primary }}>
+            Fusionar con otro alumno
+          </Button>
+        )}
       </Box>
 
       {tabs.length > 1 && (
@@ -289,6 +297,8 @@ function StudentDetail({ student, onCancel }) {
           Este alumno está dado de baja: no aparece en las listas de trabajo. Su historial sigue intacto.
         </Typography>
       )}
+
+      {merging && <MergeStudentsDialog student={student} onClose={() => setMerging(false)} />}
 
       {confirmingDeactivate && (
         <ConfirmDialog

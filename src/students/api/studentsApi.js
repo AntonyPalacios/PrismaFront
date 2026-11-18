@@ -45,6 +45,19 @@ export const studentsApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/students/${id}/reactivate`, method: 'POST' }),
       invalidatesTags: ['Student'],
     }),
+    // ADMIN only: what merging `removeId` into `keepId` would do — { keep, remove (each
+    // { studentId, fullName, active, data, enrollments, results, goals, logEntries, parents }),
+    // sharedStages: [{ stageLabel, keepTutorName, removeTutorName }], resultConflicts,
+    // goalConflicts, merged: { dni, email, phone, birthDate } }
+    getMergePreview: build.query({
+      query: ({ keepId, removeId }) => ({ url: `/students/${keepId}/merge-preview`, params: { removeId } }),
+      providesTags: ['Student', 'Enrollment', 'Exam', 'Goal', 'Logbook', 'Parent', 'TutorAssignment'],
+    }),
+    // moves everything of `removeId` to `keepId` and deletes `removeId` for good
+    mergeStudents: build.mutation({
+      query: ({ keepId, removeId }) => ({ url: `/students/${keepId}/merge`, method: 'POST', body: { removeId } }),
+      invalidatesTags: ['Student', 'Enrollment', 'Exam', 'Goal', 'Logbook', 'Parent', 'TutorAssignment', 'ImportBatch'],
+    }),
   }),
 });
 
@@ -55,4 +68,6 @@ export const {
   useUpdateStudentMutation,
   useDeactivateStudentMutation,
   useReactivateStudentMutation,
+  useGetMergePreviewQuery,
+  useMergeStudentsMutation,
 } = studentsApi;

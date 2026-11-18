@@ -55,6 +55,15 @@ const VALERIA = {
   active: false,
 };
 const BY_ID = { 1: LUCIA, 2: MATEO, 3: VALERIA };
+// Lucía kept, Mateo (her duplicate in the test) removed
+const MERGE_PREVIEW = {
+  keep: { studentId: 1, fullName: 'Campos Herrera, Lucía', active: true, data: { dni: '72814563', email: null, phone: null, birthDate: null }, enrollments: 1, results: 2, goals: 0, logEntries: 0, parents: 0 },
+  remove: { studentId: 2, fullName: 'Chávez, Mateo', active: true, data: { dni: null, email: 'mateo@correo.pe', phone: null, birthDate: null }, enrollments: 2, results: 3, goals: 1, logEntries: 1, parents: 1 },
+  sharedStages: [{ stageLabel: '2026-II · Etapa 2', keepTutorName: 'B, A', removeTutorName: 'Vargas Soto, Julia' }],
+  resultConflicts: 1,
+  goalConflicts: 0,
+  merged: { dni: '72814563', email: 'mateo@correo.pe', phone: null, birthDate: null },
+};
 
 const MATH_RADAR = {
   current: {
@@ -200,6 +209,7 @@ function route(request) {
   if (request.method === 'GET' && url.pathname.endsWith('/score-evolution')) {
     return json(200, url.searchParams.get('includeAllCycles') === 'true' ? [OLD_POINT, ...EVOLUTION] : evolution);
   }
+  if (request.method === 'GET' && url.pathname.endsWith('/merge-preview')) return json(200, MERGE_PREVIEW);
   const detail = url.pathname.match(/\/students\/(\d+)$/);
   if (request.method === 'GET' && detail) {
     return BY_ID[detail[1]]
@@ -1292,5 +1302,40 @@ describe('Student file tabs', () => {
     expect(screen.getByLabelText(/Nombres/)).toHaveValue('Lucía Fernanda');
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument();
   });
-});
 
+  it('an admin merges a duplicate after seeing both side by side', async () => {
+    writeResponse = () => json(200, LUCIA);
+    const router = renderAt('/students/1');
+    fireEvent.click(await screen.findByRole('button', { name: 'Fusionar con otro alumno' }));
+    const dialog = await screen.findByRole('region', { name: 'Fusionar alumnos' });
+    fireEvent.change(within(dialog).getByLabelText('Alumno duplicado'), { target: { value: 'chav' } });
+    fireEvent.click(await screen.findByRole('option', { name: /Chávez, Mateo/ }));
+
+    const table = await within(dialog).findByRole('table', { name: 'Vista previa de la fusión' });
+    expect(within(table).getByText('Se queda: Campos Herrera, Lucía')).toBeInTheDocument();
+    expect(within(table).getAllByText('mateo@correo.pe')).toHaveLength(2); // his email fills hers
+    expect(within(dialog).getByText(/se descarta Vargas Soto, Julia/)).toBeInTheDocument();
+    expect(within(dialog).getByText('1 examen tiene resultado de los dos: se queda el mejor.')).toBeInTheDocument();
+    const previewUrl = new URL(requests().filter((r) => r.url.includes('merge-preview')).at(-1).url);
+    expect(previewUrl.pathname).toBe('/api/v1/students/1/merge-preview');
+    expect(previewUrl.searchParams.get('removeId')).toBe('2');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Fusionar' }));
+    const confirm = await screen.findByRole('dialog', { name: '¿Fusionar alumnos?' });
+    expect(within(confirm).getByText(/Chávez, Mateo se eliminará definitivamente/)).toBeInTheDocument();
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Fusionar' }));
+
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect(new URL(writes()[0].url).pathname).toBe('/api/v1/students/1/merge');
+    expect(await writes()[0].clone().json()).toEqual({ removeId: 2 });
+    expect(await screen.findByText('Alumnos fusionados.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/students/1');
+  });
+
+  it('only an admin can merge', async () => {
+    roles = ['TUTOR'];
+    renderAt('/students/1');
+    await screen.findByRole('heading', { name: 'Campos Herrera, Lucía' });
+    expect(screen.queryByRole('button', { name: 'Fusionar con otro alumno' })).not.toBeInTheDocument();
+  });
+});
