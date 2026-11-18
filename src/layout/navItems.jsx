@@ -2,18 +2,17 @@ import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 
-// Grows with each module slice. Sections like "Seguimiento" and
+// Grows with each module slice. There is no "Inicio": "/" sends each role to
+// its work screen (home/HomePage), and the logo leads there. Sections like "Seguimiento" and
 // "Administración" from the prototype come back when they have more items.
 // adminOnly items are hidden for other roles (the routes are guarded too);
 // items with `roles` only show to users with one of them.
 export const NAV_ITEMS = [
-  { to: '/', label: 'Inicio', icon: <HomeOutlinedIcon /> },
   // a tutor (not admin) only gets their own students
   { to: '/students', label: 'Alumnos', tutorLabel: 'Mis alumnos', icon: <PeopleAltOutlinedIcon /> },
   { to: '/exams', label: 'Exámenes', icon: <AssignmentOutlinedIcon /> },

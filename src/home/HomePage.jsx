@@ -1,22 +1,22 @@
+import { Navigate } from 'react-router';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import { useGetMeQuery } from '../users/api/authApi';
+import { homeFor } from './homeFor';
 
 /**
- * Temporary post-login landing (category B, issue #36): once modules exist,
- * each role lands on the first item of its own menu instead.
+ * "/" (agreements of 2026-11-17): there is no home page of its own; ADMIN
+ * and TUTOR land on "Alumnos" ("Mis alumnos" for a tutor) and COORDINADOR
+ * on "Exámenes".
  */
 export default function HomePage() {
   const { data: me } = useGetMeQuery();
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <Typography component="h1" sx={{ fontSize: 28, fontWeight: 500 }}>
-        Bienvenido, {me?.firstName}
-      </Typography>
-      <Typography color="text.secondary">
-        Aquí irán apareciendo los módulos de Prisma a medida que se construyan.
-      </Typography>
-    </Box>
-  );
+  if (!me) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={32} aria-label="Cargando" />
+      </Box>
+    );
+  }
+  return <Navigate to={homeFor(me.roles)} replace />;
 }

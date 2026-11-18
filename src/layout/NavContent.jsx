@@ -43,7 +43,10 @@ export default function NavContent({ onNavigate }) {
   return (
     <Box component="nav" aria-label="Menú principal" sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: '20px 12px' }}>
       <Box sx={{ px: 1.25, pb: 2 }}>
-        <PrismaLogo size={44} />
+        {/* "/" lands each role on its work screen */}
+        <Box component={NavLink} to="/" onClick={onNavigate} aria-label="Ir al inicio" sx={{ display: 'inline-flex' }}>
+          <PrismaLogo size={44} />
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, p: 1.25, mb: 1, borderRadius: 3.5, bgcolor: 'background.default' }}>

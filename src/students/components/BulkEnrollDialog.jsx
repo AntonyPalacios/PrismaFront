@@ -6,6 +6,7 @@ import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
+import TablePagination from '@mui/material/TablePagination';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
@@ -21,6 +22,7 @@ const selectProps = { select: true, size: 'small', slotProps: { select: { native
 const STEPS = ['Selección', 'Carrera y tutor', 'Resultado'];
 const SKIP_LABEL = { ALREADY_ENROLLED: 'Ya matriculado: se omitirá', INACTIVE_STUDENT: 'Dado de baja: se omitirá' };
 const NO_TUTOR = '#7A4100';
+const PAGE_SIZES = [25, 50, 100];
 
 const th = { fontSize: 12, fontWeight: 500, color: 'text.secondary', textAlign: 'left', px: 2, py: 1.25, borderBottom: '1px solid #E3E7EE', whiteSpace: 'nowrap' };
 const td = { fontSize: 14, px: 2, py: 1, borderBottom: '1px solid #EEF1F5', whiteSpace: 'nowrap' };
@@ -63,6 +65,9 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
   const [tutorFilter, setTutorFilter] = useState('');
   const [applyTutor, setApplyTutor] = useState('');
   const [result, setResult] = useState(null);
+  // both tables are paged; what was checked or edited stays when the page changes
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
 
   const { data: cycles = [] } = useGetCyclesQuery();
   const { data: sourceStages = [] } = useGetStagesQuery(sourceCycleId);
@@ -101,8 +106,38 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
     ...edits[row.studentId],
   });
 
+  // the rows of the current page; a list that shrank never leaves you on an empty page
+  const pageOf = (list) => {
+    const shown = Math.min(page, Math.max(0, Math.ceil(list.length / pageSize) - 1));
+    return list.slice(shown * pageSize, (shown + 1) * pageSize);
+  };
+  const pager = (list) =>
+    list.length > PAGE_SIZES[0] && (
+      <TablePagination
+        component="div"
+        count={list.length}
+        page={Math.min(page, Math.max(0, Math.ceil(list.length / pageSize) - 1))}
+        onPageChange={(_, next) => setPage(next)}
+        rowsPerPage={pageSize}
+        rowsPerPageOptions={PAGE_SIZES}
+        onRowsPerPageChange={(e) => {
+          setPageSize(Number(e.target.value));
+          setPage(0);
+        }}
+        labelRowsPerPage="Por página"
+        labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+        getItemAriaLabel={(type) => (type === 'next' ? 'Página siguiente' : type === 'previous' ? 'Página anterior' : type)}
+        sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: '12px' }}
+      />
+    );
+  const goTo = (next) => {
+    setStep(next);
+    setPage(0);
+  };
+
   // a new source stage starts over
   const pickSource = (id) => {
+    setPage(0);
     setChosenSourceId(id);
     setTutorFilter('');
     setUnchecked(new Set());
@@ -110,6 +145,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
   };
   // a tutor's group: exactly their students end up checked
   const pickTutor = (key) => {
+    setPage(0);
     setTutorFilter(key);
     setUnchecked(new Set());
   };
@@ -121,7 +157,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
     setUnchecked(new Set());
     setEdits({});
     setApplyTutor('');
-    setStep(0);
+    goTo(0);
   };
   const toggle = (studentId) =>
     setUnchecked((current) => {
@@ -154,14 +190,21 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
         }),
       }).unwrap();
       setResult(response);
-      setStep(2);
+      goTo(2);
     } catch {
       // the alert shows the backend's message; the edits stay
     }
   };
 
   return (
-    <Dialog open fullScreen onClose={onClose} aria-labelledby="bulk-enroll-title">
+    <Dialog
+      open
+      fullScreen
+      onClose={onClose}
+      aria-labelledby="bulk-enroll-title"
+      // the page's grey all the way down, however long the list
+      slotProps={{ paper: { sx: { bgcolor: 'background.default' } } }}
+    >
       <Box sx={{ minHeight: '100%', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
         <Box
           component="header"
@@ -260,7 +303,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {visible.map((row) => (
+                    {pageOf(visible).map((row) => (
                       <tr key={row.studentId}>
                         <Box component="td" sx={{ ...td, py: 0 }}>
                           <Checkbox
@@ -281,6 +324,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                   </tbody>
                 </TableBox>
               )}
+              {pager(visible)}
             </>
           )}
 
@@ -331,7 +375,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {chosen.map((row) => {
+                  {pageOf(chosen).map((row) => {
                     const value = valueOf(row);
                     return (
                       <tr key={row.studentId}>
@@ -375,6 +419,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                   })}
                 </tbody>
               </TableBox>
+              {pager(chosen)}
             </>
           )}
 
@@ -408,7 +453,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
               <Button variant="outlined" onClick={onClose} sx={{ ...pill, borderColor: '#C5CCD8', color: '#3A4150' }}>
                 Cancelar
               </Button>
-              <Button variant="contained" color="secondary" disabled={chosen.length === 0} onClick={() => setStep(1)} sx={pill}>
+              <Button variant="contained" color="secondary" disabled={chosen.length === 0} onClick={() => goTo(1)} sx={pill}>
                 Siguiente
               </Button>
             </>
@@ -419,7 +464,7 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
                 variant="outlined"
                 onClick={() => {
                   reset();
-                  setStep(0);
+                  goTo(0);
                 }}
                 sx={{ ...pill, borderColor: '#C5CCD8', color: '#3A4150' }}
               >
