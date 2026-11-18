@@ -12,6 +12,7 @@ import { useGetScoreEvolutionQuery } from '../api/dashboardsApi';
 import { examLabel } from '../examLabel';
 import ChartCard from './ChartCard';
 import MathRadar from './MathRadar';
+import StudentGoals from '../../goals/components/StudentGoals';
 import { AreaDistribution, CourseEffectiveness } from './EffectivenessCharts';
 
 // the prototype's lines: the student solid, the exam's range dashed
@@ -145,6 +146,8 @@ export default function ProgressSection({ student }) {
           <MathRadar studentId={student.id} />
         </>
       )}
+
+      <StudentGoals studentId={student.id} />
     </Box>
   );
 }
