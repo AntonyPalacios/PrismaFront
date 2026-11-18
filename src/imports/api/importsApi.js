@@ -42,22 +42,27 @@ export const importsApi = baseApi.injectEndpoints({
     }),
     // { examId, file } → the pending batch of that exam's results; nothing real is written yet
     // `reload` (ADMIN only): load over an exam that already has results; confirming
-    // that batch (`replacesResults`) replaces them
+    // that batch (`replacesResults`) replaces them. An exam with an import in review
+    // answers 409 with `pendingBatchId` (and its file, date and uploader);
+    // `replacePending` discards that one and uploads this
     uploadExamResults: build.mutation({
-      query: ({ examId, file, reload = false }) => {
+      query: ({ examId, file, reload = false, replacePending = false }) => {
         const body = new FormData();
         body.append('file', file, file.name);
-        return { url: `/exams/${examId}/results/import`, method: 'POST', body, params: reload ? { reload: true } : undefined };
+        const params = { ...(reload ? { reload: true } : {}), ...(replacePending ? { replacePending: true } : {}) };
+        return { url: `/exams/${examId}/results/import`, method: 'POST', body, params };
       },
-      invalidatesTags: ['ImportBatch'],
+      // the exam shows its import in review
+      invalidatesTags: ['ImportBatch', 'Exam'],
     }),
     // { action: 'MATCH' | 'NEW' | 'IGNORE', studentId?, newStudent? } — a new
-    // student of a results batch brings its names split by hand
+    // student of a results batch brings its names split by hand; `replaceOther`: the
+    // student has a result in another type of the mock exam and this one replaces it
     resolveImportRow: build.mutation({
-      query: ({ batchId, rowId, action, studentId = null, newStudent = null }) => ({
+      query: ({ batchId, rowId, action, studentId = null, newStudent = null, replaceOther = false }) => ({
         url: `/import-batches/${batchId}/rows/${rowId}`,
         method: 'PUT',
-        body: { action, studentId, ...(newStudent ?? {}) },
+        body: { action, studentId, ...(newStudent ?? {}), ...(replaceOther ? { replaceOther: true } : {}) },
       }),
       invalidatesTags: ['ImportBatch'],
     }),
@@ -68,7 +73,8 @@ export const importsApi = baseApi.injectEndpoints({
     }),
     discardImportBatch: build.mutation({
       query: (id) => ({ url: `/import-batches/${id}/discard`, method: 'POST' }),
-      invalidatesTags: ['ImportBatch'],
+      // the exam no longer has an import in review
+      invalidatesTags: ['ImportBatch', 'Exam'],
     }),
     // any registered student by name or DNI, to resolve a row by hand
     searchImportStudents: build.query({

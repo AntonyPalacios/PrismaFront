@@ -363,6 +363,43 @@ describe('Exams screen', () => {
     expect(within(form).getByRole('button', { name: 'Importar' })).toBeEnabled();
   });
 
+  it('an exam with an import in review says so, and a new upload offers to go to it or replace it', async () => {
+    // Letras has an import waiting in review
+    mockExams = {
+      ...mockExams,
+      11: [{ ...REGULAR_1, exams: REGULAR_1.exams.map((e) => (e.examTypeName === 'Letras' ? { ...e, pendingImportBatchId: 5 } : e)) }, MEDICION],
+    };
+    writeResponse = (request) =>
+      new URL(request.url).searchParams.get('replacePending') === 'true'
+        ? json(201, { id: 9 })
+        : json(409, {
+            detail: 'Este examen ya tiene una importación en revisión: continúala o descártala antes de subir otra.',
+            requiresConfirmation: true,
+            pendingBatchId: 5,
+            pendingFileName: 'GENERALES LETRAS.xlsx',
+            pendingUploadedAt: '2026-11-18T10:00:00-05:00',
+            pendingUploadedBy: 'Valle Gómez, Silvia',
+          });
+    const router = renderPage();
+    const regular = (await examCard('Regular 1')).closest('li');
+    expect(within(regular).getByText('Letras · en revisión')).toBeInTheDocument();
+    fireEvent.click(await examCard('Regular 1'));
+    const sheet = await screen.findByRole('form', { name: 'Regular 1' });
+    expect(within(sheet).getByRole('link', { name: 'Importación en revisión de Letras' })).toHaveAttribute('href', '/imports/5');
+
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Importar resultados de Letras' }));
+    const form = await screen.findByRole('form', { name: 'Importar resultados' });
+    fireEvent.change(within(form).getByLabelText('Archivo de resultados'), { target: { files: [new File(['excel'], 'LETRAS 2.xlsx')] } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Importar' }));
+    fireEvent.click(within(await screen.findByRole('dialog', { name: '¿Importar resultados?' })).getByRole('button', { name: 'Importar' }));
+
+    const alert = await within(form).findByRole('alert');
+    expect(alert).toHaveTextContent('GENERALES LETRAS.xlsx, subida el 18 nov 2026 por Valle Gómez, Silvia');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Descartar la anterior y subir esta' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/imports/9'));
+    expect(new URL(writes().at(-1).url).searchParams.get('replacePending')).toBe('true');
+  });
+
   it('an admin reloads the results of a type that already has them, after a warning', async () => {
     writeResponse = () => json(201, { id: 8 });
     const router = renderPage();

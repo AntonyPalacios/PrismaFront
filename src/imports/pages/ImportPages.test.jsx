@@ -505,4 +505,25 @@ describe('Reviewing exam results', () => {
     expect(within(item).getByText('Resultados · Repaso 1 · Letras')).toBeInTheDocument();
     expect(within(item).getByText(/3 alumnos · 1 por revisar/)).toBeInTheDocument();
   });
+
+  it('a student with a result in another type of the mock exam is chosen only by replacing it', async () => {
+    const crossed = {
+      ...RESULT_ABSENT,
+      status: 'UNRESOLVED',
+      notice: 'Ya tiene resultado en Ciencias de este simulacro: ignora la fila o reemplaza ese resultado.',
+      otherExamTypeName: 'Ciencias',
+      replacesOther: false,
+    };
+    resultsBatch = { ...RESULTS_BATCH, rows: [crossed] };
+    renderAt('/imports/6');
+    fireEvent.click(await screen.findByRole('button', { name: 'Fila 14: QUISPE MAMANI LUCIA' }));
+    const sheet = await screen.findByRole('form', { name: 'Fila 14' });
+    expect(within(sheet).getByText(/Ya tiene resultado en Ciencias/)).toBeInTheDocument();
+    expect(within(sheet).getByText('Elegirlo reemplaza su resultado de Ciencias de este simulacro')).toBeInTheDocument();
+
+    fireEvent.click(within(sheet).getByRole('radio', { name: /Quispe Mamani, Lucía/ }));
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect(await writes()[0].clone().json()).toEqual({ action: 'MATCH', studentId: 7, replaceOther: true });
+  });
 });

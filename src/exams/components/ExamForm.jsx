@@ -1,3 +1,4 @@
+import { Link as RouterLink } from 'react-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -346,9 +347,22 @@ function ExamTypes({ mockExam, editable, onImport, onManual, onError }) {
             sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, px: 1.5, py: 0.75, borderRadius: '12px', bgcolor: '#F4F6FA' }}
           >
             <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{exam.examTypeName}</Typography>
-            <Typography sx={{ fontSize: 12, color: exam.hasResults ? '#2F5A08' : 'text.secondary' }}>
-              {exam.hasResults ? 'Con resultados' : 'Sin resultados'}
-            </Typography>
+            {exam.pendingImportBatchId && !exam.hasResults ? (
+              // an import of this type waits in review: open it
+              <Button
+                size="small"
+                component={RouterLink}
+                to={`/imports/${exam.pendingImportBatchId}`}
+                aria-label={`Importación en revisión de ${exam.examTypeName}`}
+                sx={{ fontSize: 12, color: '#7A4100' }}
+              >
+                En revisión
+              </Button>
+            ) : (
+              <Typography sx={{ fontSize: 12, color: exam.hasResults ? '#2F5A08' : 'text.secondary' }}>
+                {exam.hasResults ? 'Con resultados' : 'Sin resultados'}
+              </Typography>
+            )}
             {onImport && !exam.hasResults && (
               <Button
                 type="button"
