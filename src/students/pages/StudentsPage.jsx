@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -12,6 +12,7 @@ import InputBase from '@mui/material/InputBase';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Table from '@mui/material/Table';
+import TablePagination from '@mui/material/TablePagination';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
@@ -22,29 +23,47 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SearchIcon from '@mui/icons-material/Search';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
+import { useGetCareersQuery } from '../../catalog/api/careersApi';
 import { useGetStudentsQuery } from '../api/studentsApi';
 import ImportStudentsForm from '../../imports/components/ImportStudentsForm';
 import CreateStudentForm from '../components/CreateStudentForm';
 import { useIsAdmin, useIsOnlyTutor } from '../../users/api/authApi';
 import { useGetUsersQuery } from '../../users/api/usersApi';
+import { careerGroups } from '../careerGroups';
 import { studentFullName, studentInitials, useCanManageStudents } from '../studentDisplay';
 
-const SEARCH_DELAY_MS = 300;
+const PAGE_SIZES = [25, 50, 100];
+const NO_CAREER = 'none';
 
-/** What was typed, once the user pauses: one request per pause, not per key. */
-function useDebounced(value, delayMs) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timer);
-  }, [value, delayMs]);
-  return debounced;
+/** Lower case, no accents, single spaces: "  Álvarez   PÉREZ " → "alvarez perez" (as the backend did). */
+function normalize(text) {
+  return (text ?? '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/** Every typed word must appear in the surnames, names or DNI. */
+function matches(student, wanted) {
+  if (!wanted) return true;
+  const haystack = normalize([student.lastNamePat, student.lastNameMat, student.firstName, student.dni].filter(Boolean).join(' '));
+  return wanted.split(' ').every((word) => haystack.includes(word));
+}
+
+/** The career groups of the list, from the catalog (see careerGroups). */
+function useCareerGroups() {
+  const { data: careers = [] } = useGetCareersQuery();
+  return useMemo(() => careerGroups(careers), [careers]);
 }
 
 /**
- * "Alumnos" (Claude Design: StudentsMobile / StudentsDesktop). A search box
- * (name or DNI, resolved by the backend), cards on mobile and a table on
- * desktop, always in the backend's A–Z order by surnames. A row opens the
+ * "Alumnos" (Claude Design: StudentsMobile / StudentsDesktop). The list
+ * is loaded once and searched (name or DNI, ignoring case and accents),
+ * filtered by career group and paged (25, 50 or 100) right here, with no
+ * request per keystroke (agreements of 2026-11-17). Cards on mobile and a
+ * table on desktop, always in the backend's A–Z order by surnames. A row opens the
  * student's file. Inactive (retired) students only appear with "Mostrar
  * inactivos", for every role.
  * Each student shows the stage and tutor of their current enrollment. An
@@ -62,17 +81,39 @@ export default function StudentsPage() {
   const [includeInactive, setIncludeInactive] = useState(false);
   // '' = every tutor, 'none' = without tutor, otherwise a tutor's id (ADMIN only)
   const [tutorFilter, setTutorFilter] = useState('');
+  // '' = every career, 'none' = without one, otherwise an exam type's id (its careers)
+  const [careerFilter, setCareerFilter] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const isAdmin = useIsAdmin();
   const onlyTutor = useIsOnlyTutor();
   const showTutor = !onlyTutor;
-  const search = useDebounced(typed.trim(), SEARCH_DELAY_MS);
-  const { data: students = [], isLoading, isFetching, error } = useGetStudentsQuery({
-    search,
+  const search = typed.trim();
+  const { data: loaded = [], isLoading, isFetching, error } = useGetStudentsQuery({
     includeInactive,
     tutorId: tutorFilter && tutorFilter !== 'none' ? Number(tutorFilter) : null,
     withoutTutor: tutorFilter === 'none',
   });
   const open = (student) => navigate(`/students/${student.id}`);
+  const careerGroups = useCareerGroups();
+  const students = useMemo(() => {
+    const wanted = normalize(search);
+    return loaded.filter(
+      (student) =>
+        matches(student, wanted) &&
+        (careerFilter === '' ||
+          (careerFilter === NO_CAREER ? student.examTypeId == null : String(student.examTypeId) === careerFilter)),
+    );
+  }, [loaded, search, careerFilter]);
+  // a filter that shrinks the list never leaves you on an empty page
+  const lastPage = Math.max(0, Math.ceil(students.length / pageSize) - 1);
+  const shownPage = Math.min(page, lastPage);
+  const pageOfStudents = students.slice(shownPage * pageSize, (shownPage + 1) * pageSize);
+  // every filter starts over on the first page
+  const filtering = (setter) => (value) => {
+    setter(value);
+    setPage(0);
+  };
 
   const inactiveCount = students.filter((student) => !student.active).length;
   const count = `${students.length} ${students.length === 1 ? 'alumno' : 'alumnos'}`;
@@ -135,13 +176,16 @@ export default function StudentsPage() {
           <InputBase
             type="search"
             value={typed}
-            onChange={(e) => setTyped(e.target.value)}
+            onChange={(e) => filtering(setTyped)(e.target.value)}
             placeholder="Buscar por apellido, nombre o DNI"
             inputProps={{ 'aria-label': 'Buscar alumno' }}
             sx={{ flex: 1, minWidth: 0, fontSize: 15 }}
           />
         </Box>
-        {isAdmin && <TutorFilter value={tutorFilter} onChange={setTutorFilter} />}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
+          {isAdmin && <TutorFilter value={tutorFilter} onChange={filtering(setTutorFilter)} />}
+          <CareerFilter value={careerFilter} groups={careerGroups} onChange={filtering(setCareerFilter)} />
+        </Box>
         {canManage && (
           <Button variant="outlined" size="small" onClick={() => setImporting(true)} sx={{ display: { md: 'none' }, alignSelf: 'flex-start' }}>
             Importar alumnos
@@ -149,11 +193,11 @@ export default function StudentsPage() {
         )}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           <Typography role="status" sx={{ fontSize: 12, color: 'text.secondary' }}>
-            {isLoading || isFetching ? 'Buscando…' : `${countLabel} · orden A–Z por apellido`}
+            {isLoading || isFetching ? 'Cargando…' : `${countLabel} · orden A–Z por apellido`}
           </Typography>
           <FormControlLabel
             labelPlacement="start"
-            control={<Switch size="small" checked={includeInactive} onChange={(e) => setIncludeInactive(e.target.checked)} />}
+            control={<Switch size="small" checked={includeInactive} onChange={(e) => filtering(setIncludeInactive)(e.target.checked)} />}
             label="Mostrar inactivos"
             slotProps={{ typography: { sx: { fontSize: 13 } } }}
             sx={{ mr: 0 }}
@@ -171,7 +215,7 @@ export default function StudentsPage() {
 
       {!isLoading && !error && students.length === 0 && (
         <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
-          {emptyMessage({ search, tutorFilter, onlyTutor })}
+          {emptyMessage({ search, tutorFilter, careerFilter, onlyTutor })}
         </Typography>
       )}
 
@@ -182,7 +226,7 @@ export default function StudentsPage() {
             component="ul"
             sx={{ display: { xs: 'flex', md: 'none' }, listStyle: 'none', m: 0, p: 0, flexDirection: 'column', gap: 1.25 }}
           >
-            {students.map((student) => (
+            {pageOfStudents.map((student) => (
               <Box component="li" key={student.id}>
                 <StudentCard student={student} showTutor={showTutor} onOpen={() => open(student)} />
               </Box>
@@ -207,12 +251,13 @@ export default function StudentsPage() {
                   <TableCell>DNI</TableCell>
                   {showTutor && <TableCell>Tutor actual</TableCell>}
                   <TableCell>Etapa vigente</TableCell>
+                  <TableCell>Carrera</TableCell>
                   <TableCell>Teléfono</TableCell>
                   <TableCell>Estado</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {students.map((student) => (
+                {pageOfStudents.map((student) => (
                   <TableRow key={student.id} hover onClick={() => open(student)} sx={{ cursor: 'pointer' }}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -235,6 +280,7 @@ export default function StudentsPage() {
                       </TableCell>
                     )}
                     <TableCell>{student.currentStageName ?? <Muted>—</Muted>}</TableCell>
+                    <TableCell>{student.careerName ?? <Muted>—</Muted>}</TableCell>
                     <TableCell>{student.phone ?? <Muted>—</Muted>}</TableCell>
                     <TableCell>
                       <StudentStatusChip active={student.active} />
@@ -244,6 +290,25 @@ export default function StudentsPage() {
               </TableBody>
             </Table>
           </Box>
+
+          {students.length > PAGE_SIZES[0] && (
+            <TablePagination
+              component="div"
+              count={students.length}
+              page={shownPage}
+              onPageChange={(_, next) => setPage(next)}
+              rowsPerPage={pageSize}
+              rowsPerPageOptions={PAGE_SIZES}
+              onRowsPerPageChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(0);
+              }}
+              labelRowsPerPage="Por página"
+              labelDisplayedRows={({ from, to, count: total }) => `${from}–${to} de ${total}`}
+              getItemAriaLabel={(type) => (type === 'next' ? 'Página siguiente' : type === 'previous' ? 'Página anterior' : type)}
+              sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: '12px' }}
+            />
+          )}
         </>
       )}
 
@@ -276,10 +341,33 @@ export default function StudentsPage() {
   );
 }
 
-function emptyMessage({ search, tutorFilter, onlyTutor }) {
-  if (search || tutorFilter) return 'Ningún alumno coincide con la búsqueda.';
+function emptyMessage({ search, tutorFilter, careerFilter, onlyTutor }) {
+  if (search || tutorFilter || careerFilter) return 'Ningún alumno coincide con la búsqueda.';
   if (onlyTutor) return 'Aún no tienes alumnos asignados en la etapa vigente.';
   return 'Aún no hay alumnos registrados.';
+}
+
+/** The career groups of the current enrollment: an exam type's careers, or none. */
+function CareerFilter({ value, groups, onChange }) {
+  return (
+    <TextField
+      select
+      size="small"
+      label="Carrera"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      slotProps={{ select: { native: true }, inputLabel: { shrink: true }, htmlInput: { 'aria-label': 'Filtrar por carrera' } }}
+      sx={{ flex: { xs: '1 1 100%', sm: '0 1 320px' } }}
+    >
+      <option value="">Todas las carreras</option>
+      {groups.map((group) => (
+        <option key={group.value} value={group.value}>
+          {group.label}
+        </option>
+      ))}
+      <option value={NO_CAREER}>Sin carrera</option>
+    </TextField>
+  );
 }
 
 /** ADMIN only: every tutor, "Sin tutor asignado" or one active tutor (A–Z by surname, from the backend). */
@@ -294,7 +382,7 @@ function TutorFilter({ value, onChange }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       slotProps={{ select: { native: true }, inputLabel: { shrink: true }, htmlInput: { 'aria-label': 'Filtrar por tutor' } }}
-      sx={{ maxWidth: { md: 320 } }}
+      sx={{ flex: { xs: '1 1 100%', sm: '0 1 320px' } }}
     >
       <option value="">Todos los tutores</option>
       <option value="none">Sin tutor asignado</option>

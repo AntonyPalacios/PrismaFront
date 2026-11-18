@@ -6,6 +6,8 @@ import { ThemeProvider } from '@mui/material/styles';
 import { NotificationProvider } from '../../app/notifications';
 import { makeStore } from '../../app/store';
 import { theme } from '../../app/theme';
+import { homeFor } from '../../home/homeFor';
+import { careerGroups } from '../careerGroups';
 import { toStudentBody } from '../components/studentSchema';
 import { studentFullName, studentInitials } from '../studentDisplay';
 import StudentDetailPage from './StudentDetailPage';
@@ -26,6 +28,9 @@ const LUCIA = {
   currentStageName: 'Etapa 2',
   tutorId: 9,
   tutorName: 'B, A',
+  careerName: 'Biomédica',
+  examTypeId: 1,
+  examTypeName: 'Ciencias',
 };
 const MATEO = {
   id: 2,
@@ -148,15 +153,17 @@ const STAGES = {
   21: [{ id: 40, cycleId: 21, name: 'Etapa 1', status: 'PLANNED' }],
 };
 const CAREERS = [
-  { id: 1, name: 'Ciencias', active: true },
-  { id: 2, name: 'Letras', active: true },
-  { id: 3, name: 'Artes', active: false },
+  { id: 1, name: 'Ciencias', active: true, examTypeId: 1, examTypeName: 'Ciencias' },
+  { id: 2, name: 'Letras', active: true, examTypeId: 2, examTypeName: 'Letras' },
+  { id: 3, name: 'Artes', active: false, examTypeId: 2, examTypeName: 'Letras' },
 ];
 
 let fetchMock;
 let roles;
 let writeResponse;
 let enrollments;
+// a long list for the paging tests; null = the usual students
+let manyStudents = null;
 
 function route(request) {
   const url = new URL(request.url);
@@ -169,6 +176,7 @@ function route(request) {
   if (request.method === 'GET' && url.pathname.endsWith('/users')) return json(200, USERS);
   const stagesOf = url.pathname.match(/\/cycles\/(\d+)\/stages$/);
   if (request.method === 'GET' && stagesOf) return json(200, STAGES[stagesOf[1]] ?? []);
+  if (request.method === 'GET' && url.pathname.endsWith('/students') && manyStudents) return json(200, manyStudents);
   if (request.method === 'GET' && url.pathname.endsWith('/students')) {
     const search = (url.searchParams.get('search') ?? '').toLowerCase();
     const all = url.searchParams.get('includeInactive') === 'true' ? [LUCIA, VALERIA, MATEO] : [LUCIA, MATEO];
@@ -302,10 +310,37 @@ describe('Student display', () => {
   });
 });
 
+describe('Career groups and home', () => {
+  it('groups careers by their exam type, named after them', () => {
+    const careers = [
+      { name: 'Artes', active: true, examTypeId: 2, examTypeName: 'Letras' },
+      { name: 'Biomédica', active: true, examTypeId: 1, examTypeName: 'Ciencias' },
+      { name: 'Ciencias', active: true, examTypeId: 1, examTypeName: 'Ciencias' },
+      { name: 'Derecho', active: true, examTypeId: 2, examTypeName: 'Letras' },
+      { name: 'Letras', active: true, examTypeId: 2, examTypeName: 'Letras' },
+      { name: 'Arquitectura', active: true, examTypeId: 3, examTypeName: 'Arquitectura' },
+      { name: 'Antigua', active: false, examTypeId: 3, examTypeName: 'Arquitectura' },
+    ];
+    expect(careerGroups(careers)).toEqual([
+      { value: '3', label: 'Arquitectura' },
+      { value: '1', label: 'Ciencias (Biomédica y Ciencias)' },
+      { value: '2', label: 'Letras (Artes, Derecho y Letras)' },
+    ]);
+  });
+
+  it('lands each role on its work screen', () => {
+    expect(homeFor(['ADMIN'])).toBe('/students');
+    expect(homeFor(['TUTOR'])).toBe('/students');
+    expect(homeFor(['COORDINADOR'])).toBe('/exams');
+    expect(homeFor(['COORDINADOR', 'TUTOR'])).toBe('/students');
+  });
+});
+
 describe('Students screens', () => {
   beforeEach(() => {
     roles = ['TUTOR'];
     enrollments = [];
+    manyStudents = null;
     writeResponse = () => json(201, MATEO);
     fetchMock = vi.fn((request) => Promise.resolve(route(request)));
     vi.stubGlobal('fetch', fetchMock);
@@ -328,16 +363,64 @@ describe('Students screens', () => {
     expect(screen.getByText('2 alumnos asignados a ti · orden A–Z por apellido')).toBeInTheDocument();
   });
 
-  it('asks the backend for what is typed in the search box, once the user pauses', async () => {
+  it('searches right away as you type, ignoring case and accents, without asking the backend', async () => {
     renderAt('/students');
     await screen.findByRole('button', { name: 'Ver Chávez, Mateo' });
 
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar alumno' }), { target: { value: ' campos ' } });
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar alumno' }), { target: { value: ' CHAVEZ ' } });
 
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Ver Chávez, Mateo' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Ver Campos Herrera, Lucía' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver Chávez, Mateo' })).toBeInTheDocument();
+    expect(screen.getByText('1 alumno para "CHAVEZ" · orden A–Z por apellido')).toBeInTheDocument();
+    // by DNI too, and every word must match
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar alumno' }), { target: { value: '7281 lucia' } });
     expect(screen.getByRole('button', { name: 'Ver Campos Herrera, Lucía' })).toBeInTheDocument();
-    expect(screen.getByText('1 alumno para "campos" · orden A–Z por apellido')).toBeInTheDocument();
-    expect(searches()).toEqual([null, 'campos']);
+    expect(screen.queryByRole('button', { name: 'Ver Chávez, Mateo' })).not.toBeInTheDocument();
+    expect(searches().every((search) => search === null)).toBe(true);
+  });
+
+  it('filters by the career group of the current enrollment, and shows the career', async () => {
+    renderAt('/students');
+    await screen.findByRole('button', { name: 'Ver Chávez, Mateo' });
+    const filter = screen.getByLabelText('Filtrar por carrera');
+    expect([...filter.options].map((o) => o.textContent)).toEqual(['Todas las carreras', 'Ciencias', 'Letras', 'Sin carrera']);
+    expect(within(screen.getByRole('table', { name: 'Alumnos' })).getByText('Biomédica')).toBeInTheDocument();
+
+    // Biomédica is a Ciencias career
+    fireEvent.change(filter, { target: { value: '1' } });
+    expect(screen.getByRole('button', { name: 'Ver Campos Herrera, Lucía' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver Chávez, Mateo' })).not.toBeInTheDocument();
+
+    fireEvent.change(filter, { target: { value: 'none' } });
+    expect(screen.queryByRole('button', { name: 'Ver Campos Herrera, Lucía' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver Chávez, Mateo' })).toBeInTheDocument();
+
+    fireEvent.change(filter, { target: { value: '2' } });
+    expect(screen.getByText('Ningún alumno coincide con la búsqueda.')).toBeInTheDocument();
+  });
+
+  it('pages a long list by 25, and a search goes back to the first page', async () => {
+    manyStudents = Array.from({ length: 30 }, (_, i) => ({
+      ...MATEO,
+      id: 100 + i,
+      firstName: `Alumno ${String(i + 1).padStart(2, '0')}`,
+      lastNamePat: 'Prueba',
+    }));
+    renderAt('/students');
+    await screen.findByRole('button', { name: 'Ver Prueba, Alumno 01' });
+    const cards = () => screen.getAllByRole('button', { name: /^Ver / });
+    expect(cards()).toHaveLength(25);
+    expect(screen.getByText('1–25 de 30')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(cards()).toHaveLength(5);
+    expect(screen.getByRole('button', { name: 'Ver Prueba, Alumno 30' })).toBeInTheDocument();
+
+    // every word on its own: "2" also matches 12, 20 to 29
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar alumno' }), { target: { value: 'alumno 2' } });
+    expect(cards()).toHaveLength(12);
+    expect(screen.getByRole('button', { name: 'Ver Prueba, Alumno 02' })).toBeInTheDocument();
+    expect(screen.queryByText('1–25 de 30')).not.toBeInTheDocument();
   });
 
   it('says so when nothing matches the search', async () => {
