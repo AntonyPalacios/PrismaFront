@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink, useLocation, useParams } from 'react-router';
+import { Link as RouterLink, useLocation, useParams, useSearchParams } from 'react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
@@ -88,10 +90,37 @@ function BackLink() {
  * a field). Instead the parent remounts this form (onCancel) and MUI measures
  * every field again.
  */
+// the file's tabs, in order; `tab` in the URL names the open one
+const TABS = [
+  { value: 'data', label: 'Datos' },
+  { value: 'enrollment', label: 'Matrícula' },
+  { value: 'progress', label: 'Progreso' },
+  { value: 'logbook', label: 'Bitácora' },
+];
+
 function StudentDetail({ student, onCancel }) {
   const notify = useNotify();
+  const location = useLocation();
   const canManage = useCanManageStudents();
   const canEdit = useCanEditStudent(student);
+  // the same permissions as the sections had: ADMIN and TUTOR see enrollments (and
+  // guardians, inside Datos); ADMIN and the current tutor see progress and logbook
+  const tabs = TABS.filter(
+    (t) => t.value === 'data' || (t.value === 'enrollment' && canManage) || (['progress', 'logbook'].includes(t.value) && canEdit),
+  );
+  const [params, setParams] = useSearchParams();
+  const tab = tabs.some((t) => t.value === params.get('tab')) ? params.get('tab') : 'data';
+  // replace, and keep the state that brings "‹ Alumnos" back to the filtered list
+  const openTab = (value) =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value === 'data') next.delete('tab');
+        else next.set('tab', value);
+        return next;
+      },
+      { replace: true, state: location.state },
+    );
   const [editing, setEditing] = useState(false);
   const [serverError, setServerError] = useState(null);
   const isAdmin = useIsAdmin();
@@ -156,7 +185,14 @@ function StudentDetail({ student, onCancel }) {
         {student.active ? (
           <Box sx={{ display: 'flex', gap: 1 }}>
             {canEdit && !editing && (
-              <Button variant="outlined" onClick={() => setEditing(true)} sx={{ ...actionSx, color: colors.primary }}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setEditing(true);
+                  openTab('data');
+                }}
+                sx={{ ...actionSx, color: colors.primary }}
+              >
                 Editar
               </Button>
             )}
@@ -180,12 +216,31 @@ function StudentDetail({ student, onCancel }) {
         )}
       </Box>
 
+      {tabs.length > 1 && (
+        <Tabs
+          value={tab}
+          onChange={(_, value) => openTab(value)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          aria-label="Secciones de la ficha"
+          sx={{ borderBottom: 1, borderColor: 'divider', mt: -0.5 }}
+        >
+          {tabs.map((t) => (
+            <Tab key={t.value} value={t.value} label={t.label} sx={{ textTransform: 'none', fontSize: 14, fontWeight: 500, minWidth: 0, px: 2 }} />
+          ))}
+        </Tabs>
+      )}
+
+      {/* Datos stays mounted while hidden: edits in progress survive switching tabs */}
       <Box
         component="form"
         noValidate
         onSubmit={handleSubmit(onSubmit)}
         aria-labelledby="student-data-title"
+        hidden={tab !== 'data'}
         sx={{
+          '&[hidden]': { display: 'none' },
           bgcolor: 'background.paper',
           border: 1,
           borderColor: 'divider',
@@ -216,17 +271,18 @@ function StudentDetail({ student, onCancel }) {
         )}
       </Box>
 
-      {/* ADMIN and TUTOR: a coordinator does not see enrollments */}
-      {canManage && <EnrollmentsSection student={student} />}
-
+      {/* the other tabs mount (and fetch) only when opened */}
       {/* ADMIN and TUTOR see who to contact; the admin or the current tutor change it */}
-      {canManage && <ParentsSection student={student} canChange={canEdit && student.active} />}
+      {tab === 'data' && canManage && <ParentsSection student={student} canChange={canEdit && student.active} />}
+
+      {/* ADMIN and TUTOR: a coordinator does not see enrollments */}
+      {tab === 'enrollment' && <EnrollmentsSection student={student} />}
 
       {/* the same people who edit the student: ADMIN or their current tutor */}
-      {canEdit && <ProgressSection student={student} />}
+      {tab === 'progress' && <ProgressSection student={student} />}
 
       {/* ADMIN and the current tutor read it; only the current tutor writes */}
-      {canEdit && <LogbookSection student={student} />}
+      {tab === 'logbook' && <LogbookSection student={student} />}
 
       {!student.active && (
         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
