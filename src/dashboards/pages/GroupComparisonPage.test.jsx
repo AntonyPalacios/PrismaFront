@@ -153,6 +153,30 @@ describe('Charla de notas', () => {
     expect(groupRequests()[0].searchParams.has('tutorId')).toBe(false);
   });
 
+  it('shows the last 3 exams and can show every exam of the cycle', async () => {
+    // Regular 1 to 5, Lectura rising one by one
+    exams = [1, 2, 3, 4, 5].map((n) => ({
+      ...EXAMS[1],
+      examId: 2000 + n,
+      examName: `Regular ${n}`,
+      examDate: `2026-04-0${n}`,
+      areas: [area(1, 'Lectura', [10 + n, 0, 20], [5, 0, 9])],
+      courses: [],
+    }));
+    renderPage();
+
+    const table = await screen.findByRole('table', { name: 'Charla de notas' });
+    const examsShown = () => rowsOf(screen.getByRole('table', { name: 'Charla de notas' }))[0].slice(1).map((h) => h.split(' ·')[0]);
+    expect(examsShown()).toEqual(['Regular 3', 'Regular 4', 'Regular 5']);
+    // the first exam shown has nothing before it: no arrow
+    expect(rowsOf(table)[3]).toEqual(['Promedio', '13', '5', '14 ▲', '5', '15 ▲', '5']);
+
+    const select = screen.getByLabelText('Exámenes');
+    expect(within(select).getAllByRole('option').map((o) => o.textContent)).toEqual(['Últimos 3', 'Todos (5)']);
+    fireEvent.change(select, { target: { value: '0' } });
+    expect(examsShown()).toEqual(['Regular 1', 'Regular 2', 'Regular 3', 'Regular 4', 'Regular 5']);
+  });
+
   it('an admin picks another exam type and one active tutor', async () => {
     renderPage();
     await screen.findByRole('table', { name: 'Charla de notas' });
@@ -224,6 +248,38 @@ describe('Charla de notas', () => {
 
       fireEvent.change(screen.getByLabelText('Tipo de examen'), { target: { value: '2' } });
       await waitFor(() => expect(tutorRequests().at(-1).searchParams.get('examTypeId')).toBe('2'));
+    });
+
+    it('the admin picks which tutors to show; the academy always stays', async () => {
+      roles = ['ADMIN'];
+      renderPage();
+      fireEvent.click(await screen.findByRole('tab', { name: 'Por tutor' }));
+
+      // hidden: true, since the open menu hides the page from the accessibility tree
+      const names = () =>
+        [...screen.getByRole('table', { name: 'Comparativa de tutores', hidden: true }).querySelectorAll('tbody tr')].map((r) => r.children[0].textContent);
+      await waitFor(() => expect(names()).toEqual(['Salas, Ruth', 'Valle Gómez, Silvia', 'Toda la academia']));
+      const picker = () => screen.getByRole('combobox', { name: /Tutores/, hidden: true });
+      expect(picker()).toHaveTextContent('Todos');
+
+      fireEvent.mouseDown(picker());
+      fireEvent.click(await screen.findByRole('option', { name: 'Salas, Ruth' }));
+      expect(names()).toEqual(['Valle Gómez, Silvia', 'Toda la academia']);
+      expect(picker()).toHaveTextContent('Valle Gómez, Silvia');
+
+      // "Todos" clears every tutor, and checks them all again
+      fireEvent.click(screen.getByRole('option', { name: 'Todos' }));
+      expect(names()).toEqual(['Salas, Ruth', 'Valle Gómez, Silvia', 'Toda la academia']);
+      fireEvent.click(screen.getByRole('option', { name: 'Todos' }));
+      expect(names()).toEqual(['Toda la academia']);
+      expect(picker()).toHaveTextContent('Ninguno');
+      fireEvent.click(screen.getByRole('option', { name: 'Salas, Ruth' }));
+      fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+
+      // the choice stays when the exam type changes
+      fireEvent.change(screen.getByLabelText('Tipo de examen'), { target: { value: '2' } });
+      await waitFor(() => expect(tutorRequests().at(-1).searchParams.get('examTypeId')).toBe('2'));
+      await waitFor(() => expect(names()).toEqual(['Salas, Ruth', 'Toda la academia']));
     });
 
     it('says so when the exam type has no results yet', async () => {
