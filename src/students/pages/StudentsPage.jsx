@@ -12,7 +12,6 @@ import InputBase from '@mui/material/InputBase';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Table from '@mui/material/Table';
-import TablePagination from '@mui/material/TablePagination';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
@@ -30,9 +29,10 @@ import CreateStudentForm from '../components/CreateStudentForm';
 import { useIsAdmin, useIsOnlyTutor } from '../../users/api/authApi';
 import { useGetUsersQuery } from '../../users/api/usersApi';
 import { careerGroups } from '../careerGroups';
+import Pager from '../../layout/Pager';
+import { PAGE_SIZES, pageOf } from '../../layout/paging';
 import { studentFullName, studentInitials, useCanManageStudents } from '../studentDisplay';
 
-const PAGE_SIZES = [25, 50, 100];
 const NO_CAREER = 'none';
 
 /** Lower case, no accents, single spaces: "  Álvarez   PÉREZ " → "alvarez perez" (as the backend did). */
@@ -123,9 +123,7 @@ export default function StudentsPage() {
     );
   }, [loaded, search, careerFilter]);
   // a filter that shrinks the list never leaves you on an empty page
-  const lastPage = Math.max(0, Math.ceil(students.length / pageSize) - 1);
-  const shownPage = Math.min(page, lastPage);
-  const pageOfStudents = students.slice(shownPage * pageSize, (shownPage + 1) * pageSize);
+  const pageOfStudents = pageOf(students, page, pageSize);
   // every filter starts over on the first page
   const filtering = (key) => (value) => setParam(key, value);
 
@@ -305,23 +303,13 @@ export default function StudentsPage() {
             </Table>
           </Box>
 
-          {students.length > PAGE_SIZES[0] && (
-            <TablePagination
-              component="div"
-              count={students.length}
-              page={shownPage}
-              onPageChange={(_, next) => setParam('page', next + 1, { keepPage: true })}
-              rowsPerPage={pageSize}
-              rowsPerPageOptions={PAGE_SIZES}
-              onRowsPerPageChange={(e) => {
-                setParam('size', Number(e.target.value) === PAGE_SIZES[0] ? '' : e.target.value);
-              }}
-              labelRowsPerPage="Por página"
-              labelDisplayedRows={({ from, to, count: total }) => `${from}–${to} de ${total}`}
-              getItemAriaLabel={(type) => (type === 'next' ? 'Página siguiente' : type === 'previous' ? 'Página anterior' : type)}
-              sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: '12px' }}
-            />
-          )}
+          <Pager
+            count={students.length}
+            page={page}
+            onPageChange={(next) => setParam('page', next + 1, { keepPage: true })}
+            size={pageSize}
+            onSizeChange={(size) => setParam('size', size === PAGE_SIZES[0] ? '' : size)}
+          />
         </>
       )}
 

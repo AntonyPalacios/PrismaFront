@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { formatShortDate } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
+import Pager from '../../layout/Pager';
+import { PAGE_SIZES, pageOf } from '../../layout/paging';
 import { useGetStudentGoalsQuery } from '../api/goalsApi';
 
 const cell = { px: 1.25, py: 1.25, borderBottom: '1px solid #EEF1F5', fontSize: 13, whiteSpace: 'nowrap', textAlign: 'left' };
@@ -24,11 +27,14 @@ function statusOf(goal) {
 /**
  * "Metas por área" (Claude Design: StudentDetailDesktop), read only: the
  * student's goals in the active cycle, the newest exam first, with the
- * correct answers they got and whether each was met. They are set in "Metas".
+ * correct answers they got and whether each was met, 10 per page. They are
+ * set in the "Metas" screen; this is the "Metas" tab of the student's file.
  */
 export default function StudentGoals({ studentId }) {
   const { data, error } = useGetStudentGoalsQuery(studentId);
   const goals = Array.isArray(data) ? data : [];
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZES[0]);
 
   return (
     <Box
@@ -56,7 +62,7 @@ export default function StudentGoals({ studentId }) {
               </tr>
             </thead>
             <tbody>
-              {goals.map((goal) => {
+              {pageOf(goals, page, size).map((goal) => {
                 const status = statusOf(goal);
                 return (
                   <tr key={goal.id}>
@@ -84,6 +90,16 @@ export default function StudentGoals({ studentId }) {
           </Box>
         </Box>
       )}
+      <Pager
+        count={goals.length}
+        page={page}
+        onPageChange={setPage}
+        size={size}
+        onSizeChange={(next) => {
+          setSize(next);
+          setPage(0);
+        }}
+      />
     </Box>
   );
 }

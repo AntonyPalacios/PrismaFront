@@ -121,6 +121,8 @@ function json(status, body) {
 
 let fetchMock;
 let batch;
+// the imports list, when a test needs many (null = the batch alone)
+let batchList = null;
 let writeResponse;
 
 function route(request) {
@@ -131,7 +133,7 @@ function route(request) {
   if (request.method === 'GET' && url.pathname.endsWith('/student-search')) {
     return json(200, url.searchParams.get('query').toLowerCase().startsWith('quis') ? [QUISPE] : []);
   }
-  if (request.method === 'GET' && url.pathname.endsWith('/import-batches')) return json(200, [{ ...batch, rows: [] }]);
+  if (request.method === 'GET' && url.pathname.endsWith('/import-batches')) return json(200, batchList ?? [{ ...batch, rows: [] }]);
   if (request.method === 'GET' && url.pathname.endsWith('/import-batches/6')) return json(200, resultsBatch);
   if (request.method === 'GET' && url.pathname.endsWith('/import-batches/5')) return json(200, batch);
   return writeResponse(request);
@@ -369,6 +371,16 @@ describe('Importing students', () => {
     expect(await screen.findByText('Confirmada')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Confirmar importación' })).not.toBeInTheDocument();
     expect(screen.queryByText(/Aún no se guardó nada/)).not.toBeInTheDocument();
+  });
+
+  it('pages the imports by 10', async () => {
+    batchList = Array.from({ length: 12 }, (_, i) => ({ ...batch, id: 100 + i, fileName: `lote-${i + 1}.xlsx`, rows: [] }));
+    renderAt('/imports');
+    await screen.findByRole('button', { name: 'Importación lote-1.xlsx' });
+    expect(screen.getAllByRole('button', { name: /^Importación lote-/ })).toHaveLength(10);
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(screen.getAllByRole('button', { name: /^Importación lote-/ })).toHaveLength(2);
+    batchList = null;
   });
 
   it('lists the imports to resume a pending one', async () => {

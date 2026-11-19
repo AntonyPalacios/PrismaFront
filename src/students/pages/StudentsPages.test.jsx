@@ -210,6 +210,7 @@ function route(request) {
     return json(200, url.searchParams.get('includeAllCycles') === 'true' ? [OLD_POINT, ...EVOLUTION] : evolution);
   }
   if (request.method === 'GET' && url.pathname.endsWith('/merge-preview')) return json(200, MERGE_PREVIEW);
+  if (request.method === 'GET' && url.pathname.endsWith('/api/v1/goals')) return json(200, []);
   const detail = url.pathname.match(/\/students\/(\d+)$/);
   if (request.method === 'GET' && detail) {
     return BY_ID[detail[1]]
@@ -432,7 +433,7 @@ describe('Students screens', () => {
     expect(screen.getByRole('searchbox', { name: 'Buscar alumno' })).toHaveValue('chavez');
   });
 
-  it('pages a long list by 25, and a search goes back to the first page', async () => {
+  it('pages a long list by 10, and a search goes back to the first page', async () => {
     manyStudents = Array.from({ length: 30 }, (_, i) => ({
       ...MATEO,
       id: 100 + i,
@@ -442,18 +443,20 @@ describe('Students screens', () => {
     renderAt('/students');
     await screen.findByRole('button', { name: 'Ver Prueba, Alumno 01' });
     const cards = () => screen.getAllByRole('button', { name: /^Ver / });
-    expect(cards()).toHaveLength(25);
-    expect(screen.getByText('1–25 de 30')).toBeInTheDocument();
+    expect(cards()).toHaveLength(10);
+    expect(screen.getByText('1–10 de 30')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
-    expect(cards()).toHaveLength(5);
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    expect(cards()).toHaveLength(10);
     expect(screen.getByRole('button', { name: 'Ver Prueba, Alumno 30' })).toBeInTheDocument();
 
     // every word on its own: "2" also matches 12, 20 to 29
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar alumno' }), { target: { value: 'alumno 2' } });
-    expect(cards()).toHaveLength(12);
+    expect(cards()).toHaveLength(10);
+    expect(screen.getByText('1–10 de 12')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ver Prueba, Alumno 02' })).toBeInTheDocument();
-    expect(screen.queryByText('1–25 de 30')).not.toBeInTheDocument();
+    expect(screen.queryByText('1–10 de 30')).not.toBeInTheDocument();
   });
 
   it('says so when nothing matches the search', async () => {
@@ -1256,7 +1259,7 @@ describe('Student file tabs', () => {
   it('an admin gets four tabs; each one loads when opened and stays in the URL', async () => {
     const router = renderAt('/students/1');
     await screen.findByRole('heading', { name: 'Campos Herrera, Lucía' });
-    expect(tabNames()).toEqual(['Datos', 'Matrícula', 'Progreso', 'Bitácora']);
+    expect(tabNames()).toEqual(['Datos', 'Matrícula', 'Progreso', 'Metas', 'Bitácora']);
     // Datos brings the guardians; nothing of the other tabs was asked for
     expect(await screen.findByRole('region', { name: 'Apoderados' })).toBeInTheDocument();
     expect(fetched('/score-evolution')).toHaveLength(0);
@@ -1266,6 +1269,13 @@ describe('Student file tabs', () => {
     expect(await screen.findByRole('region', { name: 'Progreso' })).toBeInTheDocument();
     expect(router.state.location.search).toBe('?tab=progress');
     expect(screen.queryByRole('region', { name: 'Apoderados' })).not.toBeInTheDocument();
+  });
+
+  it('the goals have their own tab', async () => {
+    renderAt('/students/1?tab=goals');
+    expect(await screen.findByRole('tab', { name: 'Metas' })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByText('Aún no tiene metas en el ciclo activo. Se fijan en "Metas".')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Progreso' })).not.toBeInTheDocument();
   });
 
   it('opens the tab the URL names', async () => {
