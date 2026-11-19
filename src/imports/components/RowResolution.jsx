@@ -199,7 +199,7 @@ function RowResolutionContent({ batchId, row, results, editable, onClose }) {
                 </Typography>
                 {replacing(student.id) && (
                   <Typography component="span" sx={{ fontSize: 12, color: '#7A4100' }}>
-                    {`Elegirlo reemplaza su resultado de ${row.otherExamTypeName} de este simulacro`}
+                    {`Elegirlo reemplaza su resultado de ${row.otherExamTypeName} de este examen`}
                   </Typography>
                 )}
               </Box>
@@ -257,8 +257,8 @@ function RowResolutionContent({ batchId, row, results, editable, onClose }) {
         <Alert severity="warning" role="alert" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <span>
-              {`Este alumno ya tiene resultado en ${crossed.otherExamTypeName} de este simulacro (${crossed.otherResult}), ` +
-                `mejor que el de esta fila (${crossed.thisResult}). Un alumno rinde un solo tipo por simulacro: ¿con cuál se queda?`}
+              {`Este alumno ya tiene resultado en ${crossed.otherExamTypeName} de este examen (${crossed.otherResult}), ` +
+                `mejor que el de esta fila (${crossed.thisResult}). Un alumno rinde un solo tipo por examen: ¿con cuál se queda?`}
             </span>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               <Button size="small" variant="contained" disabled={isLoading} onClick={() => resolveAs({ action: 'IGNORE' })}>

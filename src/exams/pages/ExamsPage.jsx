@@ -72,7 +72,7 @@ export default function ExamsPage() {
           <Typography component="h1" sx={{ fontSize: 28, fontWeight: 500 }}>
             Exámenes
           </Typography>
-          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>Los simulacros de cada etapa, uno por tipo de examen.</Typography>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>Los exámenes de cada etapa, uno por tipo de examen.</Typography>
         </Box>
         {canCreate && (
           <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={() => setOpen('new')}>

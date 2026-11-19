@@ -541,7 +541,7 @@ describe('Reviewing exam results', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));
 
     const alert = await within(sheet).findByRole('alert');
-    expect(alert).toHaveTextContent('ya tiene resultado en Ciencias de este simulacro (650), mejor que el de esta fila (722.76)');
+    expect(alert).toHaveTextContent('ya tiene resultado en Ciencias de este examen (650), mejor que el de esta fila (722.76)');
     fireEvent.click(within(alert).getByRole('button', { name: 'Quedarse con este resultado' }));
     await waitFor(() => expect(writes()).toHaveLength(2));
     expect(await writes()[1].clone().json()).toEqual({ action: 'MATCH', studentId: 7, replaceOther: true });
@@ -560,7 +560,7 @@ describe('Reviewing exam results', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Fila 14: QUISPE MAMANI LUCIA' }));
     const sheet = await screen.findByRole('form', { name: 'Fila 14' });
     expect(within(sheet).getByText(/Ya tiene resultado en Ciencias/)).toBeInTheDocument();
-    expect(within(sheet).getByText('Elegirlo reemplaza su resultado de Ciencias de este simulacro')).toBeInTheDocument();
+    expect(within(sheet).getByText('Elegirlo reemplaza su resultado de Ciencias de este examen')).toBeInTheDocument();
 
     fireEvent.click(within(sheet).getByRole('radio', { name: /Quispe Mamani, Lucía/ }));
     fireEvent.click(within(sheet).getByRole('button', { name: 'Guardar resolución' }));

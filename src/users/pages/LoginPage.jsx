@@ -67,7 +67,7 @@ export default function LoginPage() {
         <PrismaLogo size={72} framed />
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 520 }}>
           <Typography component="h2" sx={{ fontSize: { xs: 24, md: 40 }, lineHeight: 1.2, fontWeight: 500 }}>
-            Cada simulacro, cada alumno, en un solo lugar.
+            Cada examen, cada alumno, en un solo lugar.
           </Typography>
           <Typography
             sx={{ display: { xs: 'none', md: 'block' }, fontSize: 17, lineHeight: 1.55, color: '#C9D6EA' }}
