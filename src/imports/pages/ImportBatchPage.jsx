@@ -12,6 +12,8 @@ import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
 import ConfirmDialog from '../../layout/ConfirmDialog';
+import Pager from '../../layout/Pager';
+import { PAGE_SIZES, pageOf } from '../../layout/paging';
 import { useConfirmImportBatchMutation, useDiscardImportBatchMutation, useGetImportBatchQuery } from '../api/importsApi';
 import RowResolution from '../components/RowResolution';
 import {
@@ -73,6 +75,8 @@ function BatchReview({ batch }) {
   const pending = batch.status === 'PENDING_REVIEW';
   const [filter, setFilter] = useState(batch.unresolvedRows > 0 ? 'UNRESOLVED' : 'RESOLVED');
   const [openRowId, setOpenRowId] = useState(null);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZES[0]);
   const [dialog, setDialog] = useState(null); // 'confirm' | 'discard'
   const [serverError, setServerError] = useState(null);
   const [confirmBatch, { isLoading: confirming }] = useConfirmImportBatchMutation();
@@ -187,7 +191,10 @@ function BatchReview({ batch }) {
             size="small"
             variant={filter === f.key ? 'contained' : 'outlined'}
             aria-pressed={filter === f.key}
-            onClick={() => setFilter(f.key)}
+            onClick={() => {
+              setFilter(f.key);
+              setPage(0); // another filter starts on its first page
+            }}
             sx={{ borderRadius: '8px' }}
           >
             {f.label} · {batch.rows.filter(f.matches).length}
@@ -199,7 +206,7 @@ function BatchReview({ batch }) {
         <Typography sx={{ py: 3, textAlign: 'center', color: 'text.secondary' }}>No hay filas en este filtro.</Typography>
       ) : (
         <Box component="ul" aria-label="Filas" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-          {rows.map((row) => (
+          {pageOf(rows, page, size).map((row) => (
             <Box component="li" key={row.id}>
               {results ? (
                 <ResultRowCard row={row} pending={pending} onOpen={() => setOpenRowId(row.id)} />
@@ -210,6 +217,16 @@ function BatchReview({ batch }) {
           ))}
         </Box>
       )}
+      <Pager
+        count={rows.length}
+        page={page}
+        onPageChange={setPage}
+        size={size}
+        onSizeChange={(next) => {
+          setSize(next);
+          setPage(0);
+        }}
+      />
 
       {serverError && <Alert severity="error">{serverError}</Alert>}
 

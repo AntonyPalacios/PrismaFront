@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -7,6 +8,8 @@ import Typography from '@mui/material/Typography';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
+import Pager from '../../layout/Pager';
+import { PAGE_SIZES, pageOf } from '../../layout/paging';
 import { useGetImportBatchesQuery } from '../api/importsApi';
 import { BATCH_STATUS, isResults } from '../importDisplay';
 import { Chip } from './ImportBatchPage';
@@ -22,6 +25,8 @@ const DATE_TIME = new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium', timeSt
 export default function ImportsPage() {
   const navigate = useNavigate();
   const { data: batches = [], isLoading, error } = useGetImportBatchesQuery();
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZES[0]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 860 }}>
@@ -46,7 +51,7 @@ export default function ImportsPage() {
       )}
 
       <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-        {batches.map((batch) => (
+        {pageOf(batches, page, size).map((batch) => (
           <Box component="li" key={batch.id}>
             <ButtonBase
               onClick={() => navigate(`/imports/${batch.id}`)}
@@ -84,6 +89,16 @@ export default function ImportsPage() {
           </Box>
         ))}
       </Box>
+      <Pager
+        count={batches.length}
+        page={page}
+        onPageChange={setPage}
+        size={size}
+        onSizeChange={(next) => {
+          setSize(next);
+          setPage(0);
+        }}
+      />
     </Box>
   );
 }

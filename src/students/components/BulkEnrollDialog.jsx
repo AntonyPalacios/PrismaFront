@@ -6,7 +6,6 @@ import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
-import TablePagination from '@mui/material/TablePagination';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
@@ -16,13 +15,14 @@ import { errorDetail } from '../../app/api/errors';
 import { colors } from '../../app/theme';
 import { useGetCareersQuery } from '../../catalog/api/careersApi';
 import { useGetUsersQuery } from '../../users/api/usersApi';
+import Pager from '../../layout/Pager';
+import { PAGE_SIZES, pageOf as rowsOfPage } from '../../layout/paging';
 import { useBulkEnrollMutation, useGetBulkEnrollmentPreviewQuery } from '../api/enrollmentsApi';
 
 const selectProps = { select: true, size: 'small', slotProps: { select: { native: true }, inputLabel: { shrink: true } } };
 const STEPS = ['Selección', 'Carrera y tutor', 'Resultado'];
 const SKIP_LABEL = { ALREADY_ENROLLED: 'Ya matriculado: se omitirá', INACTIVE_STUDENT: 'Dado de baja: se omitirá' };
 const NO_TUTOR = '#7A4100';
-const PAGE_SIZES = [25, 50, 100];
 
 const th = { fontSize: 12, fontWeight: 500, color: 'text.secondary', textAlign: 'left', px: 2, py: 1.25, borderBottom: '1px solid #E3E7EE', whiteSpace: 'nowrap' };
 const td = { fontSize: 14, px: 2, py: 1, borderBottom: '1px solid #EEF1F5', whiteSpace: 'nowrap' };
@@ -106,30 +106,20 @@ export default function BulkEnrollDialog({ cycle, stage, onClose }) {
     ...edits[row.studentId],
   });
 
-  // the rows of the current page; a list that shrank never leaves you on an empty page
-  const pageOf = (list) => {
-    const shown = Math.min(page, Math.max(0, Math.ceil(list.length / pageSize) - 1));
-    return list.slice(shown * pageSize, (shown + 1) * pageSize);
-  };
-  const pager = (list) =>
-    list.length > PAGE_SIZES[0] && (
-      <TablePagination
-        component="div"
-        count={list.length}
-        page={Math.min(page, Math.max(0, Math.ceil(list.length / pageSize) - 1))}
-        onPageChange={(_, next) => setPage(next)}
-        rowsPerPage={pageSize}
-        rowsPerPageOptions={PAGE_SIZES}
-        onRowsPerPageChange={(e) => {
-          setPageSize(Number(e.target.value));
-          setPage(0);
-        }}
-        labelRowsPerPage="Por página"
-        labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
-        getItemAriaLabel={(type) => (type === 'next' ? 'Página siguiente' : type === 'previous' ? 'Página anterior' : type)}
-        sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: '12px' }}
-      />
-    );
+  // the rows of the current page
+  const pageOf = (list) => rowsOfPage(list, page, pageSize);
+  const pager = (list) => (
+    <Pager
+      count={list.length}
+      page={page}
+      onPageChange={setPage}
+      size={pageSize}
+      onSizeChange={(size) => {
+        setPageSize(size);
+        setPage(0);
+      }}
+    />
+  );
   const goTo = (next) => {
     setStep(next);
     setPage(0);

@@ -15,6 +15,7 @@ import { useNotify } from '../../app/notifyContext';
 import { colors } from '../../app/theme';
 import ProgressSection from '../../dashboards/components/ProgressSection';
 import LogbookSection from '../../logbook/components/LogbookSection';
+import StudentGoals from '../../goals/components/StudentGoals';
 import ConfirmDialog from '../../layout/ConfirmDialog';
 import { useIsAdmin } from '../../users/api/authApi';
 import {
@@ -96,6 +97,7 @@ const TABS = [
   { value: 'data', label: 'Datos' },
   { value: 'enrollment', label: 'Matrícula' },
   { value: 'progress', label: 'Progreso' },
+  { value: 'goals', label: 'Metas' },
   { value: 'logbook', label: 'Bitácora' },
 ];
 
@@ -107,7 +109,7 @@ function StudentDetail({ student, onCancel }) {
   // the same permissions as the sections had: ADMIN and TUTOR see enrollments (and
   // guardians, inside Datos); ADMIN and the current tutor see progress and logbook
   const tabs = TABS.filter(
-    (t) => t.value === 'data' || (t.value === 'enrollment' && canManage) || (['progress', 'logbook'].includes(t.value) && canEdit),
+    (t) => t.value === 'data' || (t.value === 'enrollment' && canManage) || (['progress', 'goals', 'logbook'].includes(t.value) && canEdit),
   );
   const [params, setParams] = useSearchParams();
   const tab = tabs.some((t) => t.value === params.get('tab')) ? params.get('tab') : 'data';
@@ -290,6 +292,9 @@ function StudentDetail({ student, onCancel }) {
       {tab === 'progress' && <ProgressSection student={student} />}
 
       {/* ADMIN and the current tutor read it; only the current tutor writes */}
+      {/* the same people as progress: ADMIN or the current tutor */}
+      {tab === 'goals' && <StudentGoals studentId={student.id} />}
+
       {tab === 'logbook' && <LogbookSection student={student} />}
 
       {!student.active && (

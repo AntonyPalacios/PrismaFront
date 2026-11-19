@@ -218,18 +218,19 @@ describe('Bulk enrollment', () => {
     const dialog = await openBulk('Simulacros');
     await within(dialog).findByRole('table', { name: 'Alumnos de la etapa de origen' });
     const boxes = () => within(dialog).getAllByRole('checkbox', { name: /^Elegir a Prueba/ });
-    expect(boxes()).toHaveLength(25);
-    expect(within(dialog).getByText('1–25 de 30')).toBeInTheDocument();
+    expect(boxes()).toHaveLength(10);
+    expect(within(dialog).getByText('1–10 de 30')).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Página siguiente' }));
-    expect(boxes()).toHaveLength(5);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Página siguiente' }));
+    expect(boxes()).toHaveLength(10);
     fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Elegir a Prueba, Alumno 30' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Página anterior' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Siguiente' }));
 
     // step 2 starts on its first page, with the 29 still checked
     await within(dialog).findByRole('table', { name: 'Carrera y tutor por alumno' });
-    expect(within(dialog).getByText('1–25 de 29')).toBeInTheDocument();
+    expect(within(dialog).getByText('1–10 de 29')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Confirmar 29 matrículas' })).toBeInTheDocument();
   });
 });

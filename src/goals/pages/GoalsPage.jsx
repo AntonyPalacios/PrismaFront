@@ -8,6 +8,8 @@ import Typography from '@mui/material/Typography';
 import { formatShortDate, todayIso } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
+import Pager from '../../layout/Pager';
+import { PAGE_SIZES, pageOf } from '../../layout/paging';
 import { useGetMeQuery, useIsAdmin } from '../../users/api/authApi';
 import { useGetUsersQuery } from '../../users/api/usersApi';
 import { userFullName } from '../../users/userDisplay';
@@ -54,6 +56,9 @@ export default function GoalsPage() {
   const [tutorId, setTutorId] = useState('');
   // what was typed, by "enrollmentId:areaId"; the rest shows the saved goal or the suggestion
   const [edits, setEdits] = useState({});
+  // paged, but what was typed on any page is kept and saved together
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZES[0]);
   const mockExamId = chosenMockExamId ?? defaultMockExam(mockExams);
   const {
     currentData: sheet,
@@ -82,6 +87,7 @@ export default function GoalsPage() {
 
   const startOver = () => {
     setEdits({});
+    setPage(0);
     reset();
   };
 
@@ -192,7 +198,7 @@ export default function GoalsPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {pageOf(rows, page, size).map((row) => (
                   <tr key={row.enrollmentId}>
                     <Box component="th" scope="row" sx={{ ...cell, textAlign: 'left', fontWeight: 500 }}>
                       {row.fullName}
@@ -251,6 +257,16 @@ export default function GoalsPage() {
               </tbody>
             </Box>
           </Box>
+          <Pager
+            count={rows.length}
+            page={page}
+            onPageChange={setPage}
+            size={size}
+            onSizeChange={(next) => {
+              setSize(next);
+              setPage(0);
+            }}
+          />
           <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 1.5 }}>
             <Typography sx={{ flex: '1 1 260px', fontSize: 13, color: 'text.secondary' }}>
               Una meta vacía no se guarda; borrar una ya guardada la quita.

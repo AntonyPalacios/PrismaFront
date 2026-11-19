@@ -19,10 +19,11 @@ import { formatDate, todayIso } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
 import { useNotify } from '../../app/notifyContext';
 import ConfirmDialog from '../../layout/ConfirmDialog';
+import Pager from '../../layout/Pager';
+import { PAGE_SIZES } from '../../layout/paging';
 import { useGetMeQuery } from '../../users/api/authApi';
 import { useCreateLogEntryMutation, useGetLogbookPageQuery } from '../api/logbookApi';
 
-const PAGE_SIZE = 20;
 // the academy's sheet: reason and agreements; observations are optional for good
 const FIELDS = [
   ['reason', 'Motivo de la sesión'],
@@ -65,13 +66,13 @@ function useIsCurrentTutor(student) {
  * entry per session: its date, who they met (the student, the parent or
  * guardian, or both) and the texts of the academy's sheet; every save asks
  * first, because an entry can never be edited or deleted afterwards. The history spans every stage and tutor,
- * newest session first, 20 at a time.
+ * newest session first, 10 per page (paged by the backend).
  */
 export default function LogbookSection({ student }) {
   const canWrite = useIsCurrentTutor(student);
   const [writing, setWriting] = useState(false);
-  // how many pages of 20 are shown ("Ver más" adds one)
-  const [pages, setPages] = useState(1);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZES[0]);
 
   return (
     <Box
@@ -92,49 +93,43 @@ export default function LogbookSection({ student }) {
 
       {writing && <EntryForm student={student} onDone={() => setWriting(false)} />}
 
-      <Box component="ol" aria-label="Entradas de la bitácora" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-        {Array.from({ length: pages }, (_, page) => (
-          <EntriesPage key={page} studentId={student.id} page={page} last={page === pages - 1} onMore={() => setPages(pages + 1)} />
-        ))}
-      </Box>
+      <EntriesPage
+        studentId={student.id}
+        page={page}
+        size={size}
+        onPageChange={setPage}
+        onSizeChange={(next) => {
+          setSize(next);
+          setPage(0);
+        }}
+      />
     </Box>
   );
 }
 
-function EntriesPage({ studentId, page, last, onMore }) {
-  const { data, isLoading, error } = useGetLogbookPageQuery({ studentId, page, size: PAGE_SIZE });
+/** One page of the history, as the backend pages it, and the pager under it. */
+function EntriesPage({ studentId, page, size, onPageChange, onSizeChange }) {
+  const { data, isLoading, error } = useGetLogbookPageQuery({ studentId, page, size });
   if (isLoading) {
     return (
-      <Box component="li" sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
         <CircularProgress size={28} aria-label="Cargando bitácora" />
       </Box>
     );
   }
-  if (error) {
-    return (
-      <Box component="li">
-        <Alert severity="error">{errorDetail(error)}</Alert>
-      </Box>
-    );
-  }
+  if (error) return <Alert severity="error">{errorDetail(error)}</Alert>;
   const list = data?.entries ?? [];
   if (page === 0 && list.length === 0) {
-    return (
-      <Box component="li">
-        <Typography sx={{ py: 2, textAlign: 'center', color: 'text.secondary' }}>Aún no hay entradas en la bitácora.</Typography>
-      </Box>
-    );
+    return <Typography sx={{ py: 2, textAlign: 'center', color: 'text.secondary' }}>Aún no hay entradas en la bitácora.</Typography>;
   }
   return (
     <>
-      {list.map((entry) => (
-        <Entry key={entry.id} entry={entry} />
-      ))}
-      {last && data?.hasMore && (
-        <Box component="li" sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Button onClick={onMore}>Ver más</Button>
-        </Box>
-      )}
+      <Box component="ol" aria-label="Entradas de la bitácora" sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        {list.map((entry) => (
+          <Entry key={entry.id} entry={entry} />
+        ))}
+      </Box>
+      <Pager count={data?.totalElements ?? 0} page={page} onPageChange={onPageChange} size={size} onSizeChange={onSizeChange} />
     </>
   );
 }

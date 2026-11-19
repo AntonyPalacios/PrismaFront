@@ -71,6 +71,8 @@ function json(status, body) {
 
 let fetchMock;
 let roles;
+// a long group, when a test needs one (null = SHEET)
+let sheetRows = null;
 let saveResponse;
 
 function route(request) {
@@ -79,6 +81,7 @@ function route(request) {
   if (url.pathname.endsWith('/users')) return json(200, USERS);
   if (url.pathname.endsWith('/goals/mock-exams')) return json(200, MOCK_EXAMS);
   if (url.pathname.endsWith('/goals/sheet') && request.method === 'GET') {
+    if (sheetRows) return json(200, { ...SHEET, rows: sheetRows });
     return json(200, url.searchParams.get('mockExamId') === '1' ? PAST_SHEET : SHEET);
   }
   if (url.pathname.endsWith('/goals/sheet')) return saveResponse();
@@ -137,6 +140,27 @@ describe('Goals', () => {
     expect(goalInput('Lectura', 'Benítez, Beto')).toHaveValue('');
     expect(goalInput('Lectura', 'Duarte, Dario')).toBeDisabled();
     expect(screen.getByText('Este simulacro no tiene Arquitectura.')).toBeInTheDocument();
+  });
+
+  it('pages a long group and saves what was typed on every page', async () => {
+    sheetRows = Array.from({ length: 12 }, (_, i) =>
+      row(100 + i, `Prueba, Alumno ${String(i + 1).padStart(2, '0')}`, { goals: [goal(1, null, null), goal(2, null, null)] }),
+    );
+    renderPage();
+    await screen.findByRole('table', { name: 'Metas del grupo' });
+    fireEvent.change(goalInput('Lectura', 'Prueba, Alumno 01'), { target: { value: '8' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
+    fireEvent.change(goalInput('Lectura', 'Prueba, Alumno 12'), { target: { value: '9' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Página anterior' }));
+    expect(goalInput('Lectura', 'Prueba, Alumno 01')).toHaveValue('8');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar metas' }));
+    await waitFor(() => expect(saves()).toHaveLength(1));
+    expect((await saves()[0].clone().json()).goals).toEqual([
+      { enrollmentId: 100, areaId: 1, targetCorrect: 8 },
+      { enrollmentId: 111, areaId: 1, targetCorrect: 9 },
+    ]);
+    sheetRows = null;
   });
 
   it('saves the suggestions accepted and what was typed, in one request', async () => {

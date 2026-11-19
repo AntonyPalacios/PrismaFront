@@ -70,7 +70,10 @@ describe('Logbook section', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('shows the history newest first, 20 at a time, without edit or delete controls', async () => {
+  it('shows the history newest first, 10 per page, without edit or delete controls', async () => {
+    // twelve entries in all: a second page
+    pages[0] = { ...pages[0], totalElements: 12 };
+    pages[1] = { ...pages[1], totalElements: 12 };
     renderSection();
     const first = await screen.findByRole('listitem', { name: /Sesión del 10 nov 2026/ });
     expect(within(first).getByText('Bajó en Álgebra')).toBeInTheDocument();
@@ -79,10 +82,14 @@ describe('Logbook section', () => {
     expect(within(first).getByText('Padre de familia o apoderado')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /editar|borrar|eliminar/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ver más' }));
+    const pageRequests = () =>
+      fetchMock.mock.calls.map(([r]) => new URL(r.url)).filter((u) => u.pathname.endsWith('/logbook-entries'));
+    expect(pageRequests()[0].searchParams.get('size')).toBe('10');
+    expect(screen.getByText('1–10 de 12')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }));
     // a former tutor's entry is part of the history
     expect(await entries().findByText('Salas Ríos, Ruth')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ver más' })).not.toBeInTheDocument();
+    expect(pageRequests().at(-1).searchParams.get('page')).toBe('1');
   });
 
   it('every save warns that the entry cannot be edited or deleted, listing the empty fields', async () => {
