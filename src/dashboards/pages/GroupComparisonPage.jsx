@@ -18,6 +18,10 @@ import TutorComparison from '../components/TutorComparison';
 const selectProps = { select: true, size: 'small', slotProps: { select: { native: true }, inputLabel: { shrink: true } } };
 const UP = { color: '#2F5A08', fontWeight: 500 };
 const DOWN = { color: '#8E0F14', fontWeight: 500 };
+// "Por grupo" opens with the last 3 exams; more can be added up to all of them
+const DEFAULT_LATEST = 3;
+const LATEST_OPTIONS = [DEFAULT_LATEST, 5, 10];
+const ALL = 0;
 
 /** Averages as whole numbers, rounded to the nearest one (7.5 → 8). */
 const whole = (value) => (value == null ? null : Math.round(Number(value)));
@@ -40,7 +44,8 @@ function trend(exams, index, read, moreIsBetter) {
  * "Charla de notas" (Claude Design: GroupComparisonDesktop,
  * REQ-DASHBOARDS-05): for an exam type, how the group did in each exam of
  * the active cycle — per area, the average, lowest and highest count of
- * correct and of wrong answers; per course, the average of correct ones. A
+ * correct and of wrong answers; per course, the average of correct ones.
+ * It shows the last 3 exams unless more are asked for ("Exámenes"). A
  * TUTOR always sees their own students; an ADMIN the whole academy, or the
  * group of the tutor they pick. Only ADMIN and TUTOR. An ADMIN also has the
  * "Por tutor" tab (REQ-DASHBOARDS-06): every tutor's group side by side in
@@ -61,6 +66,11 @@ export default function GroupComparisonPage() {
     { examTypeId, tutorId: isAdmin && tutorId ? Number(tutorId) : undefined },
     { skip: !allowed || !examTypeId || byTutor },
   );
+  // how many of the latest exams the table shows (ALL = every exam of the cycle)
+  const [latest, setLatest] = useState(DEFAULT_LATEST);
+  const total = exams?.length ?? 0;
+  const showsAll = latest === ALL || latest >= total;
+  const shownExams = exams && !showsAll ? exams.slice(-latest) : exams;
 
   if (me && !allowed) {
     return <Alert severity="info">La charla de notas es solo para administradores y tutores.</Alert>;
@@ -89,7 +99,7 @@ export default function GroupComparisonPage() {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 280px))' },
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 240px))' },
           gap: 2,
           p: 2,
           bgcolor: 'background.paper',
@@ -106,6 +116,16 @@ export default function GroupComparisonPage() {
           ))}
         </TextField>
         {isAdmin && !byTutor && <TutorSelect value={tutorId} onChange={setTutorId} />}
+        {!byTutor && (
+          <TextField {...selectProps} label="Exámenes" value={showsAll ? ALL : latest} onChange={(e) => setLatest(Number(e.target.value))}>
+            {LATEST_OPTIONS.filter((count) => count < total).map((count) => (
+              <option key={count} value={count}>
+                Últimos {count}
+              </option>
+            ))}
+            <option value={ALL}>{total > 0 ? `Todos (${total})` : 'Todos'}</option>
+          </TextField>
+        )}
       </Box>
 
       {byTutor && <TutorComparison examTypeId={examTypeId} />}
@@ -124,9 +144,9 @@ export default function GroupComparisonPage() {
       )}
       {!byTutor && exams && exams.length > 0 && (
         <>
-          <GroupTable exams={exams} />
+          <GroupTable exams={shownExams} />
           <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-            ▲▼ comparan el promedio contra el examen anterior. Solo aparecen los exámenes con resultados del grupo; quien no
+            ▲▼ comparan el promedio contra el examen anterior de la tabla. Solo aparecen los exámenes con resultados del grupo; quien no
             asistió no cuenta.
           </Typography>
         </>

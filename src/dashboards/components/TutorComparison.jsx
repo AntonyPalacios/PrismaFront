@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import { formatShortDate } from '../../academic/cycleDisplay';
@@ -24,9 +26,20 @@ const rowName = { ...cell, textAlign: 'left', color: '#3A4150', fontWeight: 400 
  * the reference. Per exam: how many sat it and the average correct answers
  * of each area (wrong ones below, smaller); green above the academy's
  * average, red below. A tutor whose group did not sit an exam shows "—".
+ * Every tutor shows by default; the chips above the table hide or show each
+ * one, and the academy row always stays.
  */
 export default function TutorComparison({ examTypeId }) {
   const { currentData: data, isFetching, error } = useGetTutorComparisonQuery(examTypeId, { skip: !examTypeId });
+  // the tutors taken out of the table (kept when the exam type changes)
+  const [hidden, setHidden] = useState(() => new Set());
+  const toggle = (tutorId) =>
+    setHidden((current) => {
+      const next = new Set(current);
+      if (next.has(tutorId)) next.delete(tutorId);
+      else next.add(tutorId);
+      return next;
+    });
 
   if (isFetching && !data) {
     return (
@@ -49,12 +62,33 @@ export default function TutorComparison({ examTypeId }) {
   const areas = [...new Map(data.academy.flatMap((c) => c.areas).map((a) => [a.areaId, a])).values()].sort((a, b) => a.areaId - b.areaId);
   const academyOf = (examId) => data.academy.find((c) => c.examId === examId);
   const rows = [
-    ...data.tutors.map((tutor) => ({ key: tutor.tutorId, name: tutor.tutorName, cells: tutor.cells, academy: false })),
+    ...data.tutors.filter((tutor) => !hidden.has(tutor.tutorId)).map((tutor) => ({ key: tutor.tutorId, name: tutor.tutorName, cells: tutor.cells, academy: false })),
     { key: 'academy', name: 'Toda la academia', cells: data.academy, academy: true },
   ];
 
   return (
     <>
+      {data.tutors.length > 1 && (
+        <Box role="group" aria-label="Tutores a mostrar" sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+          <Typography component="span" sx={{ fontSize: 13, color: 'text.secondary', mr: 0.5 }}>
+            Tutores:
+          </Typography>
+          {data.tutors.map((tutor) => {
+            const shown = !hidden.has(tutor.tutorId);
+            return (
+              <Chip
+                key={tutor.tutorId}
+                label={tutor.tutorName}
+                size="small"
+                color={shown ? 'primary' : 'default'}
+                variant={shown ? 'filled' : 'outlined'}
+                aria-pressed={shown}
+                onClick={() => toggle(tutor.tutorId)}
+              />
+            );
+          })}
+        </Box>
+      )}
       <Box sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: '16px', overflowX: 'auto' }}>
         <Box component="table" aria-label="Comparativa de tutores" sx={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
