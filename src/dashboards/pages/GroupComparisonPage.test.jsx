@@ -255,22 +255,31 @@ describe('Charla de notas', () => {
       renderPage();
       fireEvent.click(await screen.findByRole('tab', { name: 'Por tutor' }));
 
-      const names = () => rowsOf(screen.getByRole('table', { name: 'Comparativa de tutores' })).slice(2).map((r) => r[0]);
+      // hidden: true, since the open menu hides the page from the accessibility tree
+      const names = () =>
+        [...screen.getByRole('table', { name: 'Comparativa de tutores', hidden: true }).querySelectorAll('tbody tr')].map((r) => r.children[0].textContent);
       await waitFor(() => expect(names()).toEqual(['Salas, Ruth', 'Valle Gómez, Silvia', 'Toda la academia']));
-      const ruth = screen.getByRole('button', { name: 'Salas, Ruth' });
-      expect(ruth).toHaveAttribute('aria-pressed', 'true');
+      const picker = () => screen.getByRole('combobox', { name: /Tutores/, hidden: true });
+      expect(picker()).toHaveTextContent('Todos');
 
-      fireEvent.click(ruth);
-      expect(ruth).toHaveAttribute('aria-pressed', 'false');
+      fireEvent.mouseDown(picker());
+      fireEvent.click(await screen.findByRole('option', { name: 'Salas, Ruth' }));
       expect(names()).toEqual(['Valle Gómez, Silvia', 'Toda la academia']);
+      expect(picker()).toHaveTextContent('Valle Gómez, Silvia');
+
+      // "Todos" clears every tutor, and checks them all again
+      fireEvent.click(screen.getByRole('option', { name: 'Todos' }));
+      expect(names()).toEqual(['Salas, Ruth', 'Valle Gómez, Silvia', 'Toda la academia']);
+      fireEvent.click(screen.getByRole('option', { name: 'Todos' }));
+      expect(names()).toEqual(['Toda la academia']);
+      expect(picker()).toHaveTextContent('Ninguno');
+      fireEvent.click(screen.getByRole('option', { name: 'Salas, Ruth' }));
+      fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
 
       // the choice stays when the exam type changes
       fireEvent.change(screen.getByLabelText('Tipo de examen'), { target: { value: '2' } });
       await waitFor(() => expect(tutorRequests().at(-1).searchParams.get('examTypeId')).toBe('2'));
-      await waitFor(() => expect(names()).toEqual(['Valle Gómez, Silvia', 'Toda la academia']));
-
-      fireEvent.click(screen.getByRole('button', { name: 'Salas, Ruth' }));
-      expect(names()).toEqual(['Salas, Ruth', 'Valle Gómez, Silvia', 'Toda la academia']);
+      await waitFor(() => expect(names()).toEqual(['Salas, Ruth', 'Toda la academia']));
     });
 
     it('says so when the exam type has no results yet', async () => {

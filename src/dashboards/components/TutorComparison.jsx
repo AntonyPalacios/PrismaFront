@@ -1,8 +1,10 @@
-import { useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
+import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
+import ListItemText from '@mui/material/ListItemText';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { formatShortDate } from '../../academic/cycleDisplay';
 import { errorDetail } from '../../app/api/errors';
@@ -26,20 +28,11 @@ const rowName = { ...cell, textAlign: 'left', color: '#3A4150', fontWeight: 400 
  * the reference. Per exam: how many sat it and the average correct answers
  * of each area (wrong ones below, smaller); green above the academy's
  * average, red below. A tutor whose group did not sit an exam shows "—".
- * Every tutor shows by default; the chips above the table hide or show each
- * one, and the academy row always stays.
+ * Every tutor shows by default; `hidden` holds the ones taken out with
+ * "Tutores" (TutorsSelect). The academy row always stays.
  */
-export default function TutorComparison({ examTypeId }) {
+export default function TutorComparison({ examTypeId, hidden }) {
   const { currentData: data, isFetching, error } = useGetTutorComparisonQuery(examTypeId, { skip: !examTypeId });
-  // the tutors taken out of the table (kept when the exam type changes)
-  const [hidden, setHidden] = useState(() => new Set());
-  const toggle = (tutorId) =>
-    setHidden((current) => {
-      const next = new Set(current);
-      if (next.has(tutorId)) next.delete(tutorId);
-      else next.add(tutorId);
-      return next;
-    });
 
   if (isFetching && !data) {
     return (
@@ -68,27 +61,6 @@ export default function TutorComparison({ examTypeId }) {
 
   return (
     <>
-      {data.tutors.length > 1 && (
-        <Box role="group" aria-label="Tutores a mostrar" sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-          <Typography component="span" sx={{ fontSize: 13, color: 'text.secondary', mr: 0.5 }}>
-            Tutores:
-          </Typography>
-          {data.tutors.map((tutor) => {
-            const shown = !hidden.has(tutor.tutorId);
-            return (
-              <Chip
-                key={tutor.tutorId}
-                label={tutor.tutorName}
-                size="small"
-                color={shown ? 'primary' : 'default'}
-                variant={shown ? 'filled' : 'outlined'}
-                aria-pressed={shown}
-                onClick={() => toggle(tutor.tutorId)}
-              />
-            );
-          })}
-        </Box>
-      )}
       <Box sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: '16px', overflowX: 'auto' }}>
         <Box component="table" aria-label="Comparativa de tutores" sx={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -165,5 +137,58 @@ export default function TutorComparison({ examTypeId }) {
         En verde, sobre el promedio de la academia; en rojo, debajo. Quien no asistió no cuenta.
       </Typography>
     </>
+  );
+}
+
+const ALL_TUTORS = 'all';
+
+/**
+ * "Tutores" (multiple select with checkboxes): which tutors "Por tutor"
+ * shows, all of them by default, with "Todos" to check or clear them at
+ * once. It reads the same comparison the table does (one request).
+ */
+export function TutorsSelect({ examTypeId, hidden, onChange }) {
+  const { currentData: data } = useGetTutorComparisonQuery(examTypeId, { skip: !examTypeId });
+  const tutors = data?.tutors ?? [];
+  const shown = tutors.filter((tutor) => !hidden.has(tutor.tutorId)).map((tutor) => tutor.tutorId);
+  const allShown = shown.length === tutors.length;
+
+  const describe = (selected) => {
+    if (selected.length === tutors.length) return 'Todos';
+    if (selected.length === 0) return 'Ninguno';
+    if (selected.length <= 2) return tutors.filter((t) => selected.includes(t.tutorId)).map((t) => t.tutorName).join('; ');
+    return `${selected.length} de ${tutors.length} tutores`;
+  };
+
+  const change = (event) => {
+    const picked = event.target.value;
+    if (picked.includes(ALL_TUTORS)) {
+      onChange(allShown ? new Set(tutors.map((t) => t.tutorId)) : new Set());
+    } else {
+      onChange(new Set(tutors.filter((t) => !picked.includes(t.tutorId)).map((t) => t.tutorId)));
+    }
+  };
+
+  return (
+    <TextField
+      select
+      size="small"
+      label="Tutores"
+      value={shown}
+      onChange={change}
+      disabled={tutors.length === 0}
+      slotProps={{ inputLabel: { shrink: true }, select: { multiple: true, displayEmpty: true, renderValue: describe } }}
+    >
+      <MenuItem value={ALL_TUTORS} dense>
+        <Checkbox size="small" checked={allShown} indeterminate={!allShown && shown.length > 0} />
+        <ListItemText primary="Todos" />
+      </MenuItem>
+      {tutors.map((tutor) => (
+        <MenuItem key={tutor.tutorId} value={tutor.tutorId} dense>
+          <Checkbox size="small" checked={!hidden.has(tutor.tutorId)} />
+          <ListItemText primary={tutor.tutorName} />
+        </MenuItem>
+      ))}
+    </TextField>
   );
 }

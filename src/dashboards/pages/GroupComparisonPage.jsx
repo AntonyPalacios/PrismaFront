@@ -13,7 +13,7 @@ import { useGetMeQuery, useIsAdmin } from '../../users/api/authApi';
 import { useGetUsersQuery } from '../../users/api/usersApi';
 import { userFullName } from '../../users/userDisplay';
 import { useGetGroupComparisonQuery } from '../api/dashboardsApi';
-import TutorComparison from '../components/TutorComparison';
+import TutorComparison, { TutorsSelect } from '../components/TutorComparison';
 
 const selectProps = { select: true, size: 'small', slotProps: { select: { native: true }, inputLabel: { shrink: true } } };
 const UP = { color: '#2F5A08', fontWeight: 500 };
@@ -61,6 +61,8 @@ export default function GroupComparisonPage() {
   // 'group' (the charla de notas) or 'tutors' (an admin's comparison)
   const [view, setView] = useState('group');
   const byTutor = isAdmin && view === 'tutors';
+  // the tutors "Por tutor" leaves out (kept when the exam type changes)
+  const [hiddenTutors, setHiddenTutors] = useState(() => new Set());
   const examTypeId = chosenTypeId ?? types[0]?.id;
   const { currentData: exams, isFetching, error } = useGetGroupComparisonQuery(
     { examTypeId, tutorId: isAdmin && tutorId ? Number(tutorId) : undefined },
@@ -116,6 +118,7 @@ export default function GroupComparisonPage() {
           ))}
         </TextField>
         {isAdmin && !byTutor && <TutorSelect value={tutorId} onChange={setTutorId} />}
+        {byTutor && <TutorsSelect examTypeId={examTypeId} hidden={hiddenTutors} onChange={setHiddenTutors} />}
         {!byTutor && (
           <TextField {...selectProps} label="Exámenes" value={showsAll ? ALL : latest} onChange={(e) => setLatest(Number(e.target.value))}>
             {LATEST_OPTIONS.filter((count) => count < total).map((count) => (
@@ -128,7 +131,7 @@ export default function GroupComparisonPage() {
         )}
       </Box>
 
-      {byTutor && <TutorComparison examTypeId={examTypeId} />}
+      {byTutor && <TutorComparison examTypeId={examTypeId} hidden={hiddenTutors} />}
       {!byTutor && isFetching && !exams && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
           <CircularProgress size={32} aria-label="Cargando charla de notas" />
