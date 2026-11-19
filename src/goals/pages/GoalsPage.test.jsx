@@ -129,7 +129,7 @@ describe('Goals', () => {
   it('a tutor gets the next mock exam with the goals and the suggestions ready', async () => {
     renderPage();
     await screen.findByRole('table', { name: 'Metas del grupo' });
-    expect(screen.getByLabelText('Simulacro')).toHaveValue('3');
+    expect(screen.getByLabelText('Examen')).toHaveValue('3');
     expect(new URL(sheetRequests()[0].url).searchParams.get('tutorId')).toBeNull();
     // a tutor never picks a tutor
     expect(screen.queryByLabelText('Tutor')).not.toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('Goals', () => {
     expect(screen.getByText('Sugerida (Regular 2 + 2)')).toBeInTheDocument();
     expect(goalInput('Lectura', 'Benítez, Beto')).toHaveValue('');
     expect(goalInput('Lectura', 'Duarte, Dario')).toBeDisabled();
-    expect(screen.getByText('Este simulacro no tiene Arquitectura.')).toBeInTheDocument();
+    expect(screen.getByText('Este examen no tiene Arquitectura.')).toBeInTheDocument();
   });
 
   it('pages a long group and saves what was typed on every page', async () => {
@@ -199,7 +199,7 @@ describe('Goals', () => {
   it('after the exam each goal shows whether it was met; a student who did not attend says so', async () => {
     renderPage();
     await screen.findByRole('table', { name: 'Metas del grupo' });
-    fireEvent.change(screen.getByLabelText('Simulacro'), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText('Examen'), { target: { value: '1' } });
     await waitFor(() => expect(goalInput('Lectura', 'Arias, Ana')).toHaveValue('9'));
     const table = screen.getByRole('table', { name: 'Metas del grupo' });
     expect(within(table).getByText('Lograda')).toBeInTheDocument();

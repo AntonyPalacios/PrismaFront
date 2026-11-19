@@ -27,7 +27,7 @@ const isWhole = (text) => text === '' || /^\d{1,3}$/.test(text.trim());
 /** Why a student can't get a goal in this mock exam. */
 function noExamText(row) {
   return row.noExamReason === 'EXAM_TYPE_MISSING'
-    ? `Este simulacro no tiene ${row.examTypeName}.`
+    ? `Este examen no tiene ${row.examTypeName}.`
     : 'Sin tipo de examen: asígnale una carrera en su matrícula.';
 }
 
@@ -115,7 +115,7 @@ export default function GoalsPage() {
           Metas
         </Typography>
         <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
-          Meta de buenas por área para cada alumno en un simulacro. Las vacías vienen con la sugerida: buenas del último examen
+          Meta de buenas por área para cada alumno en un examen. Las vacías vienen con la sugerida: buenas del último examen
           rendido + 2.
         </Typography>
       </Box>
@@ -134,7 +134,7 @@ export default function GoalsPage() {
       >
         <TextField
           {...selectProps}
-          label="Simulacro"
+          label="Examen"
           value={mockExamId ?? ''}
           onChange={(e) => {
             setChosenMockExamId(Number(e.target.value));
@@ -142,7 +142,7 @@ export default function GoalsPage() {
           }}
           disabled={mockExams.length === 0}
         >
-          {mockExams.length === 0 && <option value="">Sin simulacros en el ciclo activo</option>}
+          {mockExams.length === 0 && <option value="">Sin exámenes en el ciclo activo</option>}
           {mockExams.map((m) => (
             <option key={m.id} value={m.id}>
               {`${m.name} · ${formatShortDate(m.examDate)} · ${m.stageName}`}
@@ -162,7 +162,7 @@ export default function GoalsPage() {
 
       {!loadingMockExams && mockExams.length === 0 && (
         <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
-          El ciclo activo aún no tiene simulacros. Créalos en "Exámenes".
+          El ciclo activo aún no tiene exámenes. Créalos en "Exámenes".
         </Typography>
       )}
       {isFetching && !sheet && (
