@@ -101,23 +101,26 @@ export default function MathRadar({ studentId }) {
         ))}
       </Box>
 
-      <Box component="table" aria-labelledby="math-radar-title" sx={visuallyHidden}>
-        <thead>
-          <tr>
-            <th scope="col">Curso</th>
-            <th scope="col">{examLabel(current)}</th>
-            {previous && <th scope="col">{examLabel(previous)}</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.courseId}>
-              <th scope="row">{row.courseName}</th>
-              <td>{percentLabel(row.currentAxis)}</td>
-              {previous && <td>{percentLabel(row.previousAxis)}</td>}
+      {/* hidden on a div: a table ignores the 1px width and would widen the page */}
+      <Box sx={visuallyHidden}>
+        <table aria-labelledby="math-radar-title">
+          <thead>
+            <tr>
+              <th scope="col">Curso</th>
+              <th scope="col">{examLabel(current)}</th>
+              {previous && <th scope="col">{examLabel(previous)}</th>}
             </tr>
-          ))}
-        </tbody>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.courseId}>
+                <th scope="row">{row.courseName}</th>
+                <td>{percentLabel(row.currentAxis)}</td>
+                {previous && <td>{percentLabel(row.previousAxis)}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </Box>
     </Box>
   );

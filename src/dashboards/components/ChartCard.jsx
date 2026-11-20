@@ -54,8 +54,9 @@ export default function ChartCard({ id, title, aside, asideColor, toolbar, point
           </Box>
         ))}
       </Box>
-      <Box component="table" aria-labelledby={`${id}-title`} sx={visuallyHidden}>
-        {children}
+      {/* hidden on a div: a table ignores the 1px width and would widen the page */}
+      <Box sx={visuallyHidden}>
+        <table aria-labelledby={`${id}-title`}>{children}</table>
       </Box>
     </Box>
   );
