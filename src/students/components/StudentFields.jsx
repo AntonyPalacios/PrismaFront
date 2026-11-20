@@ -6,9 +6,10 @@ import TextField from '@mui/material/TextField';
  * card of the detail (read-only there until "Editar"). Only names and
  * paternal surname are required.
  *
- * `compact` (the detail's "Datos" card) packs every field in two columns,
+ * `compact` (the detail's "Datos" card) packs the fields in two columns,
  * also on a phone, with smaller fields, so the file does not become a long
- * column of inputs; the email takes the whole row, since it would be cut.
+ * column of inputs; the email always takes the whole row, and on a phone the
+ * first names and the phone too, since they would be cut.
  */
 export default function StudentFields({ register, errors, disabled = false, autoFocus = false, compact = false }) {
   const field = (name, props) => ({
@@ -24,14 +25,17 @@ export default function StudentFields({ register, errors, disabled = false, auto
   const birthDateProps = { slotProps: { inputLabel: { shrink: true } } };
 
   if (compact) {
+    // on a phone half a row only fits ~13 characters: the first names (often
+    // two words), the phone and the email take the whole row there
+    const fullOnPhone = { gridColumn: { xs: '1 / -1', sm: 'auto' } };
     return (
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.5 }}>
-        <TextField label="Nombres" required autoFocus={autoFocus} {...field('firstName')} />
+        <TextField label="Nombres" required autoFocus={autoFocus} {...field('firstName')} sx={fullOnPhone} />
         <TextField label="Apellido paterno" required {...field('lastNamePat')} />
         <TextField label="Apellido materno" {...field('lastNameMat')} />
         <TextField label="DNI" {...field('dni', dniProps)} />
         <TextField label="Fecha de nacimiento" type="date" {...field('birthDate', birthDateProps)} />
-        <TextField label="Teléfono" type="tel" {...field('phone')} />
+        <TextField label="Teléfono" type="tel" {...field('phone')} sx={fullOnPhone} />
         <TextField label="Correo" type="email" {...field('email')} sx={{ gridColumn: '1 / -1' }} />
       </Box>
     );
